@@ -2,31 +2,41 @@ const sequelize = require('../config/db');
 const UserAddress = require('../models/UserAddress'); // Import UserAddress model
 const { Op } = require('sequelize'); // Import Op for query operators
 
+
 // Fetch nearby gyms based on user's current location
 exports.fetchGyms = async (req, res) => {
   const userId = req.user.id; // Get the logged-in user ID
 
   // Get the pagination parameters from the request query or use defaults
-  const limit = parseInt(req.query.limit, 10) || 9; // Default limit is 10
+  const limit = parseInt(req.query.limit, 10) || 9; // Default limit is 9
   const page = parseInt(req.query.page, 10) || 1; // Default page is 1
   const offset = (page - 1) * limit; // Calculate offset
+  let { lat, long } = req.query; // Destructure latitude and longitude from req.query
 
   try {
-    // Fetch the current location of the logged-in user
-    const currentLocation = await UserAddress.findOne({
-      where: {
-        user_id: userId,
-        is_selected: true,
-      },
-    });
+    let userLat, userLong;
+  
+    // Fetch current location if latitude and longitude are not provided
+    if (!lat || !long) {
+      const currentLocation = await UserAddress.findOne({
+        where: {
+          user_id: userId,
+          is_selected: true,
+        },
+      });
 
-    if (!currentLocation) {
-      return res.status(400).send('User location is required');
+      if (!currentLocation) {
+        return res.status(400).send('User location is required');
+      }
+
+      userLat = currentLocation.lat;
+      userLong = currentLocation.long;
+    } else {
+      userLat = parseFloat(lat); // Convert to float
+      userLong = parseFloat(long); // Convert to float
     }
-
-    const { lat: userLat, long: userLong } = currentLocation;
-
-    // Query to fetch the total count of gyms without the LIMIT and OFFSET
+    
+    // Query to fetch the total count of gyms
     const countQuery = `
       SELECT COUNT(DISTINCT "Gyms".id) AS totalGyms
       FROM "Gyms"
@@ -43,12 +53,12 @@ exports.fetchGyms = async (req, res) => {
       ) IS NOT NULL;
     `;
 
-    // Execute the count query to get the total number of gyms
+    // Execute the count query
     const [countResult] = await sequelize.query(countQuery, {
       replacements: { userLat, userLong },
     });
 
-    const totalGyms = countResult[0].totalgyms;
+    const totalGyms = countResult[0].totalGyms; // Fix the property name to match SQL result
     const totalPages = Math.ceil(totalGyms / limit); // Calculate total pages
 
     // Query to fetch gyms with calculated distance and pagination

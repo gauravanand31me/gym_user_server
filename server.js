@@ -9,6 +9,7 @@ const gymRoutes = require('./routes/gym');
 const bookingRoutes = require('./routes/booking');
 const userRoutes = require('./routes/users');
 const friendRoutes = require('./routes/friends');
+const addressRoutes = require('./routes/address');
 const cors = require("cors");
 
 const app = express();
@@ -21,6 +22,7 @@ app.use('/api/gym', gymRoutes);
 app.use('/api/booking', bookingRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/friends', friendRoutes);
+app.use('/api/address', addressRoutes);
 
 const PORT = process.env.PORT || 5000;
 
