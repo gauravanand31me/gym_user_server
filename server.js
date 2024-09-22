@@ -17,12 +17,12 @@ app.use(bodyParser.json());
 app.use(cors());
 
 // Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/gym', gymRoutes);
-app.use('/api/booking', bookingRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/friends', friendRoutes);
-app.use('/api/address', addressRoutes);
+app.use('/user/api/auth', authRoutes);
+app.use('/user/api/gym', gymRoutes);
+app.use('/user/api/booking', bookingRoutes);
+app.use('/user/api/users', userRoutes);
+app.use('/user/api/friends', friendRoutes);
+app.use('/user/api/address', addressRoutes);
 
 const PORT = process.env.PORT || 5000;
 
