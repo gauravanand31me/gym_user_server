@@ -40,7 +40,7 @@ exports.register = async (req, res) => {
     // Send OTP via SMS
     sendSMS(mobile_number, `Your OTP is ${otp}`);
 
-    res.status(201).send('User registered successfully, please verify your OTP');
+    res.status(201).send(`User registered successfully, please verify your OTP ${otp}`);
   } catch (error) {
     res.status(400).send(error.message);
   }
@@ -101,7 +101,7 @@ exports.login = async (req, res) => {
     // Send OTP via SMS
     sendSMS(user.mobile_number, `Your OTP is ${otp}`);
 
-    res.status(200).send('OTP sent successfully');
+    res.status(200).send(`OTP sent successfully ${otp}`);
   } catch (error) {
     res.status(400).send(error.message);
   }
