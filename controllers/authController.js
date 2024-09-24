@@ -14,28 +14,31 @@ exports.register = async (req, res) => {
   const confirmPassword = password; // No need to confirm in this case
 
   if (!isMobileNumber(mobile_number)) {
-    return res.status(400).send({status: false, message: 'Please enter valid mobile number.'});
+    return res.status(400).json({status: false, message: 'Please enter valid mobile number.'});
   }
   // Generate a unique OTP
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
   try {
+    const randomNumber = Math.floor(1000 + Math.random() * 9000);
+    const username = full_name.toLowerCase().replace(/\s+/g, '')+"_"+randomNumber
     // Check for existing user
     const existingUser = await User.findOne({
       where: {
         [Op.or]: [
           { mobile_number },
-          { username: full_name.toLowerCase().replace(/\s+/g, '') }
+          { username: username}
         ]
       }
     });
-    if (existingUser) return res.status(400).send('Mobile number or username already exists');
+    
+    if (existingUser) return res.status(400).json({status: false, message: 'Mobile number or username already exists'});
 
     // Create a new user
-    const randomNumber = Math.floor(1000 + Math.random() * 9000);
+    
     const user = await User.create({
       full_name,
-      username: `${full_name.toLowerCase().replace(/\s+/g, '')}_${randomNumber}`,
+      username: username,
       mobile_number,
       password,
       otp,
