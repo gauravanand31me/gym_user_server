@@ -3,6 +3,7 @@ const User = require('../models/User');
 const { sendSMS } = require('../utils/sendSMS');
 const { Op } = require('sequelize');
 const jwt = require('jsonwebtoken');
+const { isMobileNumber } = require('../helper/helper');
 const JWT_SECRET = process.env.JWT_SECRET || "Test@1992"
 // Register a new user
 exports.register = async (req, res) => {
@@ -12,6 +13,9 @@ exports.register = async (req, res) => {
   const password = 'hardcodedPassword123';
   const confirmPassword = password; // No need to confirm in this case
 
+  if (!isMobileNumber(mobile_number)) {
+    return res.status(400).send('Please enter valid mobile number.');
+  }
   // Generate a unique OTP
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
