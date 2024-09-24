@@ -28,9 +28,10 @@ exports.register = async (req, res) => {
     if (existingUser) return res.status(400).send('Mobile number or username already exists');
 
     // Create a new user
+    const randomNumber = Math.floor(1000 + Math.random() * 9000);
     const user = await User.create({
       full_name,
-      username: full_name.toLowerCase().replace(/\s+/g, ''),
+      username: `${full_name.toLowerCase().replace(/\s+/g, '')}_${randomNumber}`,
       mobile_number,
       password,
       otp,
@@ -40,9 +41,12 @@ exports.register = async (req, res) => {
     // Send OTP via SMS
     sendSMS(mobile_number, `Your OTP is ${otp}`);
 
-    res.status(201).send(`User registered successfully, please verify your OTP ${otp}`);
+    res.status(201).send({
+      status: true,
+      message: `User registered successfully, please verify your OTP ${otp}`
+    });
   } catch (error) {
-    res.status(400).send(error.message);
+    res.status(400).json({status: false, message: error.message});
   }
 };
 
@@ -73,7 +77,7 @@ exports.verifyOTP = async (req, res) => {
       token: token
     });
   } catch (error) {
-    res.status(400).send(error.message);
+    res.status(400).json({status: false, message: error.message});
   }
 };
 
@@ -92,7 +96,7 @@ exports.login = async (req, res) => {
       }
     });
 
-    if (!user) return res.status(404).send('User not found');
+    if (!user) return res.status(404).json({status: false, message: "User not found"});
 
     // Generate a unique OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -101,9 +105,12 @@ exports.login = async (req, res) => {
     // Send OTP via SMS
     sendSMS(user.mobile_number, `Your OTP is ${otp}`);
 
-    res.status(200).send(`OTP sent successfully ${otp}`);
+    res.status(200).json({
+      status: true,
+      message: `OTP sent successfully ${otp}`
+    });
   } catch (error) {
-    res.status(400).send(error.message);
+    res.status(400).json({status: false, message: error.message});
   }
 
 }

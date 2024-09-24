@@ -29,9 +29,9 @@ exports.fetchIndividualGyms = async (req, res) => {
     });
 
     // Send the results as the response
-    res.json(results);
+    res.json({status: true, results});
   } catch (error) {
     console.error('Error fetching gym information:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ status: false, message: 'Internal server error' });
   }
 };

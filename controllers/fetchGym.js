@@ -26,7 +26,7 @@ exports.fetchGyms = async (req, res) => {
       });
 
       if (!currentLocation) {
-        return res.status(400).send('User location is required');
+        return res.status(400).json({status: false, message: 'User location is required'});
       }
 
       userLat = currentLocation.lat;
@@ -93,6 +93,7 @@ exports.fetchGyms = async (req, res) => {
 
     // Send the paginated results with additional pagination info
     res.json({
+      status: true,
       gyms: results,
       pagination: {
         currentPage: page,
@@ -103,6 +104,6 @@ exports.fetchGyms = async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching gym information:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ status: false, message: 'Internal server error' });
   }
 };
