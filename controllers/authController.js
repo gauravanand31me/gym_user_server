@@ -66,7 +66,7 @@ exports.verifyOTP = async (req, res) => {
     const user = await User.findOne({ where: { mobile_number, otp } });
 
     if (!user) {
-      return res.status(400).send('Invalid or expired OTP');
+      return res.status(400).json({status: false, message: 'Invalid or expired OTP'});
     }
 
     // Mark the user as verified
