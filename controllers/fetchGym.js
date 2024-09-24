@@ -57,10 +57,11 @@ exports.fetchGyms = async (req, res) => {
     const [countResult] = await sequelize.query(countQuery, {
       replacements: { userLat, userLong },
     });
-
-    const totalGyms = countResult[0].totalGyms; // Fix the property name to match SQL result
-    const totalPages = Math.ceil(totalGyms / limit); // Calculate total pages
-
+  
+    const totalGyms = countResult[0].totalgyms; // Fix the property name to match SQL result
+    
+    const totalPages = Math.ceil(parseInt(totalGyms) / limit); // Calculate total pages
+    
     // Query to fetch gyms with calculated distance and pagination
     const query = `
       SELECT 
@@ -98,7 +99,7 @@ exports.fetchGyms = async (req, res) => {
       pagination: {
         currentPage: page,
         totalPages,
-        totalGyms,
+        totalPage,
         limit,
       },
     });
