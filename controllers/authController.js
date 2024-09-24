@@ -14,7 +14,7 @@ exports.register = async (req, res) => {
   const confirmPassword = password; // No need to confirm in this case
 
   if (!isMobileNumber(mobile_number)) {
-    return res.status(400).send('Please enter valid mobile number.');
+    return res.status(400).send({status: false, message: 'Please enter valid mobile number.'});
   }
   // Generate a unique OTP
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
