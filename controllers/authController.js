@@ -80,6 +80,7 @@ exports.verifyOTP = async (req, res) => {
 
     // Send the token in the response along with the success message
     res.json({
+      status: true,
       message: 'OTP verified successfully',
       token: token
     });
