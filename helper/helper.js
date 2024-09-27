@@ -8,8 +8,8 @@ const isEmail = (identifier) => {
 const isMobileNumber = (identifier) => {
     // Regular expression for validating a mobile number
     // This example assumes a 10-digit mobile number
-    const mobileRegex = /^\d{10}$/; // Adjust for international formats if needed
-    return mobileRegex.test(identifier);
+    const indianMobileRegex = /^[6-9]\d{9}$/;
+    return indianMobileRegex.test(identifier);
 };
 
 module.exports = {isEmail, isMobileNumber}
