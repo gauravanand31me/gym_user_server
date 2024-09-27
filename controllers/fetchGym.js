@@ -60,7 +60,7 @@ exports.fetchGyms = async (req, res) => {
   
     const totalGyms = countResult[0].totalgyms; // Fix the property name to match SQL result
     
-    const totalPages = Math.ceil(parseInt(totalGyms) / limit); // Calculate total pages
+    const totalPage = Math.ceil(parseInt(totalGyms) / limit); // Calculate total pages
     
     // Query to fetch gyms with calculated distance and pagination
     const query = `
@@ -98,7 +98,6 @@ exports.fetchGyms = async (req, res) => {
       gyms: results,
       pagination: {
         currentPage: page,
-        totalPages,
         totalPage,
         limit,
       },
