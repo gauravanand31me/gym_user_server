@@ -15,24 +15,16 @@ const getDistance = (lat1, lon1, lat2, lon2) => {
     return distance;
 };
 
-
 exports.getNearbyUsers = async (req, res) => {
     const userId = req.user.id;
 
-    // Fetch the current location of the logged-in user
-    const currentLocation = await UserAddress.findOne({
-        where: {
-            user_id: userId,
-            is_selected: true,
-        },
-    });
+    // Extract latitude and longitude from the query parameters
+    const { lat: userLat, long: userLong } = req.query;
 
-    if (!currentLocation) {
-        return res.status(400).send('User location is required');
+    if (!userLat || !userLong) {
+        return res.status(400).send('Latitude and Longitude are required in the query parameters');
     }
 
-    const { lat: userLat, long: userLong } = currentLocation;
-    
     try {
         // Find all nearby users
         const nearbyUsers = await UserAddress.findAll({
@@ -48,7 +40,7 @@ exports.getNearbyUsers = async (req, res) => {
 
         // Calculate distances and sort users
         const usersWithDistances = nearbyUsers.map(user => {
-            const distance = getDistance(userLat, userLong, user.lat, user.long);
+            const distance = getDistance(parseFloat(userLat), parseFloat(userLong), user.lat, user.long);
             return {
                 user,
                 distance,
@@ -58,7 +50,6 @@ exports.getNearbyUsers = async (req, res) => {
         // Sort users by distance first, then by pincode, then by city/state
         usersWithDistances.sort((a, b) => {
             if (a.distance === b.distance) {
-                // Replace with actual comparison logic for pincode, city, and state
                 return a.user.pincode.localeCompare(b.user.pincode) ||
                        a.user.city.localeCompare(b.user.city) ||
                        a.user.state.localeCompare(b.user.state);
