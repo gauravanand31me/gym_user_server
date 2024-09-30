@@ -68,6 +68,7 @@ exports.fetchGyms = async (req, res) => {
     SELECT 
     "Gyms".id AS "gymId", 
     "Gyms".name AS "gymName",
+    "Gyms".rating AS "gymRating",
     json_agg(DISTINCT "Subscriptions".daily) AS "subscriptionPrices",
     json_agg(DISTINCT "GymImages".*) AS images,
     CASE 
