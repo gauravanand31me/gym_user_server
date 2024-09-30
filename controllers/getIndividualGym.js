@@ -14,17 +14,20 @@ exports.fetchIndividualGyms = async (req, res) => {
   "Gyms".city, 
   "Gyms"."pinCode", 
   "Gyms".state, 
-  json_agg(DISTINCT "GymImages".*) FILTER (WHERE "GymImages".id IS NOT NULL) AS images, 
-  json_agg(DISTINCT "Equipment".*) FILTER (WHERE "Equipment".id IS NOT NULL) AS equipment, 
+  json_agg(DISTINCT "GymImages"."imageUrl") FILTER (WHERE "GymImages".id IS NOT NULL) AS images, 
+  json_agg(DISTINCT "Equipment".name) FILTER (WHERE "Equipment".id IS NOT NULL) AS equipment, 
+  json_agg(DISTINCT "EquipmentList".*) FILTER (WHERE "EquipmentList".equipment_id IS NOT NULL) AS equipment_list, 
   json_agg(DISTINCT "Slots".*) FILTER (WHERE "Slots".id IS NOT NULL) AS slots,
   json_agg(DISTINCT "Subscriptions".*) FILTER (WHERE "Subscriptions".id IS NOT NULL) AS subscriptions
 FROM "Gyms"
 LEFT JOIN "GymImages" ON "Gyms".id = "GymImages"."gymId"
 LEFT JOIN "Equipment" ON "Gyms".id = "Equipment"."gymId"
+LEFT JOIN "EquipmentList" ON "Equipment"."name" = "EquipmentList".equipment_name
 LEFT JOIN "Slots" ON "Gyms".id = "Slots"."gymId"
 LEFT JOIN "Subscriptions" ON "Gyms".id = "Subscriptions"."gymId"
 WHERE "Gyms".id = :gymId
 GROUP BY "Gyms".id;
+
   `;
 
   try {
