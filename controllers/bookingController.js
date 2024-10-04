@@ -1,9 +1,9 @@
 const Booking = require('../models/Booking');
-
+const sequelize = require("../config/db");
 
 // Create a booking
 exports.createBooking = async (req, res) => {
-  const { subscriptionType, slotId, gymId, bookingDate, subscriptionId} = req.body;
+  const { subscriptionType, slotId, gymId, bookingDate, subscriptionId } = req.body;
 
   try {
     const booking = await Booking.create({
@@ -17,6 +17,7 @@ exports.createBooking = async (req, res) => {
 
     res.status(201).send(booking);
   } catch (error) {
+    console.log("Error is", error);
     res.status(400).send(error.message);
   }
 };
@@ -37,23 +38,40 @@ exports.inviteBuddies = async (req, res) => {
 };
 
 
-// Fetch all bookings by User
+// Fetch all Booking by User
 exports.getAllBookingsByUser = async (req, res) => {
   try {
-    const bookings = await Booking.findAll({
-      where: {
-        userId: req.user.id // Fetch bookings for the logged-in user
-      }
+    const userId = req.user.id;
+
+    const query = `
+SELECT 
+    "Booking"."bookingId" AS "bookingId",
+    "Booking"."userId" AS "userId",
+    "Booking"."bookingDate" AS "bookingDate",
+    "Gyms".id AS "gymId", 
+    "Gyms".name AS "gymName",
+    "Gyms".rating AS "gymRating",
+    "Slots"."startTime" AS "slotStartTime",
+    "Subscriptions".daily AS "subscriptionPrice"
+FROM "Booking"
+JOIN "Slots" ON "Booking"."slotId" = "Slots".id
+JOIN "Gyms" ON "Slots"."gymId" = "Gyms".id
+JOIN "Subscriptions" ON "Slots"."gymId" = "Subscriptions"."gymId" -- Change made here
+WHERE "Booking"."userId" = :userId
+ORDER BY "Booking"."bookingDate" DESC; -- Order by booking date
+`;
+
+    // Execute the booking query
+    const [results] = await sequelize.query(query, {
+      replacements: { userId: userId },
     });
 
-    if (bookings.length === 0) {
-      return res.status(404).json({ message: 'No bookings found for this user' });
-    }
-
-    res.status(200).json(bookings);
+    res.status(200).json({ Booking: results });
   } catch (error) {
-    console.error('Error fetching bookings:', error);
+    console.error('Error fetching Booking:', error);
     res.status(500).send('Server error');
   }
 };
+
+
 
