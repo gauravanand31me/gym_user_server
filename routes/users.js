@@ -1,10 +1,10 @@
 const express = require('express');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const { getNearbyUsers } = require('../controllers/getNearbyUsers');
-const { getIndividualUser, searchUserByUsername } = require('../controllers/getIndividualUser');
+const { getIndividualUser, searchUsersByUsernameOrLocation } = require('../controllers/getIndividualUser');
 const router = express.Router();
 
-router.get('/nearby-users', authMiddleware, getNearbyUsers);
+router.get('/nearby-users', authMiddleware, searchUsersByUsernameOrLocation);
 router.get('/get', authMiddleware, getIndividualUser);
-router.get('/search/:username', authMiddleware, searchUserByUsername);
+router.get('/search/:username', authMiddleware, searchUsersByUsernameOrLocation);
 module.exports = router;

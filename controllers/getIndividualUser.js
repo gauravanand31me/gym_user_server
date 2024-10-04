@@ -1,6 +1,7 @@
 const FriendRequest = require('../models/FriendRequest');
+const UserAddress = require('../models/UserAddress');
 const User = require('../models/User');
-const { Op } = require('sequelize');
+const { Op, Sequelize } = require('sequelize');
 
 const getDistance = (lat1, lon1, lat2, lon2) => {
     const R = 6371; // Radius of the Earth in kilometers
@@ -40,56 +41,110 @@ exports.getIndividualUser = async (req, res) => {
 
 
 
-exports.searchUserByUsername = async (req, res) => {
+
+
+
+
+// Function to search users by username or location
+exports.searchUsersByUsernameOrLocation = async (req, res) => {
     const { username } = req.params;
     const loggedInUserId = req.user.id;
+    const { latitude, longitude } = req.query;
 
     try {
-        const user = await User.findOne({
+        let users;
+
+        if (username) {
+            // Search users by username or full name, excluding the logged-in user
+            users = await User.findAll({
+                where: {
+                    [Op.and]: [
+                        {
+                            [Op.or]: [
+                                { username: { [Op.iLike]: username } },
+                                { full_name: { [Op.iLike]: `%${username}%` } }
+                            ]
+                        },
+                        { id: { [Op.ne]: loggedInUserId } } // Exclude logged-in user
+                    ]
+                }
+            });
+        } else {
+            // Search nearby users based on latitude and longitude, excluding the logged-in user
+            const nearbyUsers = await UserAddress.findAll({
+                where: {
+                    is_selected: true,
+                    user_id: { [Op.ne]: loggedInUserId },
+                },
+                include: [{
+                    model: User,
+                    required: true,
+                }],
+            });
+
+            // Calculate distances for nearby users
+            const usersWithDistances = nearbyUsers.map(userAddress => {
+                const distance = getDistance(
+                    parseFloat(latitude),
+                    parseFloat(longitude),
+                    userAddress.lat,
+                    userAddress.long
+                );
+                return {
+                    user: userAddress.User,
+                    distance,
+                };
+            });
+
+            // Sort users by distance
+            usersWithDistances.sort((a, b) => a.distance - b.distance);
+
+            // Map users excluding the logged-in user
+            users = usersWithDistances.map(u => u.user);
+        }
+
+        if (!users.length) {
+            return res.status(404).json({ message: "No users found" });
+        }
+
+        const userIds = users.map(user => user.id);
+
+        // Find all friend requests sent by the logged-in user to the found users
+        const sentRequests = await FriendRequest.findAll({
             where: {
-                username: { [Op.iLike]: username }, // Case insensitive match
+                fromUserId: loggedInUserId,
+                toUserId: { [Op.in]: userIds },
             }
         });
 
-        if (!user) {
-            return res.status(404).json({ message: "User not found" });
-        }
-
-        // Check for existing friend requests (pending and accepted)
-        const sentRequest = await FriendRequest.findOne({
-            where: {
-                fromUserId: loggedInUserId,
-                toUserId: user.id,
-                status: 'pending',
-            },
-        });
-
-        const acceptedRequest = await FriendRequest.findOne({
-            where: {
-                fromUserId: loggedInUserId,
-                toUserId: user.id,
-                status: 'accepted',
-            },
+        // Map friend request statuses by user ID
+        const requestStatuses = {};
+        sentRequests.forEach(request => {
+            requestStatuses[request.toUserId] = {
+                sent: request.status === 'pending',
+                accepted: request.status === 'accepted',
+            };
         });
 
         // Prepare user data with friend request status
-        const responseData = {
+        const responseData = users.map(user => ({
             id: user.id,
             username: user.username,
             full_name: user.full_name,
             profile_pic: user.profile_pic || "https://via.placeholder.com/150",
-            friendRequestStatus: {
-                sent: !!sentRequest, // true if a pending request exists
-                accepted: !!acceptedRequest, // true if an accepted request exists
-            },
-        };
+            friendRequestStatus: requestStatuses[user.id] || { sent: false, accepted: false },
+        }));
 
+        // Return list of users
         res.status(200).json(responseData);
     } catch (error) {
-        console.error('Error searching for user:', error);
+        console.error('Error searching for users:', error);
         res.status(500).send('Server error');
     }
 };
+
+
+
 
 
 
