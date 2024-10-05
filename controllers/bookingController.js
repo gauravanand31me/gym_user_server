@@ -43,23 +43,24 @@ exports.getAllBookingsByUser = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const query = `
-SELECT 
-    "Booking"."bookingId" AS "bookingId",
-    "Booking"."userId" AS "userId",
-    "Booking"."bookingDate" AS "bookingDate",
-    "Gyms".id AS "gymId", 
-    "Gyms".name AS "gymName",
-    "Gyms".rating AS "gymRating",
-    "Slots"."startTime" AS "slotStartTime",
-    "Subscriptions".daily AS "subscriptionPrice"
-FROM "Booking"
-JOIN "Slots" ON "Booking"."slotId" = "Slots".id
-JOIN "Gyms" ON "Slots"."gymId" = "Gyms".id
-JOIN "Subscriptions" ON "Slots"."gymId" = "Subscriptions"."gymId" -- Change made here
-WHERE "Booking"."userId" = :userId
-ORDER BY "Booking"."bookingDate" DESC; -- Order by booking date
-`;
+    const query = 'SELECT \n' +
+      '    "Booking"."bookingId" AS "bookingId",\n' +
+      '    "Booking"."userId" AS "userId",\n' +
+      '    "Booking"."bookingDate" AS "bookingDate",\n' +
+      '    "Gyms".id AS "gymId", \n' +
+      '    "Gyms".name AS "gymName",\n' +
+      '    "Gyms".rating AS "gymRating",\n' +
+      '    "Slots"."startTime" AS "slotStartTime",\n' +
+      '    "Subscriptions".daily AS "subscriptionPrice",\n' +
+      '    COUNT("BuddyRequests".id) AS "invitedBuddyCount"  -- Count of buddies invited\n' +
+      'FROM "Booking"\n' +
+      'JOIN "Slots" ON "Booking"."slotId" = "Slots".id\n' +
+      'JOIN "Gyms" ON "Slots"."gymId" = "Gyms".id\n' +
+      'JOIN "Subscriptions" ON "Slots"."gymId" = "Subscriptions"."gymId" \n' +
+      'LEFT JOIN "BuddyRequests" ON "Booking"."bookingId" = "BuddyRequests"."bookingId"  -- Left join to BuddyRequests\n' +
+      `WHERE "Booking"."userId" = '${userId}'\n` +
+      'GROUP BY "Booking"."bookingId", "Booking"."userId", "Booking"."bookingDate", "Gyms".id, "Gyms".name, "Gyms".rating, "Slots"."startTime", "Subscriptions".daily\n' +  // Corrected here
+      'ORDER BY "Booking"."bookingDate" DESC; -- Order by booking date';
 
     // Execute the booking query
     const [results] = await sequelize.query(query, {
