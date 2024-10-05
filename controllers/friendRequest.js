@@ -4,46 +4,65 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/User'); // Adjust your model imports as necessary
 const FriendRequest  = require("../models/FriendRequest");
+const Notification  = require("../models/Notification");
 const sequelize = require("../config/db");
-
+const { v4: uuidv4 } = require('uuid');
 
 exports.sendFriendRequest = async (req, res) => {
     const { userId } = req.body; // ID of the user to send a friend request to
-  const loggedInUserId = req.user.id; // ID of the logged-in user
-
-  console.log("loggedInUserId", loggedInUserId);
-
-  if (!userId || loggedInUserId === userId) {
-    return res.status(400).json({ message: "Invalid request." });
-  }
-
-  try {
-    // Check if a friend request already exists
-    const existingRequest = await FriendRequest.findOne({
-      where: {
+    const loggedInUserId = req.user.id; // ID of the logged-in user
+  
+    if (!userId || loggedInUserId === userId) {
+      return res.status(400).json({ message: "Invalid request." });
+    }
+  
+    try {
+      // Check if a friend request already exists
+      const existingRequest = await FriendRequest.findOne({
+        where: {
+          fromUserId: loggedInUserId,
+          toUserId: userId,
+          status: 'pending'
+        }
+      });
+  
+      if (existingRequest) {
+        return res.status(400).json({ message: "Friend request already sent." });
+      }
+  
+      // Create a new friend request
+      const friendRequest = await FriendRequest.create({
+        id: uuidv4(),
         fromUserId: loggedInUserId,
         toUserId: userId,
         status: 'pending'
-      }
-    });
-
-    if (existingRequest) {
-      return res.status(400).json({ message: "Friend request already sent." });
+      });
+  
+      // Fetch the user who is sending the request
+      const fromUser = await User.findOne({
+        where: { id: loggedInUserId },
+        attributes: ['id', 'full_name'] // Get only the needed fields like id and name
+      });
+  
+      // Create a new notification for the recipient
+      const notification = await Notification.create({
+        userId: userId, // Recipient of the notification (the person receiving the friend request)
+        message: `${fromUser.full_name} has sent you a friend request.`, // Notification message
+        type: 'friendRequest', // Type of notification
+        status: 'unread', // Notification status (you could use 'unread' as default)
+        relatedId: friendRequest.id, // Store related friend request ID
+      });
+  
+      return res.status(201).json({ 
+        message: "Friend request sent and notification created.",
+        friendRequest,
+        notification
+      });
+    } catch (error) {
+      console.error("Error sending friend request:", error);
+      return res.status(500).json({ message: "Server error." });
     }
-
-    // Create a new friend request
-    const friendRequest = await FriendRequest.create({
-      fromUserId: loggedInUserId,
-      toUserId: userId,
-      status: 'pending'
-    });
-
-    return res.status(201).json({ message: "Friend request sent.", friendRequest });
-  } catch (error) {
-    console.error("Error sending friend request:", error);
-    return res.status(500).json({ message: "Server error." });
-  }
-}
+};
 
 
 
@@ -66,13 +85,40 @@ exports.acceptRequest = async (req, res) => {
         request.acceptedOn = new Date(); // Adding accepted timestamp
         await request.save();
 
-       
+        // Fetch the user who sent the friend request
+        const fromUser = await User.findOne({
+            where: { id: request.toUserId },
+            attributes: ['id', 'full_name'] // Get only the needed fields
+        });
+
+        // Delete the existing notification for the friend request
+        await Notification.destroy({
+            where: {
+                userId: request.fromUserId, // The user who sent the request
+                relatedId: requestId // The friend request ID
+            }
+        });
+
         // Optionally, you can create a new entry for the reverse relationship
         await FriendRequest.create({
+            id: uuidv4(),
             fromUserId: request.toUserId,
             toUserId: request.fromUserId,
             status: 'accepted',
             sentOn: new Date(),
+        });
+
+        // Update the friend counts for both users
+        await User.increment('followers_count', { by: 1, where: { id: request.fromUserId } });
+        await User.increment('followers_count', { by: 1, where: { id: request.toUserId } });
+
+        // Create a new notification for the sender
+        await Notification.create({
+            userId: request.fromUserId, // Recipient of the notification (the person who sent the request)
+            message: `${fromUser.full_name} has accepted your friend request.`, // Notification message
+            type: 'friendRequestAcceptance', // Type of notification
+            status: 'unread', // Notification status
+            relatedId: requestId // Store related friend request ID
         });
 
         return res.status(200).json({ message: "Friend request accepted." });
@@ -81,6 +127,7 @@ exports.acceptRequest = async (req, res) => {
         return res.status(500).json({ message: "Server error." });
     }
 };
+
 
 
 

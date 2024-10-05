@@ -2,6 +2,7 @@ const UserAddress = require('../models/UserAddress');
 const User = require('../models/User');
 const { Op } = require('sequelize');
 
+
 const getDistance = (lat1, lon1, lat2, lon2) => {
     const R = 6371; // Radius of the Earth in kilometers
     const dLat = (lat2 - lat1) * (Math.PI / 180);
@@ -29,7 +30,7 @@ exports.getNearbyUsers = async (req, res) => {
         // Find all nearby users
         const nearbyUsers = await UserAddress.findAll({
             where: {
-                is_selected: true,
+              
                 user_id: { [Op.ne]: userId }, // Exclude the current user
             },
             include: [{

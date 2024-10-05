@@ -87,6 +87,11 @@ const User = sequelize.define('User', {
     },
 });
 
-
+User.associate = (models) => {
+    User.hasMany(models.Notification, {
+      foreignKey: 'userId',
+      as: 'notifications', // Alias to use when fetching notifications
+    });
+};
 
 module.exports = User;

@@ -10,7 +10,8 @@ const bookingRoutes = require('./routes/booking');
 const userRoutes = require('./routes/users');
 const friendRoutes = require('./routes/friends');
 const addressRoutes = require('./routes/address');
-const buddyRoutes = require('./routes/buddy');
+const buddyRoutes = require('./routes/buddy');3
+const notificationRoutes = require('./routes/notification');
 const cors = require("cors");
 
 const app = express();
@@ -25,7 +26,7 @@ app.use('/user/api/users', userRoutes);
 app.use('/user/api/friends', friendRoutes);
 app.use('/user/api/address', addressRoutes);
 app.use('/user/api/buddy', buddyRoutes);
-
+app.use('/user/api/notifications', notificationRoutes);
 const PORT = process.env.PORT || 5000;
 
 sequelize.sync().then(() => {
