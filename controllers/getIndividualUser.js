@@ -1,6 +1,9 @@
 const FriendRequest = require('../models/FriendRequest');
 const UserAddress = require('../models/UserAddress');
+const UserImage = require('../models/UserImages');
 const User = require('../models/User');
+// controllers/userController.js
+const upload = require('../middleware/upload'); // Adjust path as necessary
 const { Op, Sequelize } = require('sequelize');
 
 const getDistance = (lat1, lon1, lat2, lon2) => {
@@ -142,6 +145,101 @@ exports.searchUsersByUsernameOrLocation = async (req, res) => {
         res.status(500).send('Server error');
     }
 };
+
+
+
+exports.uploadProfileImage = async (req, res) => {
+    const userId = req.user.id;
+
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'No file uploaded' });
+        }
+
+        const profilePicUrl = req.file.location;
+
+        await User.update(
+            { profile_pic: profilePicUrl },
+            { where: { id: userId } }
+        );
+
+        res.status(200).json({ message: 'Profile image uploaded successfully', profile_pic: profilePicUrl });
+    } catch (error) {
+        console.error('Error uploading profile image:', error);
+        res.status(500).send('Server error');
+    }
+};
+
+exports.uploadPostImage = async (req, res) => {
+    const userId = req.user.id;
+
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'No file uploaded' });
+        }
+
+        const postPicUrl = req.file.location;
+
+
+
+
+        const userImage = new UserImage({
+            user_id: userId, // Ensure user_id is sent in the request
+            user_image: req.file.location, // S3 URL
+            likes_count: 0 // Initial likes count
+        });
+
+        await userImage.save(); // Save to the database
+
+        await User.increment('upload_count', { by: 1, where: { id: userId } });
+        return res.status(201).json({ message: 'Image uploaded successfully', userImage });
+
+        
+
+        
+    } catch (error) {
+        console.error('Error uploading profile image:', error);
+        res.status(500).send('Server error');
+    }
+};
+
+
+exports.getUserImage = async (req, res) => {
+    const userId = req.params.userId; // Get user ID from request parameters
+    const limit = 12; // Set the limit for pagination
+    const page = parseInt(req.query.page) || 1; // Get page number from query, default to 1
+
+    try {
+        const offset = (page - 1) * limit; // Calculate offset for pagination
+
+        // Query to get user images with pagination
+        const userImages = await UserImage.findAll({
+            where: { user_id: userId },
+            limit: limit,
+            offset: offset,
+            order: [['created_on', 'DESC']], // Order by upload date descending
+        });
+
+        // Fetch total count of images for pagination
+        const totalImages = await UserImage.count({
+            where: { user_id: userId },
+        });
+
+        // Calculate total pages
+        const totalPages = Math.ceil(totalImages / limit);
+
+        return res.status(200).json({
+            message: 'Images retrieved successfully',
+            userImages,
+            totalImages,
+            totalPages,
+            currentPage: page,
+        });
+    } catch (error) {
+        console.error('Error retrieving user images:', error);
+        return res.status(500).json({ message: 'Server error' });
+    }
+}
 
 
 

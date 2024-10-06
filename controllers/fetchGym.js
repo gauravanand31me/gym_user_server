@@ -62,13 +62,15 @@ exports.fetchGyms = async (req, res) => {
     const totalGyms = countResult[0].totalgyms; // Fix the property name to match SQL result
 
     const totalPage = Math.ceil(parseInt(totalGyms) / limit); // Calculate total pages
-
+    const searchText = req.query.search || '';
+    console.log("Search Text", searchText);
     // Query to fetch gyms with calculated distance and pagination
     const query = `
     SELECT 
     "Gyms".id AS "gymId", 
     "Gyms".name AS "gymName",
     "Gyms".rating AS "gymRating",
+    "Gyms".description AS "gymDescription",
     json_agg(DISTINCT "Subscriptions".daily) AS "subscriptionPrices",
     json_agg(DISTINCT "GymImages".*) AS images,
     CASE 
@@ -92,15 +94,18 @@ exports.fetchGyms = async (req, res) => {
 FROM "Gyms"
 LEFT JOIN "Subscriptions" ON "Gyms".id = "Subscriptions"."gymId"
 LEFT JOIN "GymImages" ON "Gyms".id = "GymImages"."gymId"
+WHERE (:searchText = '' OR "Gyms".name ILIKE '%' || :searchText || '%')
 GROUP BY "Gyms".id
 ORDER BY distance ASC, "Gyms".city, "Gyms"."pinCode", "Gyms".state
 LIMIT :limit OFFSET :offset;
 
+
     `;
+    
 
     // Execute the gym query with pagination parameters
     const [results] = await sequelize.query(query, {
-      replacements: { userLat, userLong, limit, offset },
+      replacements: { userLat, userLong, limit, offset, searchText },
     });
 
     // Send the paginated results with additional pagination info
