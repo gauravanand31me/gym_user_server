@@ -1,5 +1,13 @@
 const Booking = require('../models/Booking');
 const sequelize = require("../config/db");
+const Razorpay = require('razorpay');
+const shortid = require('shortid'); // For generating unique order IDs
+
+
+const razorpay = new Razorpay({
+  key_id: process.env.RAZOR_PAY_PAYMENT_KEY,
+  key_secret: process.env.RAZOR_PAY_PAYMENT_SECRET,
+});
 
 // Create a booking
 exports.createBooking = async (req, res) => {
@@ -71,6 +79,36 @@ exports.getAllBookingsByUser = async (req, res) => {
   } catch (error) {
     console.error('Error fetching Booking:', error);
     res.status(500).send('Server error');
+  }
+};
+
+
+
+exports.createOrder = async (req, res) => {
+  const { amount } = req.body; // You will send this from the frontend
+
+  const payment_capture = 1; // Automatic capture after successful payment
+  const currency = 'INR'; // You can change currency as per your need
+
+  const options = {
+    amount: amount * 100, // Razorpay expects amount in paise, so multiply by 100
+    currency,
+    receipt: shortid.generate(),
+    payment_capture,
+  };
+
+  try {
+    const response = await razorpay.orders.create(options);
+    console.log("Response id is", response.id);
+    res.json({
+      id: response.id,
+      currency: response.currency,
+      amount: response.amount,
+      paymentLink: `https://rzp.io/rzp/P6ns3cf`
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: 'Something went wrong' });
   }
 };
 

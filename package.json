@@ -24,7 +24,9 @@
     "nodemailer": "^6.9.15",
     "pg": "^8.13.0",
     "pg-hstore": "^2.3.4",
+    "razorpay": "^2.9.4",
     "sequelize": "^6.37.3",
+    "shortid": "^2.2.16",
     "twilio": "^5.3.1"
   }
 }
