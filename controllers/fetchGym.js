@@ -69,6 +69,7 @@ exports.fetchGyms = async (req, res) => {
     "Gyms".id AS "gymId", 
     "Gyms".name AS "gymName",
     "Gyms".rating AS "gymRating",
+    "Gyms".description AS "gymDescription",
     json_agg(DISTINCT "Subscriptions".daily) AS "subscriptionPrices",
     json_agg(DISTINCT "GymImages".*) AS images,
     CASE 
@@ -95,6 +96,7 @@ LEFT JOIN "GymImages" ON "Gyms".id = "GymImages"."gymId"
 GROUP BY "Gyms".id
 ORDER BY distance ASC, "Gyms".city, "Gyms"."pinCode", "Gyms".state
 LIMIT :limit OFFSET :offset;
+
 
     `;
 

@@ -1,6 +1,8 @@
 const FriendRequest = require('../models/FriendRequest');
 const UserAddress = require('../models/UserAddress');
 const User = require('../models/User');
+// controllers/userController.js
+const upload = require('../middleware/upload'); // Adjust path as necessary
 const { Op, Sequelize } = require('sequelize');
 
 const getDistance = (lat1, lon1, lat2, lon2) => {
@@ -139,6 +141,30 @@ exports.searchUsersByUsernameOrLocation = async (req, res) => {
         res.status(200).json(responseData);
     } catch (error) {
         console.error('Error searching for users:', error);
+        res.status(500).send('Server error');
+    }
+};
+
+
+
+exports.uploadProfileImage = async (req, res) => {
+    const userId = req.user.id;
+
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'No file uploaded' });
+        }
+
+        const profilePicUrl = req.file.location;
+
+        await User.update(
+            { profile_pic: profilePicUrl },
+            { where: { id: userId } }
+        );
+
+        res.status(200).json({ message: 'Profile image uploaded successfully', profile_pic: profilePicUrl });
+    } catch (error) {
+        console.error('Error uploading profile image:', error);
         res.status(500).send('Server error');
     }
 };
