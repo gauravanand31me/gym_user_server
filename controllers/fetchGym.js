@@ -94,14 +94,14 @@ exports.fetchGyms = async (req, res) => {
 FROM "Gyms"
 LEFT JOIN "Subscriptions" ON "Gyms".id = "Subscriptions"."gymId"
 LEFT JOIN "GymImages" ON "Gyms".id = "GymImages"."gymId"
-WHERE (:searchText = '' OR "Gyms".name ILIKE '%' || :searchText || '%')
+WHERE (:searchText IS NULL OR "Gyms".name ILIKE '%' || :searchText || '%')
 GROUP BY "Gyms".id
 ORDER BY distance ASC, "Gyms".city, "Gyms"."pinCode", "Gyms".state
 LIMIT :limit OFFSET :offset;
 
 
     `;
-    
+
 
     // Execute the gym query with pagination parameters
     const [results] = await sequelize.query(query, {
