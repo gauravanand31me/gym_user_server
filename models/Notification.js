@@ -34,6 +34,10 @@ const User = require('./User');
       defaultValue: 'unread',
       allowNull: false,
     },
+    profileImage: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
     relatedId: {
       type: DataTypes.UUID,
       allowNull: true, // Can be null, for related entities like FriendRequest, Post, etc.

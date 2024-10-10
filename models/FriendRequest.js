@@ -3,6 +3,12 @@ const sequelize = require('../config/db');
 const User = require('./User');
 
 const FriendRequest = sequelize.define('FriendRequest', {
+    id: {
+        type: DataTypes.UUID,
+        allowNull: false,
+        primaryKey: true,
+        defaultValue: DataTypes.UUIDV4, 
+    },
     fromUserId: {
         type: DataTypes.UUID,
         allowNull: false,

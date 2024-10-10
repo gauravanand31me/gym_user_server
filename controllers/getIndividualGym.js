@@ -11,6 +11,8 @@ exports.fetchIndividualGyms = async (req, res) => {
   "Gyms".description, 
   "Gyms".latitude, 
   "Gyms".longitude, 
+  "Gyms"."addressLine1", 
+  "Gyms"."addressLine2", 
   "Gyms".city, 
   "Gyms"."pinCode", 
   "Gyms".state, 

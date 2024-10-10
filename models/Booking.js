@@ -2,9 +2,6 @@ const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
 const User = require('./User');
 
-
-
-
 const Booking = sequelize.define('Booking', {
   bookingId: {
     type: DataTypes.UUID,
@@ -76,15 +73,30 @@ const Booking = sequelize.define('Booking', {
   isCheckedIn: {
     type: DataTypes.BOOLEAN,
     defaultValue: false
-  }
+  },
+  // New column to hold the booking ID as a string
+  stringBookingId: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    unique: true, // Optionally ensure each booking ID is unique
+  },
+  // New column for duration of the booking
+  duration: {
+    type: DataTypes.INTEGER, // Assuming duration is in minutes, adjust as necessary
+    allowNull: false,
+  },
+  // New column for price of the booking
+  price: {
+    type: DataTypes.FLOAT, // Adjust the type as needed for your use case
+    allowNull: false,
+  },
 }, {
   tableName: 'Booking',
-  timestamps: true // Adds createdAt and updatedAt fields
+  timestamps: true, // Adds createdAt and updatedAt fields
+  
 });
 
-
-
-
+// Associations
 User.hasMany(Booking, { foreignKey: 'userId' });
 Booking.belongsTo(User, { foreignKey: 'userId' });
 

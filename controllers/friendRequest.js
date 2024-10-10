@@ -41,9 +41,10 @@ exports.sendFriendRequest = async (req, res) => {
       // Fetch the user who is sending the request
       const fromUser = await User.findOne({
         where: { id: loggedInUserId },
-        attributes: ['id', 'full_name'] // Get only the needed fields like id and name
+        attributes: ['id', 'full_name', 'profile_pic'] // Get only the needed fields like id and name
       });
-  
+      
+      console.log("fromUser received", fromUser);
       // Create a new notification for the recipient
       const notification = await Notification.create({
         userId: userId, // Recipient of the notification (the person receiving the friend request)
@@ -51,6 +52,7 @@ exports.sendFriendRequest = async (req, res) => {
         type: 'friendRequest', // Type of notification
         status: 'unread', // Notification status (you could use 'unread' as default)
         relatedId: friendRequest.id, // Store related friend request ID
+        profileImage: fromUser.profile_pic || "https://png.pngtree.com/png-vector/20190223/ourmid/pngtree-profile-glyph-black-icon-png-image_691589.jpg"
       });
   
       return res.status(201).json({ 
@@ -88,7 +90,7 @@ exports.acceptRequest = async (req, res) => {
         // Fetch the user who sent the friend request
         const fromUser = await User.findOne({
             where: { id: request.toUserId },
-            attributes: ['id', 'full_name'] // Get only the needed fields
+            attributes: ['id', 'full_name', 'profile_pic'] // Get only the needed fields
         });
 
         // Delete the existing notification for the friend request
@@ -118,7 +120,8 @@ exports.acceptRequest = async (req, res) => {
             message: `${fromUser.full_name} has accepted your friend request.`, // Notification message
             type: 'friendRequestAcceptance', // Type of notification
             status: 'unread', // Notification status
-            relatedId: requestId // Store related friend request ID
+            relatedId: requestId, // Store related friend request ID
+            profileImage: fromUser.profile_pic || "https://png.pngtree.com/png-vector/20190223/ourmid/pngtree-profile-glyph-black-icon-png-image_691589.jpg"
         });
 
         return res.status(200).json({ message: "Friend request accepted." });

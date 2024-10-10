@@ -11,8 +11,8 @@ const razorpay = new Razorpay({
 
 // Create a booking
 exports.createBooking = async (req, res) => {
-  const { subscriptionType, slotId, gymId, bookingDate, subscriptionId } = req.body;
-
+  const { subscriptionType, slotId, gymId, bookingDate, subscriptionId, duration, price } = req.body;
+  const stringBookingId = `${gymId.substring(0, 3).toUpperCase()}${Math.floor(100000000 + Math.random() * 900000000)}`;
   try {
     const booking = await Booking.create({
       slotId,
@@ -20,7 +20,10 @@ exports.createBooking = async (req, res) => {
       userId: req.user.id,
       bookingDate,
       type: subscriptionType,
-      subscriptionId
+      subscriptionId,
+      duration,
+      price,
+      stringBookingId
     });
 
     res.status(201).send(booking);
@@ -52,7 +55,7 @@ exports.getAllBookingsByUser = async (req, res) => {
     const userId = req.user.id;
 
     const query = 'SELECT \n' +
-      '    "Booking"."bookingId" AS "bookingId",\n' +
+      '    "Booking"."stringBookingId" AS "bookingId",\n' +
       '    "Booking"."userId" AS "userId",\n' +
       '    "Booking"."bookingDate" AS "bookingDate",\n' +
       '    "Gyms".id AS "gymId", \n' +
@@ -99,7 +102,7 @@ exports.createOrder = async (req, res) => {
 
   try {
     const response = await razorpay.orders.create(options);
-    console.log("Response id is", response.id);
+ 
     res.json({
       id: response.id,
       currency: response.currency,

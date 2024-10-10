@@ -4,6 +4,12 @@ const User = require('./User');
 const Booking = require('./Booking'); // Assuming you have a Booking model
 
 const BuddyRequest = sequelize.define('BuddyRequest', {
+    id: {
+        type: DataTypes.UUID,
+        allowNull: false,
+        primaryKey: true,
+        defaultValue: DataTypes.UUIDV4, 
+    },
     fromUserId: {
         type: DataTypes.UUID,
         allowNull: false,

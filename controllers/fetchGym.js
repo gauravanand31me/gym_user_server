@@ -5,7 +5,7 @@ const { Op } = require("sequelize"); // Import Op for query operators
 // Fetch nearby gyms based on user's current location
 exports.fetchGyms = async (req, res) => {
   const userId = req.user.id; // Get the logged-in user ID
-
+  console.log("Query is", req.query);
   // Get the pagination parameters from the request query or use defaults
   const limit = parseInt(req.query.limit, 10) || 9; // Default limit is 9
   const page = parseInt(req.query.page, 10) || 1; // Default page is 1
@@ -97,7 +97,8 @@ LEFT JOIN "GymImages" ON "Gyms".id = "GymImages"."gymId"
 WHERE (:searchText IS NULL OR "Gyms".name ILIKE '%' || :searchText || '%')
 GROUP BY "Gyms".id
 ORDER BY distance ASC, "Gyms".city, "Gyms"."pinCode", "Gyms".state
-LIMIT :limit OFFSET :offset;
+LIMIT CASE WHEN :searchText IS NULL THEN :limit ELSE NULL END
+OFFSET CASE WHEN :searchText IS NULL THEN :offset ELSE NULL END;
 
 
     `;
@@ -108,6 +109,7 @@ LIMIT :limit OFFSET :offset;
       replacements: { userLat, userLong, limit, offset, searchText },
     });
 
+    console.log("Result is results", results);
     // Send the paginated results with additional pagination info
     res.json({
       status: true,
