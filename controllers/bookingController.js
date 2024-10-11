@@ -125,7 +125,7 @@ exports.verifyBooking = async (req, res) => {
     // Step 1: Fetch the booking details by bookingId and userId
     const booking = await Booking.findOne({
       where: {
-        bookingId: bookingId,
+        stringBookingId: bookingId,
       },
     });
 
