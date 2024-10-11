@@ -2,7 +2,7 @@ const Booking = require('../models/Booking');
 const sequelize = require("../config/db");
 const Razorpay = require('razorpay');
 const shortid = require('shortid'); // For generating unique order IDs
-
+const moment = require('moment');
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZOR_PAY_PAYMENT_KEY,
