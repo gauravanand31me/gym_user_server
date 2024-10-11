@@ -3,6 +3,7 @@ const sequelize = require("../config/db");
 const Razorpay = require('razorpay');
 const shortid = require('shortid'); // For generating unique order IDs
 const moment = require('moment');
+const User = require('../models/User'); // Adjust your model imports as necessary
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZOR_PAY_PAYMENT_KEY,
@@ -151,7 +152,7 @@ exports.verifyBooking = async (req, res) => {
     }
 
     // Increment the user's workout hours by the booking duration
-    user.total_work_out_time += bookingDuration;
+    user.total_work_out_time += booking.duration;
 
     // Save the updated user data
     await user.save();
