@@ -12,6 +12,7 @@ const razorpay = new Razorpay({
 // Create a booking
 exports.createBooking = async (req, res) => {
   const { subscriptionType, slotId, gymId, bookingDate, subscriptionId, duration, price } = req.body;
+  console.log("Booking date received", bookingDate);
   const stringBookingId = `${gymId.substring(0, 3).toUpperCase()}${Math.floor(100000000 + Math.random() * 900000000)}`;
   try {
     const booking = await Booking.create({
@@ -114,6 +115,62 @@ exports.createOrder = async (req, res) => {
     res.status(500).json({ error: 'Something went wrong' });
   }
 };
+
+
+exports.verifyBooking = async (req, res) => {
+
+  try {
+    const { bookingId } = req.query;
+
+    // Step 1: Fetch the booking details by bookingId and userId
+    const booking = await Booking.findOne({
+      where: {
+        bookingId: bookingId,
+      },
+    });
+
+    if (!booking) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+
+    // Step 2: Check if the booking date matches the current date
+    const currentDate = moment().format('YYYY-MM-DD');
+    const bookingDate = moment(booking.booking_date).format('YYYY-MM-DD');
+
+    if (currentDate !== bookingDate) {
+      return res.status(400).json({ message: 'Booking is not for today' });
+    }
+
+
+
+    // Step 4: Update the user's workout hours
+    const user = await User.findOne({ where: { id: booking.userId } });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Increment the user's workout hours by the booking duration
+    user.total_work_out_time += bookingDuration;
+
+    // Save the updated user data
+    await user.save();
+
+    // Step 5: Set isCheckIn to true for this booking
+    booking.isCheckIn = true;
+
+    // Save the updated booking
+    await booking.save();
+
+    // Respond with success
+    res.send("User Successfully verified");
+  } catch (error) {
+    console.error('Error in createOrder:', error);
+    res.send("User cannot be verified");
+  }
+
+
+}
 
 
 
