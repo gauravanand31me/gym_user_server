@@ -7,5 +7,5 @@ router.post('/create', authMiddleware, createBooking);
 router.post('/invite', authMiddleware, inviteBuddies);
 router.get('/get', authMiddleware, getAllBookingsByUser);
 router.post('/initiate', authMiddleware, createOrder);
-router.post('/verify', verifyBooking);
+router.get('/verify', verifyBooking);
 module.exports = router;
