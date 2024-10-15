@@ -1,5 +1,5 @@
 const express = require('express');
-const { createBooking, inviteBuddies, getAllBookingsByUser, createOrder, verifyBooking, getIndividualBooking, getAllVisitedGymsWithWorkoutHours } = require('../controllers/bookingController');
+const { createBooking, inviteBuddies, getAllBookingsByUser, createOrder, verifyBooking, getIndividualBooking, getAllVisitedGymsWithWorkoutHours, getAllBuddiesWithWorkoutHours } = require('../controllers/bookingController');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const router = express.Router();
 
@@ -10,4 +10,6 @@ router.post('/initiate', authMiddleware, createOrder);
 router.get('/indv', authMiddleware, getIndividualBooking);
 router.get('/verify', verifyBooking);
 router.get('/visited-gyms', authMiddleware, getAllVisitedGymsWithWorkoutHours);
+router.get('/workout-hours', authMiddleware, getAllBuddiesWithWorkoutHours);
+router.get('/workout-buddies', authMiddleware, getAllBuddiesWithWorkoutHours);
 module.exports = router;

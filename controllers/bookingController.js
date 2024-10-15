@@ -5,6 +5,7 @@ const shortid = require('shortid'); // For generating unique order IDs
 const moment = require('moment');
 const User = require('../models/User'); // Adjust your model imports as necessary
 const Notification  = require("../models/Notification");
+const BuddyRequest = require('../models/BuddyRequest');
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZOR_PAY_PAYMENT_KEY,
@@ -39,8 +40,22 @@ exports.createBooking = async (req, res) => {
           relatedId: requestId, // Related to the bookingId (buddy request)
           profileImage: fromUser.profile_pic || "https://png.pngtree.com/png-vector/20190223/ourmid/pngtree-profile-glyph-black-icon-png-image_691589.jpg" // Use default profile pic if not available
         });
+        
 
         console.log("Notification created for buddy request:", notification);
+
+        const buddyRequest = await BuddyRequest.findOne({
+          where: { bookingId: requestId } // Adjust this if you have a different key for your buddy requests
+        });
+      
+        if (buddyRequest) {
+          buddyRequest.status = 'accepted'; // Update the status
+          await buddyRequest.save(); // Save the changes
+          console.log(`Buddy request with ID ${requestId} has been accepted.`);
+        } else {
+          console.log(`Buddy request with ID ${requestId} not found.`);
+        }
+
       } else {
         console.log(`Booking with ID ${requestId} not found.`);
       }
@@ -89,6 +104,7 @@ exports.getAllBookingsByUser = async (req, res) => {
     const userId = req.user.id;
 
     const query = 'SELECT \n' +
+      '    "Booking"."bookingId" AS "id",\n' +
       '    "Booking"."stringBookingId" AS "bookingId",\n' +
       '    "Booking"."userId" AS "userId",\n' +
       '    "Booking"."bookingDate" AS "bookingDate",\n' +
@@ -253,7 +269,7 @@ exports.getIndividualBooking = async (req, res) => {
 
 exports.getAllVisitedGymsWithWorkoutHours = async (req, res) => {
   try {
-    const userId = req.user.id; // Get the logged-in user's ID
+    const userId = req.query.id || req.user.id; // Get the logged-in user's ID
 
     // Query to fetch all visited gyms with total workout hours for the user
     const query = `
@@ -281,6 +297,41 @@ exports.getAllVisitedGymsWithWorkoutHours = async (req, res) => {
     res.status(500).send('Server error');
   }
 };
+
+
+exports.getAllBuddiesWithWorkoutHours = async (req, res) => {
+  try {
+    const userId = req.query.id || req.user.id; // Get the logged-in user's ID
+
+    // SQL query to fetch all buddies (toUserId) and their total workout hours where fromUserId is the logged-in user
+    const query = `
+      SELECT 
+        "Users"."id" AS "buddyId",
+        "Users"."full_name" AS "buddyName",
+        SUM("Booking"."duration") AS "totalWorkoutHours" -- Sum of workout hours for each buddy
+      FROM "BuddyRequests"
+      JOIN "Users" ON "BuddyRequests"."toUserId" = "Users"."id"
+      LEFT JOIN "Booking" ON "Booking"."userId" = "Users"."id" 
+      WHERE "BuddyRequests"."fromUserId" = :userId
+      AND "BuddyRequests"."status" = 'accepted'
+      GROUP BY "Users"."id", "Users"."full_name"
+      ORDER BY "totalWorkoutHours" DESC; -- Order by workout hours in descending order
+    `;
+
+    // Execute the query using Sequelize or any database connection
+    const [results] = await sequelize.query(query, {
+      replacements: { userId },
+    });
+
+    // Send the buddy workout data as a response
+    res.status(200).json({ buddiesWithWorkoutHours: results });
+  } catch (error) {
+    console.error('Error fetching buddies with workout hours:', error);
+    res.status(500).send('Server error');
+  }
+};
+
+
 
 
 

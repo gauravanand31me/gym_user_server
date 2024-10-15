@@ -20,7 +20,7 @@ const getDistance = (lat1, lon1, lat2, lon2) => {
 };
 
 exports.getIndividualUser = async (req, res) => {
-    const userId = req.user.id;
+    const userId = req.query.id || req.user.id;
 
     try {
         // Fetch the logged-in user's information
