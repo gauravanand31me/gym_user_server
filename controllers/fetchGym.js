@@ -109,7 +109,7 @@ OFFSET CASE WHEN :searchText IS NULL THEN :offset ELSE NULL END;
       replacements: { userLat, userLong, limit, offset, searchText },
     });
 
-    console.log("Result is results", results);
+    
     // Send the paginated results with additional pagination info
     res.json({
       status: true,

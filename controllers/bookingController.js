@@ -3,6 +3,9 @@ const sequelize = require("../config/db");
 const Razorpay = require('razorpay');
 const shortid = require('shortid'); // For generating unique order IDs
 const moment = require('moment');
+const User = require('../models/User'); // Adjust your model imports as necessary
+const Notification  = require("../models/Notification");
+const BuddyRequest = require('../models/BuddyRequest');
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZOR_PAY_PAYMENT_KEY,
@@ -11,10 +14,54 @@ const razorpay = new Razorpay({
 
 // Create a booking
 exports.createBooking = async (req, res) => {
-  const { subscriptionType, slotId, gymId, bookingDate, subscriptionId, duration, price } = req.body;
-  console.log("Booking date received", bookingDate);
+  const { subscriptionType, slotId, gymId, bookingDate, subscriptionId, duration, price, requestId } = req.body; // Added requestId
+
+  
+  // Generate a random booking ID string based on the gymId and a random number
   const stringBookingId = `${gymId.substring(0, 3).toUpperCase()}${Math.floor(100000000 + Math.random() * 900000000)}`;
+
   try {
+    // Check if the requestId is available (this means a friend request is involved)
+    if (requestId) {
+      // Find the booking that the requestId (bookingId) refers to
+      const relatedBooking = await Booking.findByPk(requestId);
+
+      if (relatedBooking) {
+        // Get the user who made the original booking (to notify them)
+        const toUser = await User.findByPk(relatedBooking.userId); // User who will receive the notification
+        const fromUser = await User.findByPk(req.user.id); // User who is accepting the buddy request
+
+        // Create a notification for the recipient that the buddy request has been accepted
+        const notification = await Notification.create({
+          userId: relatedBooking.userId, // The user who made the original booking (to be notified)
+          message: `${fromUser.full_name} has accepted your buddy request.`, // Notification message
+          type: 'acceptedBuddyRequest', // Notification type
+          status: 'unread', // Unread by default
+          relatedId: requestId, // Related to the bookingId (buddy request)
+          profileImage: fromUser.profile_pic || "https://png.pngtree.com/png-vector/20190223/ourmid/pngtree-profile-glyph-black-icon-png-image_691589.jpg" // Use default profile pic if not available
+        });
+        
+
+        console.log("Notification created for buddy request:", notification);
+
+        const buddyRequest = await BuddyRequest.findOne({
+          where: { bookingId: requestId } // Adjust this if you have a different key for your buddy requests
+        });
+      
+        if (buddyRequest) {
+          buddyRequest.status = 'accepted'; // Update the status
+          await buddyRequest.save(); // Save the changes
+          console.log(`Buddy request with ID ${requestId} has been accepted.`);
+        } else {
+          console.log(`Buddy request with ID ${requestId} not found.`);
+        }
+
+      } else {
+        console.log(`Booking with ID ${requestId} not found.`);
+      }
+    }
+
+    // Create the booking in the database
     const booking = await Booking.create({
       slotId,
       gymId,
@@ -27,9 +74,10 @@ exports.createBooking = async (req, res) => {
       stringBookingId
     });
 
+    // Send the booking as a response
     res.status(201).send(booking);
   } catch (error) {
-    console.log("Error is", error);
+    console.log("Error while creating booking:", error);
     res.status(400).send(error.message);
   }
 };
@@ -56,6 +104,7 @@ exports.getAllBookingsByUser = async (req, res) => {
     const userId = req.user.id;
 
     const query = 'SELECT \n' +
+      '    "Booking"."bookingId" AS "id",\n' +
       '    "Booking"."stringBookingId" AS "bookingId",\n' +
       '    "Booking"."userId" AS "userId",\n' +
       '    "Booking"."bookingDate" AS "bookingDate",\n' +
@@ -63,7 +112,7 @@ exports.getAllBookingsByUser = async (req, res) => {
       '    "Gyms".name AS "gymName",\n' +
       '    "Gyms".rating AS "gymRating",\n' +
       '    "Slots"."startTime" AS "slotStartTime",\n' +
-      '    "Subscriptions".daily AS "subscriptionPrice",\n' +
+      '    "Booking".price AS "subscriptionPrice",\n' +
       '    COUNT("BuddyRequests".id) AS "invitedBuddyCount"  -- Count of buddies invited\n' +
       'FROM "Booking"\n' +
       'JOIN "Slots" ON "Booking"."slotId" = "Slots".id\n' +
@@ -151,7 +200,7 @@ exports.verifyBooking = async (req, res) => {
     }
 
     // Increment the user's workout hours by the booking duration
-    user.total_work_out_time += bookingDuration;
+    user.total_work_out_time += booking.duration;
 
     // Save the updated user data
     await user.save();
@@ -171,6 +220,119 @@ exports.verifyBooking = async (req, res) => {
 
 
 }
+
+
+exports.getIndividualBooking = async (req, res) => {
+  const { requestId } = req.query; // Extract requestId from query parameters
+
+  try {
+    // Query to fetch booking details with slot and gym information
+    const query = `
+      SELECT 
+        "Booking"."stringBookingId" AS "bookingId",
+        "Booking"."userId" AS "userId",
+        "Booking"."bookingDate" AS "bookingDate",
+        "Gyms".id AS "gymId",
+        "Gyms".name AS "gymName",
+        "Gyms".rating AS "gymRating",
+        "Slots"."startTime" AS "slotStartTime",
+        "Booking".price AS "subscriptionPrice",
+        "Booking".duration AS "bookingDuration",
+        "Booking"."slotId" AS "bookingSlotId",
+        "Booking"."subscriptionId" AS "bookingSubscriptionId"
+      FROM "Booking"
+      JOIN "Slots" ON "Booking"."slotId" = "Slots".id
+      JOIN "Gyms" ON "Slots"."gymId" = "Gyms".id
+      WHERE "Booking"."bookingId" = :requestId
+    `;
+
+    // Execute the booking query
+    const [results] = await sequelize.query(query, {
+      replacements: { requestId },
+    });
+
+    // Check if the booking exists
+    if (results.length === 0) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+
+    // Send the booking details as a response
+    res.status(200).json({ booking: results[0] }); // Return the first result
+  } catch (error) {
+    console.error('Error fetching individual booking:', error);
+    res.status(500).send('Server error');
+  }
+};
+
+
+
+
+exports.getAllVisitedGymsWithWorkoutHours = async (req, res) => {
+  try {
+    const userId = req.query.id || req.user.id; // Get the logged-in user's ID
+
+    // Query to fetch all visited gyms with total workout hours for the user
+    const query = `
+      SELECT 
+        "Gyms"."id" AS "gymId",
+        "Gyms"."name" AS "gymName",
+        "Gyms"."rating" AS "gymRating",
+        SUM("Booking"."duration") AS "totalWorkoutHours" -- Sum of workout duration at each gym
+      FROM "Booking"
+      JOIN "Gyms" ON "Booking"."gymId" = "Gyms"."id"
+      WHERE "Booking"."userId" = :userId
+      GROUP BY "Gyms"."id", "Gyms"."name", "Gyms"."city", "Gyms"."rating"
+      ORDER BY "totalWorkoutHours" DESC; -- Order by total workout hours
+    `;
+
+    // Execute the query
+    const [results] = await sequelize.query(query, {
+      replacements: { userId },
+    });
+
+    // Send the results as a response
+    res.status(200).json({ visitedGyms: results });
+  } catch (error) {
+    console.error('Error fetching visited gyms with workout hours:', error);
+    res.status(500).send('Server error');
+  }
+};
+
+
+exports.getAllBuddiesWithWorkoutHours = async (req, res) => {
+  try {
+    const userId = req.query.id || req.user.id; // Get the logged-in user's ID
+
+    // SQL query to fetch all buddies (toUserId) and their total workout hours where fromUserId is the logged-in user
+    const query = `
+      SELECT 
+        "Users"."id" AS "buddyId",
+        "Users"."full_name" AS "buddyName",
+        SUM("Booking"."duration") AS "totalWorkoutHours" -- Sum of workout hours for each buddy
+      FROM "BuddyRequests"
+      JOIN "Users" ON "BuddyRequests"."toUserId" = "Users"."id"
+      LEFT JOIN "Booking" ON "Booking"."userId" = "Users"."id" 
+      WHERE "BuddyRequests"."fromUserId" = :userId
+      AND "BuddyRequests"."status" = 'accepted'
+      GROUP BY "Users"."id", "Users"."full_name"
+      ORDER BY "totalWorkoutHours" DESC; -- Order by workout hours in descending order
+    `;
+
+    // Execute the query using Sequelize or any database connection
+    const [results] = await sequelize.query(query, {
+      replacements: { userId },
+    });
+
+    // Send the buddy workout data as a response
+    res.status(200).json({ buddiesWithWorkoutHours: results });
+  } catch (error) {
+    console.error('Error fetching buddies with workout hours:', error);
+    res.status(500).send('Server error');
+  }
+};
+
+
+
 
 
 

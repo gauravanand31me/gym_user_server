@@ -46,7 +46,7 @@ exports.register = async (req, res) => {
     });
 
     // Send OTP via SMS
-    sendSMS(mobile_number, `Your OTP is ${otp}`);
+    sendSMS("+91"+mobile_number, `Your OTP is ${otp}`);
 
     res.status(201).send({
       status: true,
@@ -111,7 +111,7 @@ exports.login = async (req, res) => {
     await user.update({ otp, otpExpires: new Date(Date.now() + 3600000) }); // 1 hour expiry
 
     // Send OTP via SMS
-    sendSMS(user.mobile_number, `Your OTP is ${otp}`);
+    sendSMS("+91"+user.mobile_number, `Your OTP is ${otp}`);
 
     res.status(200).json({
       status: true,
