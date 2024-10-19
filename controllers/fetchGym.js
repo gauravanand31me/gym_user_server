@@ -71,6 +71,7 @@ exports.fetchGyms = async (req, res) => {
     "Gyms".name AS "gymName",
     "Gyms".rating AS "gymRating",
     "Gyms".description AS "gymDescription",
+    "Gyms"."addressLine1" AS "address",
     json_agg(DISTINCT "Subscriptions".daily) AS "subscriptionPrices",
     json_agg(DISTINCT "GymImages".*) AS images,
     CASE 
