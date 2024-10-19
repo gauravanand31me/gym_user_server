@@ -44,7 +44,7 @@ exports.sendFriendRequest = async (req, res) => {
         attributes: ['id', 'full_name', 'profile_pic'] // Get only the needed fields like id and name
       });
       
-      console.log("fromUser received", fromUser);
+  
       // Create a new notification for the recipient
       const notification = await Notification.create({
         userId: userId, // Recipient of the notification (the person receiving the friend request)
