@@ -158,7 +158,7 @@ exports.createOrder = async (req, res) => {
       id: response.id,
       currency: response.currency,
       amount: response.amount,
-      paymentLink: `https://rzp.io/rzp/fzXk5nl`
+      paymentLink: `https://rzp.io/rzp/CcdlJdJz`
     });
   } catch (error) {
     console.log(error);
