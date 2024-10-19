@@ -166,6 +166,26 @@ exports.createOrder = async (req, res) => {
 };
 
 
+exports.razorPayWebhook = async (req, res) => {
+  const secret = "dolbina";
+
+  const shasum = crypto.createHmac("sha256", secret);
+  shasum.update(JSON.stringify(req.body));
+  const digest = shasum.digest("hex");
+
+  if (digest === req.headers["x-razorpay-signature"]) {
+    // Payment was successful
+    const paymentData = req.body;
+    
+    // Handle successful payment logic here (e.g., update database, notify user)
+    console.log("Payment successful:", paymentData);
+    res.status(200).json({ status: "ok" });
+  } else {
+    // Invalid signature
+    res.status(403).json({ status: "Invalid signature" });
+  }
+}
+
 exports.verifyBooking = async (req, res) => {
 
   try {
