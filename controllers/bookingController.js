@@ -6,6 +6,7 @@ const moment = require('moment');
 const User = require('../models/User'); // Adjust your model imports as necessary
 const Notification  = require("../models/Notification");
 const BuddyRequest = require('../models/BuddyRequest');
+const crypto = require("crypto");
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZOR_PAY_PAYMENT_KEY,
@@ -157,7 +158,7 @@ exports.createOrder = async (req, res) => {
       id: response.id,
       currency: response.currency,
       amount: response.amount,
-      paymentLink: `https://rzp.io/rzp/hPYrMUH`
+      paymentLink: `https://rzp.io/rzp/fzXk5nl`
     });
   } catch (error) {
     console.log(error);
