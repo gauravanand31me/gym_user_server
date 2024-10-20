@@ -121,6 +121,7 @@ exports.getAllBookingsByUser = async (req, res) => {
       '    "Gyms".rating AS "gymRating",\n' +
       '    "Slots"."startTime" AS "slotStartTime",\n' +
       '    "Booking".price AS "subscriptionPrice",\n' +
+      '    "Booking".createdAt AS "create",\n' +
       '    COUNT("BuddyRequests".id) AS "invitedBuddyCount"  -- Count of buddies invited\n' +
       'FROM "Booking"\n' +
       'JOIN "Slots" ON "Booking"."slotId" = "Slots".id\n' +
