@@ -4,7 +4,7 @@ const Razorpay = require('razorpay');
 const shortid = require('shortid'); // For generating unique order IDs
 const moment = require('moment');
 const User = require('../models/User'); // Adjust your model imports as necessary
-const Notification  = require("../models/Notification");
+const Notification = require("../models/Notification");
 const BuddyRequest = require('../models/BuddyRequest');
 const crypto = require("crypto");
 
@@ -17,7 +17,7 @@ const razorpay = new Razorpay({
 exports.createBooking = async (req, res) => {
   const { subscriptionType, slotId, gymId, bookingDate, subscriptionId, duration, price, requestId } = req.body; // Added requestId
 
-  
+
   // Generate a random booking ID string based on the gymId and a random number
   const stringBookingId = `${gymId.substring(0, 3).toUpperCase()}${Math.floor(100000000 + Math.random() * 900000000)}`;
 
@@ -41,14 +41,14 @@ exports.createBooking = async (req, res) => {
           relatedId: requestId, // Related to the bookingId (buddy request)
           profileImage: fromUser.profile_pic || "https://png.pngtree.com/png-vector/20190223/ourmid/pngtree-profile-glyph-black-icon-png-image_691589.jpg" // Use default profile pic if not available
         });
-        
+
 
         console.log("Notification created for buddy request:", notification);
 
         const buddyRequest = await BuddyRequest.findOne({
           where: { bookingId: requestId } // Adjust this if you have a different key for your buddy requests
         });
-      
+
         if (buddyRequest) {
           buddyRequest.status = 'accepted'; // Update the status
           await buddyRequest.save(); // Save the changes
@@ -153,7 +153,7 @@ exports.createOrder = async (req, res) => {
 
   try {
     const response = await razorpay.orders.create(options);
- 
+
     res.json({
       id: response.id,
       currency: response.currency,
@@ -177,7 +177,7 @@ exports.razorPayWebhook = async (req, res) => {
   if (digest === req.headers["x-razorpay-signature"]) {
     // Payment was successful
     const paymentData = req.body;
-    
+
     // Handle successful payment logic here (e.g., update database, notify user)
 
     console.log("Payment successful:", paymentData);
@@ -296,16 +296,16 @@ exports.getAllVisitedGymsWithWorkoutHours = async (req, res) => {
     // Query to fetch all visited gyms with total workout hours for the user
     const query = `
       SELECT 
-        "Gyms"."id" AS "gymId",
-        "Gyms"."name" AS "gymName",
-        "Gyms"."rating" AS "gymRating",
-        SUM("Booking"."duration") AS "totalWorkoutHours" -- Sum of workout duration at each gym
-      FROM "Booking"
-      JOIN "Gyms" ON "Booking"."gymId" = "Gyms"."id"
-      WHERE "Booking"."isCheckedIn" = true
-      WHERE "Booking"."userId" = :userId
-      GROUP BY "Gyms"."id", "Gyms"."name", "Gyms"."city", "Gyms"."rating"
-      ORDER BY "totalWorkoutHours" DESC; -- Order by total workout hours
+    "Gyms"."id" AS "gymId",
+    "Gyms"."name" AS "gymName",
+    "Gyms"."rating" AS "gymRating",
+    SUM("Booking"."duration") AS "totalWorkoutHours" -- Sum of workout duration at each gym
+FROM "Booking"
+JOIN "Gyms" ON "Booking"."gymId" = "Gyms"."id"
+WHERE "Booking"."isCheckedIn" = 'true'
+AND "Booking"."userId" = :userId
+GROUP BY "Gyms"."id", "Gyms"."name", "Gyms"."rating"
+ORDER BY "totalWorkoutHours" DESC;
     `;
 
     // Execute the query
