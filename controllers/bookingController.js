@@ -228,7 +228,7 @@ exports.verifyBooking = async (req, res) => {
     await user.save();
 
     // Step 5: Set isCheckIn to true for this booking
-    booking.isCheckIn = true;
+    booking.isCheckedIn = true;
 
     // Save the updated booking
     await booking.save();
@@ -302,7 +302,7 @@ exports.getAllVisitedGymsWithWorkoutHours = async (req, res) => {
         SUM("Booking"."duration") AS "totalWorkoutHours" -- Sum of workout duration at each gym
       FROM "Booking"
       JOIN "Gyms" ON "Booking"."gymId" = "Gyms"."id"
-      WHERE "Booking"."isCheckIn" = true
+      WHERE "Booking"."isCheckedIn" = true
       WHERE "Booking"."userId" = :userId
       GROUP BY "Gyms"."id", "Gyms"."name", "Gyms"."city", "Gyms"."rating"
       ORDER BY "totalWorkoutHours" DESC; -- Order by total workout hours
