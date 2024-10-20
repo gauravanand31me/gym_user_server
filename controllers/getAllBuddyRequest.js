@@ -67,7 +67,7 @@ exports.sendBuddyRequest = async (req, res) => {
         await Notification.create({
             userId: toUserId, // Recipient of the notification (the buddy receiving the invite)
             message: `${fromUser.full_name} has invited you to a workout session.`, // Custom message
-            type: 'buddyInvite', // Notification type
+            type: 'workoutRequestInvite', // Notification type
             status: 'unread', // Set status to unread initially
             relatedId: bookingId, // Store the booking ID for reference (or invite request ID)
             profileImage: fromUser.profile_pic || "https://png.pngtree.com/png-vector/20190223/ourmid/pngtree-profile-glyph-black-icon-png-image_691589.jpg"
