@@ -115,6 +115,7 @@ exports.getAllBookingsByUser = async (req, res) => {
       '    "Booking"."stringBookingId" AS "bookingId",\n' +
       '    "Booking"."userId" AS "userId",\n' +
       '    "Booking"."bookingDate" AS "bookingDate",\n' +
+      '    "Booking"."isCheckedIn" AS "visited",\n' +
       '    "Gyms".id AS "gymId", \n' +
       '    "Gyms".name AS "gymName",\n' +
       '    "Gyms".rating AS "gymRating",\n' +
