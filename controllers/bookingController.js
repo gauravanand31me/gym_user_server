@@ -32,6 +32,12 @@ exports.createBooking = async (req, res) => {
         const toUser = await User.findByPk(relatedBooking.userId); // User who will receive the notification
         const fromUser = await User.findByPk(req.user.id); // User who is accepting the buddy request
 
+        await Notification.destroy({
+          where: {
+            relatedId: requestId // Delete notification buddy request
+          }
+        });
+
         // Create a notification for the recipient that the buddy request has been accepted
         const notification = await Notification.create({
           userId: relatedBooking.userId, // The user who made the original booking (to be notified)

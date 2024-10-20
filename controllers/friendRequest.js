@@ -96,10 +96,11 @@ exports.acceptRequest = async (req, res) => {
         // Delete the existing notification for the friend request
         await Notification.destroy({
             where: {
-                userId: request.fromUserId, // The user who sent the request
-                relatedId: requestId // The friend request ID
+              relatedId: requestId // The friend request ID
             }
         });
+
+       
 
         // Optionally, you can create a new entry for the reverse relationship
         await FriendRequest.create({
