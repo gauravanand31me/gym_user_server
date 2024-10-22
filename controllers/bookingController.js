@@ -7,6 +7,7 @@ const User = require('../models/User'); // Adjust your model imports as necessar
 const Notification = require("../models/Notification");
 const BuddyRequest = require('../models/BuddyRequest');
 const crypto = require("crypto");
+const { v4: uuidv4 } = require('uuid');
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZOR_PAY_PAYMENT_KEY,
@@ -146,55 +147,178 @@ exports.getAllBookingsByUser = async (req, res) => {
 
 
 
-exports.createOrder = async (req, res) => {
-  const { amount } = req.body; // You will send this from the frontend
 
-  const payment_capture = 1; // Automatic capture after successful payment
-  const currency = 'INR'; // You can change currency as per your need
+// Create Order with custom bookingId and userId
+exports.createOrder = async (req, res) => {
+  const { amount } = req.body; // Get amount from frontend
+  const userId = req.user.id;  // Assuming the user is authenticated and userId is available
+
+  // Generate a custom bookingId
+  const bookingId = uuidv4();
 
   const options = {
-    amount: amount * 100, // Razorpay expects amount in paise, so multiply by 100
-    currency,
-    receipt: shortid.generate(),
-    payment_capture,
+    amount: amount * 100, // Razorpay expects amount in paise (1 INR = 100 paise)
+    currency: 'INR',
+    receipt: bookingId, // Using bookingId as the receipt
+    payment_capture: 1 // Automatic payment capture
   };
 
   try {
-    const response = await razorpay.orders.create(options);
+    // Step 1: Create Razorpay order
+    const orderResponse = await razorpay.orders.create(options);
 
+    // Step 2: Create Razorpay payment link
+    const paymentLinkResponse = await razorpay.paymentLink.create({
+      amount: amount * 100, // Amount in paise
+      currency: 'INR',
+      notes: {
+        bookingId: bookingId, // Include bookingId in notes
+        userId: userId, // Include userId in notes
+      },
+      callback_url: 'https://yupluck.com/user/api/booking/webhook', // Add your callback URL
+      callback_method: 'get'
+    });
+
+    console.log("paymentLinkResponse", paymentLinkResponse);
+    // Send response back to frontend
     res.json({
-      id: response.id,
-      currency: response.currency,
-      amount: response.amount,
-      paymentLink: `https://rzp.io/rzp/CcdlJdJz`
+      orderId: orderResponse.id,
+      currency: orderResponse.currency,
+      amount: orderResponse.amount,
+      bookingId: bookingId,
+      userId: userId, // Send userId in the response
+      paymentLink: paymentLinkResponse.short_url // Dynamic payment link
     });
   } catch (error) {
     console.log(error);
-    res.status(500).json({ error: 'Something went wrong' });
+    res.status(500).json({ error: 'Something went wrong while creating the order' });
   }
 };
 
 
+
 exports.razorPayWebhook = async (req, res) => {
-  const secret = "dolbina";
+  const secret = 'teslago'; // Set your Razorpay webhook secret
 
-  const shasum = crypto.createHmac("sha256", secret);
+  // Verify the webhook signature
+  const shasum = crypto.createHmac('sha256', secret);
   shasum.update(JSON.stringify(req.body));
-  const digest = shasum.digest("hex");
+  const digest = shasum.digest('hex');
+  console.log("digest is", digest);
+  console.log("req.headers['x-razorpay-signature']", req.headers);
+  console.log("req.body", req.body);
+  if (digest === req.headers['x-razorpay-signature']) {
+    // Signature verified, process the payment
+    const paymentData = req.body.payload.payment.entity;
 
-  if (digest === req.headers["x-razorpay-signature"]) {
-    // Payment was successful
-    const paymentData = req.body;
+    try {
+      // Extract necessary data
+      const { id: paymentId, amount, currency, status, notes } = paymentData;
+      const { bookingId, userId } = notes; // Extract bookingId and userId from notes
 
-    // Handle successful payment logic here (e.g., update database, notify user)
+      // Save payment information in your database
+      await Payment.create({
+        paymentId: paymentId,
+        bookingId: bookingId,
+        userId: userId, // Save the userId along with the payment record
+        amount: amount / 100, // Convert from paise to INR
+        currency: currency,
+        isPaid: status === 'captured', // Check if payment is captured
+        paymentDate: new Date(),
+      });
 
-    console.log("Payment successful:", paymentData);
-    res.status(200).json({ status: "ok" });
+      // Optionally, update booking status to 'paid'
+      await Booking.update({ isPaid: true }, { where: { bookingId } });
+
+      // Send an HTML response for successful payment
+      res.status(200).send(`
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Payment Successful</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              height: 100vh;
+              margin: 0;
+              background-color: #f4f4f4;
+            }
+            .container {
+              text-align: center;
+              background: #fff;
+              padding: 20px;
+              border-radius: 10px;
+              box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            }
+            h1 {
+              color: #4caf50;
+            }
+            p {
+              margin: 15px 0;
+            }
+            button {
+              padding: 10px 20px;
+              background-color: #4caf50;
+              color: white;
+              border: none;
+              border-radius: 5px;
+              cursor: pointer;
+              font-size: 16px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h1>Payment Successful!</h1>
+            <p>Thank you for your payment.</p>
+            <p>You can now close this window.</p>
+            <button onclick="window.close()">Close Window</button>
+          </div>
+        </body>
+        </html>
+      `);
+    } catch (error) {
+      console.error('Error processing payment:', error);
+      res.status(500).send(`
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Payment Error</title>
+        </head>
+        <body>
+          <h1>Payment Error</h1>
+          <p>There was an issue processing your payment. Please contact support.</p>
+        </body>
+        </html>
+      `);
+    }
   } else {
     // Invalid signature
-    res.status(403).json({ status: "Invalid signature" });
+    res.status(403).send(`
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Invalid Signature</title>
+      </head>
+      <body>
+        <h1>Invalid Signature</h1>
+        <p>Payment verification failed. Please contact support.</p>
+      </body>
+      </html>
+    `);
   }
-}
+};
+
+
 
 exports.verifyBooking = async (req, res) => {
 
