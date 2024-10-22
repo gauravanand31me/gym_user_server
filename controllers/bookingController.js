@@ -175,7 +175,7 @@ exports.createOrder = async (req, res) => {
         bookingId: bookingId, // Include bookingId in notes
         userId: userId, // Include userId in notes
       },
-      callback_url: 'https://3fcd-2401-4900-3306-5b7e-1920-86-b4b-cd8e.ngrok-free.app/user/api/booking/webhook', // Add your callback URL
+      callback_url: 'https://yupluck.com/user/api/booking/webhook', // Add your callback URL
       callback_method: 'get'
     });
 
@@ -187,7 +187,7 @@ exports.createOrder = async (req, res) => {
       amount: orderResponse.amount,
       bookingId: bookingId,
       userId: userId, // Send userId in the response
-      paymentLink: "https://rzp.io/rzp/knNN0i5X" // Dynamic payment link
+      paymentLink: paymentLinkResponse.short_url // Dynamic payment link
     });
   } catch (error) {
     console.log(error);
@@ -198,7 +198,7 @@ exports.createOrder = async (req, res) => {
 
 
 exports.razorPayWebhook = async (req, res) => {
-  const secret = 'demosecret'; // Set your Razorpay webhook secret
+  const secret = 'teslago'; // Set your Razorpay webhook secret
 
   // Verify the webhook signature
   const shasum = crypto.createHmac('sha256', secret);
