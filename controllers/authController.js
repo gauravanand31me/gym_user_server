@@ -4,6 +4,7 @@ const { sendSMS } = require('../utils/sendSMS');
 const { Op } = require('sequelize');
 const jwt = require('jsonwebtoken');
 const { isMobileNumber } = require('../helper/helper');
+const PushNotification = require('../models/PushNotification');
 const JWT_SECRET = process.env.JWT_SECRET || "Test@1992"
 // Register a new user
 exports.register = async (req, res) => {
@@ -59,7 +60,9 @@ exports.register = async (req, res) => {
 
 
 exports.verifyOTP = async (req, res) => {
-  const { mobile_number, otp } = req.body;
+  const { mobile_number, otp, expoPushToken } = req.body;
+
+  console.log("expoPushToken", expoPushToken);
 
   try {
     // Find the user with the given mobile number and OTP
@@ -75,7 +78,21 @@ exports.verifyOTP = async (req, res) => {
     // Create a JWT token with the user_id
     const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: '20d' });
 
+   
 
+    const notify = await PushNotification.findOne({ userId: user.id });
+
+        if (notify) {
+            // If user exists, update the expoPushToken
+            notify.expoPushToken = expoPushToken;
+            await notify.save();
+        
+        } else {
+            // If user doesn't exist, create a new record
+          const newToken = new User({ userId: user.id , expoPushToken });
+          await newToken.save();
+          
+        }
     
 
     // Send the token in the response along with the success message

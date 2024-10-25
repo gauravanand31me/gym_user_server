@@ -7,6 +7,7 @@ const FriendRequest  = require("../models/FriendRequest");
 const Notification  = require("../models/Notification");
 const sequelize = require("../config/db");
 const { v4: uuidv4 } = require('uuid');
+const PushNotification = require('../models/PushNotification');
 
 exports.sendFriendRequest = async (req, res) => {
     const { userId } = req.body; // ID of the user to send a friend request to
@@ -54,6 +55,17 @@ exports.sendFriendRequest = async (req, res) => {
         relatedId: friendRequest.id, // Store related friend request ID
         profileImage: fromUser.profile_pic || "https://png.pngtree.com/png-vector/20190223/ourmid/pngtree-profile-glyph-black-icon-png-image_691589.jpg"
       });
+
+      const notificationData = await PushNotification.findOne({
+        where: { id: userId }
+      });
+
+      const notificationTitle = {
+        title: "New Friend Request",
+        message: `${fromUser.full_name} has sent you a friend request.`, // Notification message
+      }
+
+      await sendPushNotification(notificationData?.expoPushToken, notificationTitle);
   
       return res.status(201).json({ 
         message: "Friend request sent and notification created.",
@@ -184,4 +196,24 @@ exports.rejectRequest = async (req, res) => {
         console.error("Error rejecting friend request:", error);
         return res.status(500).json({ message: "Server error." });
     }
+};
+
+
+
+
+const sendPushNotification = async (expoPushToken, message) => {
+  const body = {
+      to: expoPushToken,
+      sound: 'default',
+      title: message.title,
+      body: message.body,
+      data: { someData: 'goes here' },
+  };
+
+  try {
+      const response = await axios.post('https://exp.host/--/api/v2/push/send', body);
+      return response.data;
+  } catch (error) {
+      console.error('Error sending push notification:', error.response ? error.response.data : error.message);
+  }
 };
