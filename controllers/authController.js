@@ -82,7 +82,7 @@ exports.verifyOTP = async (req, res) => {
    
 
     const notify = await PushNotification.findOne({ where: { userId: user.id } })
-
+    console.log("notify request received", notify);
         if (notify) {
             // If user exists, update the expoPushToken
             notify.expoPushToken = expoPushToken;
