@@ -124,6 +124,7 @@ exports.searchUsersByUsernameOrLocation = async (req, res) => {
         const requestStatuses = {};
         sentRequests.forEach(request => {
             requestStatuses[request.toUserId] = {
+                id: request.id,
                 sent: request.status === 'pending',
                 accepted: request.status === 'accepted',
             };

@@ -172,7 +172,7 @@ exports.rejectRequest = async (req, res) => {
             return res.status(404).json({ message: "Friend request not found." });
         }
 
-        if (request.toUserId !== req.user.id) {
+        if (request.fromUserId !== req.user.id) {
             return res.status(403).json({ message: "Not authorized." });
         }
 
