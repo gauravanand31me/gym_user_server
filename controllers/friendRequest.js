@@ -123,6 +123,15 @@ exports.acceptRequest = async (req, res) => {
             sentOn: new Date(),
         });
 
+
+        await FriendRequest.create({
+          id: uuidv4(),
+          fromUserId: request.fromUserId,
+          toUserId: request.toUserId,
+          status: 'accepted',
+          sentOn: new Date(),
+        });
+
         // Update the friend counts for both users
         await User.increment('followers_count', { by: 1, where: { id: request.fromUserId } });
         await User.increment('followers_count', { by: 1, where: { id: request.toUserId } });
@@ -175,28 +184,43 @@ exports.getFriendRequests = async (req, res) => {
 
 
 exports.rejectRequest = async (req, res) => {
-    const { requestId } = req.body;
+  const { requestId } = req.body;
 
-    try {
-        const request = await FriendRequest.findByPk(requestId);
+  try {
+      const request = await FriendRequest.findByPk(requestId);
 
-        if (!request) {
-            return res.status(404).json({ message: "Friend request not found." });
-        }
+      if (!request) {
+          return res.status(404).json({ message: "Friend request not found." });
+      }
 
-        if (request.fromUserId !== req.user.id) {
-            return res.status(403).json({ message: "Not authorized." });
-        }
+      
 
-        // Remove entry from FriendRequest table
-        await request.destroy();
+      // Delete both entries from the FriendRequest table
+      await FriendRequest.destroy({
+          where: {
+              fromUserId: request.fromUserId,
+              toUserId: request.toUserId
+          }
+      });
 
-        return res.status(200).json({ message: "Friend request rejected." });
-    } catch (error) {
-        console.error("Error rejecting friend request:", error);
-        return res.status(500).json({ message: "Server error." });
-    }
+      await FriendRequest.destroy({
+          where: {
+              fromUserId: request.toUserId,
+              toUserId: request.fromUserId
+          }
+      });
+
+      // Decrement friend counts for both users
+      await User.increment('followers_count', { by: -1, where: { id: request.fromUserId } });
+      await User.increment('followers_count', { by: -1, where: { id: request.toUserId } });
+
+      return res.status(200).json({ message: "Friend request rejected." });
+  } catch (error) {
+      console.error("Error rejecting friend request:", error);
+      return res.status(500).json({ message: "Server error." });
+  }
 };
+
 
 
 
