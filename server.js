@@ -15,7 +15,12 @@ const notificationRoutes = require('./routes/notification');
 const cors = require("cors");
 
 const app = express();
-app.use(bodyParser.json({ type: 'application/json' }));
+// app.use(bodyParser.json({ type: 'application/json' }));
+app.use(express.json({
+  verify: (req, res, buf) => {
+    req.rawBody = buf;
+  }
+}));
 app.use(cors());
 
 // Routes
