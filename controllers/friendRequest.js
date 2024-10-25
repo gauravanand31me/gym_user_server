@@ -203,16 +203,20 @@ exports.rejectRequest = async (req, res) => {
           }
       });
 
-      await FriendRequest.destroy({
+      if (request.status == "accepted") {
+        await FriendRequest.destroy({
           where: {
               fromUserId: request.toUserId,
               toUserId: request.fromUserId
           }
-      });
+        });
+        await User.increment('followers_count', { by: -1, where: { id: request.fromUserId } });
+        await User.increment('followers_count', { by: -1, where: { id: request.toUserId } });
+      }
+      
 
       // Decrement friend counts for both users
-      await User.increment('followers_count', { by: -1, where: { id: request.fromUserId } });
-      await User.increment('followers_count', { by: -1, where: { id: request.toUserId } });
+      
 
       return res.status(200).json({ message: "Friend request rejected." });
   } catch (error) {
