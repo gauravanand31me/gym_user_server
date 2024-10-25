@@ -90,7 +90,7 @@ exports.verifyOTP = async (req, res) => {
         
         } else {
             // If user doesn't exist, create a new record
-          const newToken = new User({ userId: user.id , expoPushToken });
+          const newToken = new PushNotification({ userId: user.id , expoPushToken });
           await newToken.save();
           
         }
