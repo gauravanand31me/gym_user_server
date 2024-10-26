@@ -86,7 +86,7 @@ exports.markNotificationsAsRead = async (req, res) => {
 
 
 
-export const deleteOldNotifications = async () => {
+exports.deleteOldNotifications = async () => {
     try {
       const daysAgo = new Date();
       daysAgo.setDate(daysAgo.getDate() - 7); // Get date 7 days ago
