@@ -164,7 +164,7 @@ exports.getFriendRequests = async (req, res) => {
             `SELECT fr.*, u.id as "fromUserId", u.full_name, u.profile_pic 
              FROM "FriendRequests" fr
              JOIN "Users" u ON fr."fromUserId" = u.id
-             WHERE fr."toUserId" = :userId AND (fr.status = 'pending' OR fr.status = 'accepted')`,
+             WHERE fr."toUserId" = :userId AND (fr.status = 'accepted')`,
             {
                 replacements: { userId },
                 type: sequelize.QueryTypes.SELECT
