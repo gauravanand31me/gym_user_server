@@ -1,6 +1,7 @@
 const sequelize = require("../config/db");
 const UserAddress = require("../models/UserAddress"); // Import UserAddress model
 const { Op } = require("sequelize"); // Import Op for query operators
+const { deleteOldNotifications } = require("./getNotification");
 
 // Fetch nearby gyms based on user's current location
 exports.fetchGyms = async (req, res) => {
@@ -110,7 +111,7 @@ OFFSET CASE WHEN :searchText IS NULL THEN :offset ELSE NULL END;
       replacements: { userLat, userLong, limit, offset, searchText },
     });
 
-    
+    deleteOldNotifications();
     // Send the paginated results with additional pagination info
     res.json({
       status: true,

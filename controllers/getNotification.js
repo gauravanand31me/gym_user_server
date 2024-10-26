@@ -1,4 +1,5 @@
 const sequelize = require("../config/db");
+const { Op } = require('sequelize');
 
 exports.getNotifications = async (req, res) => {
     const userId = req.user.id; // Get the logged-in user ID from the request
@@ -79,6 +80,28 @@ exports.markNotificationsAsRead = async (req, res) => {
     } catch (error) {
         console.error('Error marking notifications as read:', error);
         res.status(500).json({ message: 'Server error.' });
+    }
+};
+
+
+
+
+export const deleteOldNotifications = async () => {
+    try {
+      const daysAgo = new Date();
+      daysAgo.setDate(daysAgo.getDate() - 7); // Get date 7 days ago
+  
+      const deletedNotifications = await Notification.destroy({
+        where: {
+          createdAt: {
+            [Op.lt]: daysAgo, // Deletes notifications older than 7 days
+          },
+        },
+      });
+  
+      console.log(`${deletedNotifications} notifications older than 7 days have been deleted.`);
+    } catch (error) {
+      console.error('Error deleting old notifications:', error);
     }
 };
 
