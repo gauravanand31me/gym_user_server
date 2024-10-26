@@ -138,9 +138,7 @@ exports.declineBuddyRequest = async (req, res) => {
 
         console.log("Notification created for buddy request:", notification);
 
-        const buddyRequest = await BuddyRequest.findOne({
-          where: { bookingId: requestId, toUserId:  req.user.id} // Adjust this if you have a different key for your buddy requests
-        });
+      
 
         if (buddyRequest) {
           buddyRequest.status = 'declined'; // Update the status
