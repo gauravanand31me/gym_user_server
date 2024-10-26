@@ -15,8 +15,7 @@ exports.getAllBuddyRequest = async (req, res) => {
             [Op.or]: [
                 { fromUserId: userId },
                 { toUserId: userId }
-            ],
-            status: { [Op.ne]: 'declined' } // Exclude buddy requests with status 'declined'
+            ]
         };
 
         // If bookingId is provided, add it to the where clause
