@@ -1,5 +1,6 @@
 const sequelize = require("../config/db");
 const { Op } = require('sequelize');
+const Notification = require("../models/Notification");
 
 exports.getNotifications = async (req, res) => {
     const userId = req.user.id; // Get the logged-in user ID from the request
