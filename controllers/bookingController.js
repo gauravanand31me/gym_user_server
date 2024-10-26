@@ -98,7 +98,7 @@ exports.declineBuddyRequest = async (req, res) => {
     // Find the buddy request
     const { requestId } = req.params; // Added requestId
     const buddyRequest = await BuddyRequest.findOne({
-      where: { bookingId: requestId },
+      where: { bookingId: requestId, toUserId: req.user.id},
     });
 
     if (!buddyRequest) {
@@ -112,12 +112,12 @@ exports.declineBuddyRequest = async (req, res) => {
     // Update the status to 'declined'
     if (requestId) {
       // Find the booking that the requestId (bookingId) refers to
-      const relatedBooking = await Booking.findByPk(requestId);
+ 
 
-      if (relatedBooking) {
+      if (buddyRequest) {
         // Get the user who made the original booking (to notify them)
-        const toUser = await User.findByPk(relatedBooking.userId); // User who will receive the notification
-        const fromUser = await User.findByPk(req.user.id); // User who is accepting the buddy request
+        const toUser = await User.findByPk(buddyRequest.fromUserId); // User who will receive the notification
+        const fromUser = await User.findByPk(req.user.id); // User who is deleting the buddy request
 
         await Notification.destroy({
           where: {
@@ -127,7 +127,7 @@ exports.declineBuddyRequest = async (req, res) => {
 
         // Create a notification for the recipient that the buddy request has been accepted
         const notification = await Notification.create({
-          userId: relatedBooking.userId, // The user who made the original booking (to be notified)
+          userId: toUser.id, // The user who made the original booking (to be notified)
           message: `${fromUser.full_name} has declined your buddy request.`, // Notification message
           type: 'declinedBuddyRequest', // Notification type
           status: 'unread', // Unread by default
@@ -139,7 +139,7 @@ exports.declineBuddyRequest = async (req, res) => {
         console.log("Notification created for buddy request:", notification);
 
         const buddyRequest = await BuddyRequest.findOne({
-          where: { bookingId: requestId } // Adjust this if you have a different key for your buddy requests
+          where: { bookingId: requestId, toUserId:  req.user.id} // Adjust this if you have a different key for your buddy requests
         });
 
         if (buddyRequest) {

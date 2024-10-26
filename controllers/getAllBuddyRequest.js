@@ -10,15 +10,14 @@ exports.getAllBuddyRequest = async (req, res) => {
         const userId = req.user.id; // Replace this with your logic for fetching the logged-in user's ID.
         const { bookingId } = req.query; // Assuming bookingId is passed as a query parameter
 
-        // Fetch buddy requests where the logged-in user is either the sender or the receiver and optionally filter by bookingId
+        // Fetch buddy requests where the logged-in user is either the sender or the receiver
         const whereCondition = {
             [Op.or]: [
                 { fromUserId: userId },
                 { toUserId: userId }
-            ]
+            ],
+            status: { [Op.ne]: 'declined' } // Exclude buddy requests with status 'declined'
         };
-
-        
 
         // If bookingId is provided, add it to the where clause
         if (bookingId) {
@@ -47,6 +46,7 @@ exports.getAllBuddyRequest = async (req, res) => {
         res.status(500).json({ error: 'Unable to fetch buddy requests.' });
     }
 };
+
 
 exports.sendBuddyRequest = async (req, res) => {
     const { toUserId, bookingId } = req.body;
