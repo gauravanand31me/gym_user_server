@@ -1,9 +1,10 @@
 const express = require('express');
-const { createBooking, inviteBuddies, getAllBookingsByUser, createOrder, verifyBooking, getIndividualBooking, getAllVisitedGymsWithWorkoutHours, getAllBuddiesWithWorkoutHours, razorPayWebhook } = require('../controllers/bookingController');
+const { createBooking, inviteBuddies, getAllBookingsByUser, createOrder, verifyBooking, getIndividualBooking, getAllVisitedGymsWithWorkoutHours, getAllBuddiesWithWorkoutHours, razorPayWebhook, declineBuddyRequest } = require('../controllers/bookingController');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const router = express.Router();
 
 router.post('/create', authMiddleware, createBooking);
+router.delete('/deleteBuddyRequest/:id', authMiddleware, declineBuddyRequest);
 router.post('/invite', authMiddleware, inviteBuddies);
 router.get('/get', authMiddleware, getAllBookingsByUser);
 router.post('/initiate', authMiddleware, createOrder);

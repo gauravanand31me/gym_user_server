@@ -90,6 +90,83 @@ exports.createBooking = async (req, res) => {
   }
 };
 
+
+
+
+exports.declineBuddyRequest = async (req, res) => {
+  try {
+    // Find the buddy request
+    const { requestId } = req.params; // Added requestId
+    const buddyRequest = await BuddyRequest.findOne({
+      where: { bookingId: requestId },
+    });
+
+    if (!buddyRequest) {
+      console.log(`Buddy request with ID ${requestId} not found.`);
+      res.status(404).json({
+        success: false,
+        message: `Buddy request with ID ${requestId} not found.`,
+      });
+    }
+
+    // Update the status to 'declined'
+    if (requestId) {
+      // Find the booking that the requestId (bookingId) refers to
+      const relatedBooking = await Booking.findByPk(requestId);
+
+      if (relatedBooking) {
+        // Get the user who made the original booking (to notify them)
+        const toUser = await User.findByPk(relatedBooking.userId); // User who will receive the notification
+        const fromUser = await User.findByPk(req.user.id); // User who is accepting the buddy request
+
+        await Notification.destroy({
+          where: {
+            relatedId: requestId // Delete notification buddy request
+          }
+        });
+
+        // Create a notification for the recipient that the buddy request has been accepted
+        const notification = await Notification.create({
+          userId: relatedBooking.userId, // The user who made the original booking (to be notified)
+          message: `${fromUser.full_name} has declined your buddy request.`, // Notification message
+          type: 'declinedBuddyRequest', // Notification type
+          status: 'unread', // Unread by default
+          relatedId: requestId, // Related to the bookingId (buddy request)
+          profileImage: fromUser.profile_pic || "https://png.pngtree.com/png-vector/20190223/ourmid/pngtree-profile-glyph-black-icon-png-image_691589.jpg" // Use default profile pic if not available
+        });
+
+
+        console.log("Notification created for buddy request:", notification);
+
+        const buddyRequest = await BuddyRequest.findOne({
+          where: { bookingId: requestId } // Adjust this if you have a different key for your buddy requests
+        });
+
+        if (buddyRequest) {
+          buddyRequest.status = 'declined'; // Update the status
+          await buddyRequest.save(); // Save the changes
+          console.log(`Buddy request with ID ${requestId} has been deleted.`);
+        } else {
+          console.log(`Buddy request with ID ${requestId} not found.`);
+        }
+
+      } else {
+        console.log(`Booking with ID ${requestId} not found.`);
+      }
+      res.status(500).json({
+        status: true,
+        message: 'Buddy request has been declined',
+      });
+    }
+  } catch (error) {
+    console.error("Error declining buddy request:", error);
+    res.status(500).json({
+      success: false,
+      message: 'An error occurred while declining the buddy request.',
+    });
+  }
+};
+
 // Invite Buddies
 exports.inviteBuddies = async (req, res) => {
   const { bookingId, buddyIds } = req.body;
