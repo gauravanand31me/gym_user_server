@@ -153,7 +153,7 @@ exports.declineBuddyRequest = async (req, res) => {
       } else {
         console.log(`Booking with ID ${requestId} not found.`);
       }
-      res.status(500).json({
+      res.status(200).json({
         status: true,
         message: 'Buddy request has been declined',
       });
