@@ -137,16 +137,10 @@ exports.declineBuddyRequest = async (req, res) => {
 
 
         console.log("Notification created for buddy request:", notification);
-
-      
-
-        if (buddyRequest) {
           buddyRequest.status = 'declined'; // Update the status
           await buddyRequest.save(); // Save the changes
           console.log(`Buddy request with ID ${requestId} has been deleted.`);
-        } else {
-          console.log(`Buddy request with ID ${requestId} not found.`);
-        }
+       
 
       } else {
         console.log(`Booking with ID ${requestId} not found.`);
