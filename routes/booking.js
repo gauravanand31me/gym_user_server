@@ -4,7 +4,7 @@ const { authMiddleware } = require('../middleware/authMiddleware');
 const router = express.Router();
 
 router.post('/create', authMiddleware, createBooking);
-router.delete('/deleteBuddyRequest/:id', authMiddleware, declineBuddyRequest);
+router.delete('/deleteBuddyRequest/:requestId', authMiddleware, declineBuddyRequest);
 router.post('/invite', authMiddleware, inviteBuddies);
 router.get('/get', authMiddleware, getAllBookingsByUser);
 router.post('/initiate', authMiddleware, createOrder);
