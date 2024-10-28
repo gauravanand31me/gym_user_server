@@ -18,7 +18,7 @@ const razorpay = new Razorpay({
 exports.createBooking = async (req, res) => {
   const { subscriptionType, slotId, gymId, bookingDate, subscriptionId, duration, price, requestId } = req.body; // Added requestId
 
-
+  console.log(" req.body",  req.body);
   // Generate a random booking ID string based on the gymId and a random number
   const stringBookingId = `${gymId.substring(0, 3).toUpperCase()}${Math.floor(100000000 + Math.random() * 900000000)}`;
 
