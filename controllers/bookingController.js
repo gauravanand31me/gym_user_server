@@ -479,6 +479,8 @@ exports.getIndividualBooking = async (req, res) => {
       return res.status(404).json({ message: 'Booking not found' });
     }
 
+    console.log("results[0]", results[0]);
+
     // Send the booking details as a response
     res.status(200).json({ booking: results[0] }); // Return the first result
   } catch (error) {
