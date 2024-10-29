@@ -250,7 +250,7 @@ exports.createOrder = async (req, res) => {
         userId: userId, // Include userId in notes
       },
       callback_url: 'https://yupluck.com/user/api/booking/webhook', // Add your callback URL
-      callback_method: 'post'
+      callback_method: 'get'
     });
 
     console.log("paymentLinkResponse", paymentLinkResponse);
