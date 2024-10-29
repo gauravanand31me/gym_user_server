@@ -14,11 +14,14 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZOR_PAY_PAYMENT_SECRET,
 });
 
+
+
+
 // Create a booking
 exports.createBooking = async (req, res) => {
   const { subscriptionType, slotId, gymId, bookingDate, subscriptionId, duration, price, requestId } = req.body; // Added requestId
 
-  console.log("bookingDate", bookingDate);
+  
   // Generate a random booking ID string based on the gymId and a random number
   const stringBookingId = `${gymId.substring(0, 3).toUpperCase()}${Math.floor(100000000 + Math.random() * 900000000)}`;
 
@@ -283,11 +286,7 @@ exports.razorPayWebhook = async (req, res) => {
   console.log("Booking id received", bookingId);
   await Booking.update({ isPaid: true }, { where: { bookingId } });
 
-  await Booking.destroy({
-    where: {
-      isPaid: false
-    }
-  });
+  
 
       // Send an HTML response for successful payment
       res.status(200).send(`
