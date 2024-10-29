@@ -283,6 +283,12 @@ exports.razorPayWebhook = async (req, res) => {
   console.log("Booking id received", bookingId);
   await Booking.update({ isPaid: true }, { where: { bookingId } });
 
+  await Booking.destroy({
+    where: {
+      isPaid: false
+    }
+  });
+
       // Send an HTML response for successful payment
       res.status(200).send(`
         <!DOCTYPE html>
