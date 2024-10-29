@@ -191,6 +191,7 @@ exports.getAllBookingsByUser = async (req, res) => {
       '    "Booking"."userId" AS "userId",\n' +
       '    "Booking"."bookingDate" AS "bookingDate",\n' +
       '    "Booking"."isCheckedIn" AS "visited",\n' +
+      '    "Booking"."isPaid" AS "isPaid",\n' +
       '    "Gyms".id AS "gymId", \n' +
       '    "Gyms".name AS "gymName",\n' +
       '    "Gyms".rating AS "gymRating",\n' +
@@ -204,7 +205,7 @@ exports.getAllBookingsByUser = async (req, res) => {
       'JOIN "Subscriptions" ON "Slots"."gymId" = "Subscriptions"."gymId" \n' +
       'LEFT JOIN "BuddyRequests" ON "Booking"."bookingId" = "BuddyRequests"."bookingId"  -- Left join to BuddyRequests\n' +
       `WHERE "Booking"."userId" = '${userId}'\n` +
-      'GROUP BY "Booking"."bookingId", "Booking"."userId", "Booking"."bookingDate", "Gyms".id, "Gyms".name, "Gyms".rating, "Slots"."startTime", "Subscriptions".daily\n' +  // Corrected here
+      'GROUP BY "Booking"."bookingId", "Booking"."userId", "Booking"."bookingDate", "Booking"."isPaid", "Gyms".id, "Gyms".name, "Gyms".rating, "Slots"."startTime", "Subscriptions".daily\n' +  // Corrected here
       'ORDER BY "Booking"."bookingDate" DESC; -- Order by booking date';
 
     // Execute the booking query
