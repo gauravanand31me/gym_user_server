@@ -280,6 +280,7 @@ exports.razorPayWebhook = async (req, res) => {
   shasum.update(JSON.stringify(req.body));
   const digest = shasum.digest('hex');
   const {bookingId} = req.query;
+  console.log("Booking id received", bookingId);
   await Booking.update({ isPaid: true }, { where: { bookingId } });
 
       // Send an HTML response for successful payment
