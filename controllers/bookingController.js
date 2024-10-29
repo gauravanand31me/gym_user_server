@@ -530,7 +530,8 @@ exports.getIndividualBooking = async (req, res) => {
         "Booking".price AS "subscriptionPrice",
         "Booking".duration AS "bookingDuration",
         "Booking"."slotId" AS "bookingSlotId",
-        "Booking"."subscriptionId" AS "bookingSubscriptionId"
+        "Booking"."subscriptionId" AS "bookingSubscriptionId",
+        "Booking"."isPaid" AS "isPaid"
       FROM "Booking"
       JOIN "Slots" ON "Booking"."slotId" = "Slots".id
       JOIN "Gyms" ON "Slots"."gymId" = "Gyms".id
