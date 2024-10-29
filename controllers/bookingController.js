@@ -225,12 +225,10 @@ exports.getAllBookingsByUser = async (req, res) => {
 
 // Create Order with custom bookingId and userId
 exports.createOrder = async (req, res) => {
-  const { amount } = req.body; // Get amount from frontend
+  const { amount, bookingId } = req.body; // Get amount from frontend
   const userId = req.user.id;  // Assuming the user is authenticated and userId is available
 
   // Generate a custom bookingId
-  const bookingId = uuidv4();
-
   const options = {
     amount: amount * 100, // Razorpay expects amount in paise (1 INR = 100 paise)
     currency: 'INR',
@@ -281,7 +279,7 @@ exports.razorPayWebhook = async (req, res) => {
   const digest = shasum.digest('hex');
   const {bookingId} = req.query;
   console.log("Booking id received", bookingId);
-  await Booking.update({ isPaid: true }, { where: { bookingId } });
+  
 
       // Send an HTML response for successful payment
       res.status(200).send(`
