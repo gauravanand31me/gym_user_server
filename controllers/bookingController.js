@@ -259,7 +259,7 @@ exports.createOrder = async (req, res) => {
       callback_method: 'get'
     });
 
-    console.log("paymentLinkResponse", paymentLinkResponse);
+
     // Send response back to frontend
     res.json({
       orderId: orderResponse.id,
@@ -535,6 +535,7 @@ exports.getIndividualBooking = async (req, res) => {
       JOIN "Slots" ON "Booking"."slotId" = "Slots".id
       JOIN "Gyms" ON "Slots"."gymId" = "Gyms".id
       WHERE "Booking"."bookingId" = :requestId
+      AND "Booking"."isPaid" = true
     `;
 
     // Execute the booking query
