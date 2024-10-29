@@ -249,7 +249,7 @@ exports.createOrder = async (req, res) => {
         bookingId: bookingId, // Include bookingId in notes
         userId: userId, // Include userId in notes
       },
-      callback_url: 'https://yupluck.com/user/api/booking/webhook', // Add your callback URL
+      callback_url: `https://yupluck.com/user/api/booking/webhook?bookingId=${bookingId}`, // Add your callback URL
       callback_method: 'get'
     });
 
@@ -278,31 +278,8 @@ exports.razorPayWebhook = async (req, res) => {
   const shasum = crypto.createHmac('sha256', secret);
   shasum.update(JSON.stringify(req.body));
   const digest = shasum.digest('hex');
-  console.log("digest is", digest);
-  console.log("req.headers['x-razorpay-signature']", req.headers);
-  console.log("req.body", req.body);
-  if (digest === req.headers['x-razorpay-signature']) {
-    // Signature verified, process the payment
-    const paymentData = req.body.payload.payment.entity;
-
-    try {
-      // Extract necessary data
-      const { id: paymentId, amount, currency, status, notes } = paymentData;
-      const { bookingId, userId } = notes; // Extract bookingId and userId from notes
-
-      // Save payment information in your database
-      await Payment.create({
-        paymentId: paymentId,
-        bookingId: bookingId,
-        userId: userId, // Save the userId along with the payment record
-        amount: amount / 100, // Convert from paise to INR
-        currency: currency,
-        isPaid: status === 'captured', // Check if payment is captured
-        paymentDate: new Date(),
-      });
-
-      // Optionally, update booking status to 'paid'
-      await Booking.update({ isPaid: true }, { where: { bookingId } });
+  const {bookingId} = req.query;
+  await Booking.update({ isPaid: true }, { where: { bookingId } });
 
       // Send an HTML response for successful payment
       res.status(200).send(`
@@ -355,41 +332,118 @@ exports.razorPayWebhook = async (req, res) => {
           </div>
         </body>
         </html>
-      `);
-    } catch (error) {
-      console.error('Error processing payment:', error);
-      res.status(500).send(`
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Payment Error</title>
-        </head>
-        <body>
-          <h1>Payment Error</h1>
-          <p>There was an issue processing your payment. Please contact support.</p>
-        </body>
-        </html>
-      `);
-    }
-  } else {
-    // Invalid signature
-    res.status(403).send(`
-      <!DOCTYPE html>
-      <html lang="en">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Invalid Signature</title>
-      </head>
-      <body>
-        <h1>Invalid Signature</h1>
-        <p>Payment verification failed. Please contact support.</p>
-      </body>
-      </html>
     `);
-  }
+  
+
+  // if (digest === req.headers['x-razorpay-signature']) {
+  //   // Signature verified, process the payment
+  //   const paymentData = req.body.payload.payment.entity;
+
+  //   try {
+  //     // Extract necessary data
+  //     const { id: paymentId, amount, currency, status, notes } = paymentData;
+  //     const { bookingId, userId } = notes; // Extract bookingId and userId from notes
+
+  //     // Save payment information in your database
+  //     await Payment.create({
+  //       paymentId: paymentId,
+  //       bookingId: bookingId,
+  //       userId: userId, // Save the userId along with the payment record
+  //       amount: amount / 100, // Convert from paise to INR
+  //       currency: currency,
+  //       isPaid: status === 'captured', // Check if payment is captured
+  //       paymentDate: new Date(),
+  //     });
+
+  //     // Optionally, update booking status to 'paid'
+      
+
+      // // Send an HTML response for successful payment
+      // res.status(200).send(`
+      //   <!DOCTYPE html>
+      //   <html lang="en">
+      //   <head>
+      //     <meta charset="UTF-8">
+      //     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      //     <title>Payment Successful</title>
+      //     <style>
+      //       body {
+      //         font-family: Arial, sans-serif;
+      //         display: flex;
+      //         justify-content: center;
+      //         align-items: center;
+      //         height: 100vh;
+      //         margin: 0;
+      //         background-color: #f4f4f4;
+      //       }
+      //       .container {
+      //         text-align: center;
+      //         background: #fff;
+      //         padding: 20px;
+      //         border-radius: 10px;
+      //         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      //       }
+      //       h1 {
+      //         color: #4caf50;
+      //       }
+      //       p {
+      //         margin: 15px 0;
+      //       }
+      //       button {
+      //         padding: 10px 20px;
+      //         background-color: #4caf50;
+      //         color: white;
+      //         border: none;
+      //         border-radius: 5px;
+      //         cursor: pointer;
+      //         font-size: 16px;
+      //       }
+      //     </style>
+      //   </head>
+      //   <body>
+      //     <div class="container">
+      //       <h1>Payment Successful!</h1>
+      //       <p>Thank you for your payment.</p>
+      //       <p>You can now close this window.</p>
+      //       <button onclick="window.close()">Close Window</button>
+      //     </div>
+      //   </body>
+      //   </html>
+      // `);
+  //   } catch (error) {
+  //     console.error('Error processing payment:', error);
+  //     res.status(500).send(`
+  //       <!DOCTYPE html>
+  //       <html lang="en">
+  //       <head>
+  //         <meta charset="UTF-8">
+  //         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  //         <title>Payment Error</title>
+  //       </head>
+  //       <body>
+  //         <h1>Payment Error</h1>
+  //         <p>There was an issue processing your payment. Please contact support.</p>
+  //       </body>
+  //       </html>
+  //     `);
+  //   }
+  // } else {
+  //   // Invalid signature
+  //   res.status(403).send(`
+  //     <!DOCTYPE html>
+  //     <html lang="en">
+  //     <head>
+  //       <meta charset="UTF-8">
+  //       <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  //       <title>Invalid Signature</title>
+  //     </head>
+  //     <body>
+  //       <h1>Invalid Signature</h1>
+  //       <p>Payment verification failed. Please contact support.</p>
+  //     </body>
+  //     </html>
+  //   `);
+  // }
 };
 
 
