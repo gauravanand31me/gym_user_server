@@ -528,7 +528,7 @@ exports.getIndividualBooking = async (req, res) => {
         "Gyms".rating AS "gymRating",
         "Slots"."startTime" AS "slotStartTime",
         "Booking".price AS "subscriptionPrice",
-        "Booking".isPaid AS "isPaid",
+        "Booking"."isPaid" AS "isPaid",
         "Booking".duration AS "bookingDuration",
         "Booking"."slotId" AS "bookingSlotId",
         "Booking"."subscriptionId" AS "bookingSubscriptionId"
