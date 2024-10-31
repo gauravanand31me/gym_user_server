@@ -12,7 +12,8 @@ exports.fetchGyms = async (req, res) => {
   const page = parseInt(req.query.page, 10) || 1; // Default page is 1
   const offset = (page - 1) * limit; // Calculate offset
   let { lat, long } = req.query; // Destructure latitude and longitude from req.query
-
+  console.log("Limit is", limit);
+  console.log("Offset is", offset);
   try {
     let userLat, userLong;
 
@@ -99,8 +100,8 @@ LEFT JOIN "GymImages" ON "Gyms".id = "GymImages"."gymId"
 WHERE (:searchText IS NULL OR "Gyms".name ILIKE '%' || :searchText || '%')
 GROUP BY "Gyms".id
 ORDER BY distance ASC, "Gyms".city, "Gyms"."pinCode", "Gyms".state
-LIMIT CASE WHEN :searchText IS NULL THEN :limit ELSE NULL END
-OFFSET CASE WHEN :searchText IS NULL THEN :offset ELSE NULL END;
+LIMIT :limit
+OFFSET :offset
 
 
     `;
