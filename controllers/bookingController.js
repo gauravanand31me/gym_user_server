@@ -275,7 +275,7 @@ exports.razorPayWebhook = async (req, res) => {
 
       await Notification.destroy({
         where: {
-          relatedId: requestId // Delete notification buddy request
+          relatedId: request // Delete notification buddy request
         }
       });
 
@@ -285,7 +285,7 @@ exports.razorPayWebhook = async (req, res) => {
         message: `${fromUser.full_name} has accepted your buddy request.`, // Notification message
         type: 'acceptedBuddyRequest', // Notification type
         status: 'unread', // Unread by default
-        relatedId: requestId, // Related to the bookingId (buddy request)
+        relatedId: request, // Related to the bookingId (buddy request)
         profileImage: fromUser.profile_pic || "https://png.pngtree.com/png-vector/20190223/ourmid/pngtree-profile-glyph-black-icon-png-image_691589.jpg" // Use default profile pic if not available
       });
 
