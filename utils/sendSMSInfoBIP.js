@@ -1,13 +1,13 @@
 var https = require('follow-redirects').https;
 var fs = require('fs');
 
-exports.sendSMSINFOBIP = function (number) {
+exports.sendSMSINFOBIP = function (number, body) {
     var options = {
         'method': 'POST',
         'hostname': '8kvymd.api.infobip.com',
         'path': '/sms/2/text/advanced',
         'headers': {
-            'Authorization': 'App <<TOKEN>>',
+            'Authorization': `App ${process.env.SMS_AUTH_TOKEN}`,
             'Content-Type': 'application/json',
             'Accept': 'application/json'
         },
