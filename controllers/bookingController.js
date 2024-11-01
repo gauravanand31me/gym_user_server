@@ -215,10 +215,10 @@ exports.createOrder = async (req, res) => {
     payment_capture: 1 // Automatic payment capture
   };
 
-  let callback_url = `https://yupluck.com/user/api/booking/webhook?bookingId=${bookingId}`;
+  let callback_url = `https://yupluck.com/user/api/booking/webhook?bookingId=${bookingId}&userId=${userId}`;
 
   if (requestId) {
-    callback_url = `https://yupluck.com/user/api/booking/webhook?bookingId=${bookingId}&request=${requestId}`;
+    callback_url = `https://yupluck.com/user/api/booking/webhook?bookingId=${bookingId}&request=${requestId}&userId=${userId}`;
   }
 
   try {
@@ -262,7 +262,7 @@ exports.razorPayWebhook = async (req, res) => {
   const shasum = crypto.createHmac('sha256', secret);
   shasum.update(JSON.stringify(req.body));
   const digest = shasum.digest('hex');
-  const {bookingId, request} = req.query;
+  const {bookingId, request, userId} = req.query;
 
   if (request) {
     // Find the booking that the requestId (bookingId) refers to
@@ -271,7 +271,7 @@ exports.razorPayWebhook = async (req, res) => {
     if (relatedBooking) {
       // Get the user who made the original booking (to notify them)
       const toUser = await User.findByPk(relatedBooking.userId); // User who will receive the notification
-      const fromUser = await User.findByPk(req.user.id); // User who is accepting the buddy request
+      const fromUser = await User.findByPk(userId); // User who is accepting the buddy request
 
       await Notification.destroy({
         where: {
