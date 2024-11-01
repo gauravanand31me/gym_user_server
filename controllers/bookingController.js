@@ -171,11 +171,17 @@ exports.getAllBookingsByUser = async (req, res) => {
 
     // Conditional filtering based on selectedTab
     if (selectedTab === 'Upcoming') {
-      query += ' AND "Booking"."isCheckedIn" = false'; // Upcoming bookings
+      query += `
+        AND "Booking"."isCheckedIn" = false
+        AND "Booking"."bookingDate" >= CURRENT_DATE
+      `; // Only show bookings for today or later
     } else if (selectedTab === 'Completed') {
       query += ' AND "Booking"."isCheckedIn" = true'; // Completed bookings
     } else if (selectedTab === 'noShow') {
-      query += ' AND "Booking"."bookingDate" < CURRENT_DATE AND "Booking"."isCheckedIn" = false'; // No Show bookings
+      query += `
+        AND "Booking"."bookingDate" < CURRENT_DATE
+        AND "Booking"."isCheckedIn" = false
+      `; // No Show bookings (past dates with no check-in)
     }
 
     query += `
@@ -195,6 +201,7 @@ exports.getAllBookingsByUser = async (req, res) => {
     res.status(500).send('Server error');
   }
 };
+
 
 
 
