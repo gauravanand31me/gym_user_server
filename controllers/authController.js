@@ -5,6 +5,7 @@ const { Op } = require('sequelize');
 const jwt = require('jsonwebtoken');
 const { isMobileNumber } = require('../helper/helper');
 const PushNotification = require('../models/PushNotification');
+const { sendSMSINFOBIP } = require('../utils/sendSMSInfoBIP');
 const JWT_SECRET = process.env.JWT_SECRET || "Test@1992"
 // Register a new user
 exports.register = async (req, res) => {
@@ -129,8 +130,8 @@ exports.login = async (req, res) => {
     await user.update({ otp, otpExpires: new Date(Date.now() + 3600000) }); // 1 hour expiry
 
     // Send OTP via SMS
-    sendSMS("+91"+user.mobile_number, `Your OTP is ${otp}`);
-
+    //sendSMS("+91"+user.mobile_number, `Your OTP is ${otp}`);
+    sendSMSINFOBIP(user.mobile_number, `Your OTP is ${otp}`);
     res.status(200).json({
       status: true,
       message: `OTP sent successfully ${otp}`,
