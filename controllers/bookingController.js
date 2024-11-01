@@ -219,7 +219,7 @@ exports.getAllBookingsByUser = async (req, res) => {
       query += ' AND "Booking"."isCheckedIn" = false'; // Upcoming bookings
     } else if (selectedTab === 'Completed') {
       query += ' AND "Booking"."isCheckedIn" = true'; // Completed bookings
-    } else if (selectedTab === 'No Show') {
+    } else if (selectedTab === 'noShow') {
       query += ' AND "Booking"."bookingDate" < NOW() AND "Booking"."isCheckedIn" = false'; // No Show bookings
     }
 
