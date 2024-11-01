@@ -220,7 +220,7 @@ exports.getAllBookingsByUser = async (req, res) => {
     } else if (selectedTab === 'Completed') {
       query += ' AND "Booking"."isCheckedIn" = true'; // Completed bookings
     } else if (selectedTab === 'noShow') {
-      query += ' AND "Booking"."bookingDate" < NOW() AND "Booking"."isCheckedIn" = false'; // No Show bookings
+      query += ' AND "Booking"."bookingDate" < CURRENT_DATE AND "Booking"."isCheckedIn" = false'; // No Show bookings
     }
 
     query += `
