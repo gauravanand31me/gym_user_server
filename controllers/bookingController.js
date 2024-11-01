@@ -187,31 +187,47 @@ exports.inviteBuddies = async (req, res) => {
 exports.getAllBookingsByUser = async (req, res) => {
   try {
     const userId = req.user.id;
+    const { selectedTab } = req.query;
 
-    const query = 'SELECT \n' +
-    '    "Booking"."bookingId" AS "id",\n' +
-    '    "Booking"."stringBookingId" AS "bookingId",\n' +
-    '    "Booking"."userId" AS "userId",\n' +
-    '    "Booking"."bookingDate" AS "bookingDate",\n' +
-    '    "Booking"."isCheckedIn" AS "visited",\n' +
-    '    "Booking"."isPaid" AS "isPaid",\n' +
-    '    "Gyms".id AS "gymId", \n' +
-    '    "Gyms".name AS "gymName",\n' +
-    '    "Gyms".rating AS "gymRating",\n' +
-    '    "Slots"."startTime" AS "slotStartTime",\n' +
-    '    "Booking".price AS "subscriptionPrice",\n' +
-    '    "Booking"."createdAt" AS "create",\n' +
-    '    COUNT("BuddyRequests".id) AS "invitedBuddyCount"  -- Count of buddies invited\n' +
-    'FROM "Booking"\n' +
-    'JOIN "Slots" ON "Booking"."slotId" = "Slots".id\n' +
-    'JOIN "Gyms" ON "Slots"."gymId" = "Gyms".id\n' +
-    'JOIN "Subscriptions" ON "Slots"."gymId" = "Subscriptions"."gymId" \n' +
-    'LEFT JOIN "BuddyRequests" ON "Booking"."bookingId" = "BuddyRequests"."bookingId"  -- Left join to BuddyRequests\n' +
-    `WHERE "Booking"."userId" = '${userId}'\n` +
-    'AND "Booking"."isPaid" = true\n' +  // Added a space here
-    'GROUP BY "Booking"."bookingId", "Booking"."userId", "Booking"."bookingDate", "Booking"."isPaid", "Gyms".id, "Gyms".name, "Gyms".rating, "Slots"."startTime", "Subscriptions".daily\n' +
-    'ORDER BY "Booking"."bookingDate" DESC; -- Order by booking date';
+    // Base query
+    let query = `
+      SELECT 
+          "Booking"."bookingId" AS "id",
+          "Booking"."stringBookingId" AS "bookingId",
+          "Booking"."userId" AS "userId",
+          "Booking"."bookingDate" AS "bookingDate",
+          "Booking"."isCheckedIn" AS "visited",
+          "Booking"."isPaid" AS "isPaid",
+          "Gyms".id AS "gymId", 
+          "Gyms".name AS "gymName",
+          "Gyms".rating AS "gymRating",
+          "Slots"."startTime" AS "slotStartTime",
+          "Booking".price AS "subscriptionPrice",
+          "Booking"."createdAt" AS "create",
+          COUNT("BuddyRequests".id) AS "invitedBuddyCount"  
+      FROM "Booking"
+      JOIN "Slots" ON "Booking"."slotId" = "Slots".id
+      JOIN "Gyms" ON "Slots"."gymId" = "Gyms".id
+      JOIN "Subscriptions" ON "Slots"."gymId" = "Subscriptions"."gymId" 
+      LEFT JOIN "BuddyRequests" ON "Booking"."bookingId" = "BuddyRequests"."bookingId"
+      WHERE "Booking"."userId" = :userId
+      AND "Booking"."isPaid" = true
+    `;
 
+    // Conditional filtering based on selectedTab
+    if (selectedTab === 'Upcoming') {
+      query += ' AND "Booking"."isCheckedIn" = false'; // Upcoming bookings
+    } else if (selectedTab === 'Completed') {
+      query += ' AND "Booking"."isCheckedIn" = true'; // Completed bookings
+    } else if (selectedTab === 'No Show') {
+      query += ' AND "Booking"."bookingDate" < NOW() AND "Booking"."isCheckedIn" = false'; // No Show bookings
+    }
+
+    query += `
+      GROUP BY "Booking"."bookingId", "Booking"."userId", "Booking"."bookingDate", "Booking"."isPaid", 
+               "Gyms".id, "Gyms".name, "Gyms".rating, "Slots"."startTime", "Subscriptions".daily
+      ORDER BY "Booking"."bookingDate" DESC;
+    `;
 
     // Execute the booking query
     const [results] = await sequelize.query(query, {
@@ -224,6 +240,7 @@ exports.getAllBookingsByUser = async (req, res) => {
     res.status(500).send('Server error');
   }
 };
+
 
 
 
