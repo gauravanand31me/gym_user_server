@@ -34,7 +34,7 @@ exports.sendSMSINFOBIP = function (number, body) {
     var postData = JSON.stringify({
         "messages": [
             {
-                "destinations": [{"to": "91"+number}],
+                "destinations": [{"to": number}],
                 "from": "447491163443",
                 "text": body
             }
