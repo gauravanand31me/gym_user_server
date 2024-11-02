@@ -19,16 +19,6 @@ exports.createBookingRating = async (req, res) => {
             existingRating.ratedOn = new Date();
             await existingRating.save();
             res.status(200).json({ message: 'Rating updated successfully', rating: existingRating });
-        } else {
-            // Create a new rating
-            const newRating = await BookingRating.create({
-                bookingId,
-                gymId,
-                userId,
-                rating,
-                ratedOn: new Date()
-            });
-            res.status(201).json({ message: 'Rating created successfully', rating: newRating });
         }
 
         // Calculate the average rating for the gym using a raw query
@@ -46,11 +36,21 @@ exports.createBookingRating = async (req, res) => {
         // Update the total rating for the gym using a raw query
         await sequelize.query(`
             UPDATE "Gyms"
-            SET rating = :averageRating
+            SET rating = :averageRating,
+            total_rating_count = total_rating_count + 1
             WHERE id = :gymId
         `, {
             replacements: { averageRating, gymId }
         });
+
+        const newRating = await BookingRating.create({
+            bookingId,
+            gymId,
+            userId,
+            rating,
+            ratedOn: new Date()
+        });
+        res.status(201).json({ message: 'Rating created successfully', rating: newRating });
 
     } catch (error) {
         console.error('Error creating/updating booking rating:', error);
