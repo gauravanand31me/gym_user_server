@@ -34,8 +34,8 @@ exports.createBookingRating = async (req, res) => {
         // Calculate the average rating for the gym using a raw query
         const [results] = await sequelize.query(`
             SELECT AVG(rating) AS averageRating
-            FROM BookingRatings
-            WHERE gymId = :gymId
+            FROM "BookingRatings"
+            WHERE "gymId" = :gymId
         `, {
             replacements: { gymId },
             type: sequelize.QueryTypes.SELECT
@@ -45,7 +45,7 @@ exports.createBookingRating = async (req, res) => {
 
         // Update the total rating for the gym using a raw query
         await sequelize.query(`
-            UPDATE Gyms
+            UPDATE "Gyms"
             SET rating = :averageRating
             WHERE id = :gymId
         `, {
