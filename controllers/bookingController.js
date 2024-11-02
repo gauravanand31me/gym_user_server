@@ -263,8 +263,9 @@ exports.createOrder = async (req, res) => {
 
 
 exports.razorPayWebhook = async (req, res) => {
-  const secret = 'testingwebhook'; // Set your Razorpay webhook secret
+  const secret = 'LivePayment@1992'; // Set your Razorpay webhook secret
 
+  console.log("Webhook triggered");
   // Verify the webhook signature
   const shasum = crypto.createHmac('sha256', secret);
   shasum.update(JSON.stringify(req.body));
