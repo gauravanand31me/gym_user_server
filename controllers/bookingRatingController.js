@@ -18,7 +18,7 @@ exports.createBookingRating = async (req, res) => {
             existingRating.rating = rating;
             existingRating.ratedOn = new Date();
             await existingRating.save();
-            res.status(200).json({ message: 'Rating updated successfully', rating: existingRating });
+            return res.status(200).json({ message: 'Rating updated successfully', rating: existingRating });
         }
 
         // Calculate the average rating for the gym using a raw query
@@ -31,18 +31,9 @@ exports.createBookingRating = async (req, res) => {
             type: sequelize.QueryTypes.SELECT
         });
 
-        const averageRating = results.averageRating;
+        const averageRating = results.averageRating || 0; // Default to 0 if no ratings exist
 
-        // Update the total rating for the gym using a raw query
-        await sequelize.query(`
-            UPDATE "Gyms"
-            SET rating = :averageRating,
-            total_rating_count = total_rating_count + 1
-            WHERE id = :gymId
-        `, {
-            replacements: { averageRating, gymId }
-        });
-
+        // Create the new rating before updating the gym's rating
         const newRating = await BookingRating.create({
             bookingId,
             gymId,
@@ -50,13 +41,25 @@ exports.createBookingRating = async (req, res) => {
             rating,
             ratedOn: new Date()
         });
-        res.status(201).json({ message: 'Rating created successfully', rating: newRating });
+
+        // Update the total rating for the gym using a raw query
+        await sequelize.query(`
+            UPDATE "Gyms"
+            SET rating = :averageRating,
+                total_rating_count = total_rating_count + 1
+            WHERE id = :gymId
+        `, {
+            replacements: { averageRating: (averageRating + rating) / 2, gymId } // Update to average with new rating
+        });
+
+        return res.status(201).json({ message: 'Rating created successfully', rating: newRating });
 
     } catch (error) {
         console.error('Error creating/updating booking rating:', error);
-        res.status(500).json({ message: 'An error occurred while processing your request', error });
+        return res.status(500).json({ message: 'An error occurred while processing your request', error });
     }
 };
+
 
 
 
