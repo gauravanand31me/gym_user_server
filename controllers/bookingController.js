@@ -263,7 +263,7 @@ exports.createOrder = async (req, res) => {
 
 
 exports.razorPayWebhook = async (req, res) => {
-  const secret = 'LivePayment@1992'; // Set your Razorpay webhook secret
+  const secret = 'Sourav@1992'; // Set your Razorpay webhook secret
 
   console.log("Webhook triggered");
   // Verify the webhook signature
