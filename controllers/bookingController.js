@@ -223,9 +223,13 @@ exports.createOrder = async (req, res) => {
   };
 
   let callback_url = `https://yupluck.com/user/api/booking/webhook?bookingId=${bookingId}&userId=${userId}`;
-
+  const notes = {
+    bookingId: bookingId, // Include bookingId in notes
+    userId: userId, // Include userId in notes
+  
+  }
   if (requestId) {
-    callback_url = `https://yupluck.com/user/api/booking/webhook?bookingId=${bookingId}&request=${requestId}&userId=${userId}`;
+    notes["request"] = requestId;
   }
 
   try {
@@ -236,10 +240,7 @@ exports.createOrder = async (req, res) => {
     const paymentLinkResponse = await razorpay.paymentLink.create({
       amount: amount * 100, // Amount in paise
       currency: 'INR',
-      notes: {
-        bookingId: bookingId, // Include bookingId in notes
-        userId: userId, // Include userId in notes
-      },
+      notes,
       callback_url: "https://yupluck.com/user/api/booking/webhook", // Add your callback URL
       callback_method: 'get'
     });
@@ -260,12 +261,17 @@ exports.createOrder = async (req, res) => {
   }
 };
 
-exports.razorPayWebhookPost = async (req, res) => {
+exports.razorPayWebhook = async (req, res) => {
   console.log("I am called after payment", req.body);
+  const webhookData = req.body;  // assuming you get the payload as JSON
+
+  // Access the notes
+  const notes = webhookData.payload.payment.entity.notes;
+console.log("Notes:", notes);
 }
 
 
-exports.razorPayWebhook = async (req, res) => {
+exports.razorPayWebhookPost = async (req, res) => {
   const secret = 'Sourav@1992'; // Set your Razorpay webhook secret
 
   console.log("Webhook triggered");
@@ -273,55 +279,59 @@ exports.razorPayWebhook = async (req, res) => {
   const shasum = crypto.createHmac('sha256', secret);
   shasum.update(JSON.stringify(req.body));
   const digest = shasum.digest('hex');
-  const {bookingId, request, userId} = req.query;
-  console.log("Webhook verification called");
-  // if (request) {
-  //   // Find the booking that the requestId (bookingId) refers to
-  //   const relatedBooking = await Booking.findByPk(request);
+  const receivedSignature = req.headers['x-razorpay-signature'];
+  const webhookData = req.body;  // assuming you get the payload as JSON
+  const {bookingId, request, userId} = webhookData.payload.payment.entity.notes;
+  console.log("req.headers", req.headers);
+  console.log("Digest", digest);
+  if (receivedSignature == digest) {
+  if (request) {
+    // Find the booking that the requestId (bookingId) refers to
+    const relatedBooking = await Booking.findByPk(request);
 
-  //   if (relatedBooking) {
-  //     // Get the user who made the original booking (to notify them)
-  //     const toUser = await User.findByPk(relatedBooking.userId); // User who will receive the notification
-  //     const fromUser = await User.findByPk(userId); // User who is accepting the buddy request
+    if (relatedBooking) {
+      // Get the user who made the original booking (to notify them)
+      const toUser = await User.findByPk(relatedBooking.userId); // User who will receive the notification
+      const fromUser = await User.findByPk(userId); // User who is accepting the buddy request
 
-  //     await Notification.destroy({
-  //       where: {
-  //         relatedId: request // Delete notification buddy request
-  //       }
-  //     });
+      await Notification.destroy({
+        where: {
+          relatedId: request // Delete notification buddy request
+        }
+      });
 
-  //     // Create a notification for the recipient that the buddy request has been accepted
-  //     const notification = await Notification.create({
-  //       userId: relatedBooking.userId, // The user who made the original booking (to be notified)
-  //       message: `${fromUser.full_name} has accepted your buddy request.`, // Notification message
-  //       type: 'acceptedBuddyRequest', // Notification type
-  //       status: 'unread', // Unread by default
-  //       relatedId: request, // Related to the bookingId (buddy request)
-  //       profileImage: fromUser.profile_pic || "https://png.pngtree.com/png-vector/20190223/ourmid/pngtree-profile-glyph-black-icon-png-image_691589.jpg" // Use default profile pic if not available
-  //     });
-
-
-  //     console.log("Notification created for buddy request:", notification);
-
-  //     const buddyRequest = await BuddyRequest.findOne({
-  //       where: { bookingId: request } // Adjust this if you have a different key for your buddy requests
-  //     });
-
-  //     if (buddyRequest) {
-  //       buddyRequest.status = 'accepted'; // Update the status
-  //       await buddyRequest.save(); // Save the changes
-  //       console.log(`Buddy request with ID ${request} has been accepted.`);
-  //     } else {
-  //       console.log(`Buddy request with ID ${request} not found.`);
-  //     }
-
-  //   } else {
-  //     console.log(`Booking with ID ${request} not found.`);
-  //   }
-  // }
+      // Create a notification for the recipient that the buddy request has been accepted
+      const notification = await Notification.create({
+        userId: relatedBooking.userId, // The user who made the original booking (to be notified)
+        message: `${fromUser.full_name} has accepted your buddy request.`, // Notification message
+        type: 'acceptedBuddyRequest', // Notification type
+        status: 'unread', // Unread by default
+        relatedId: request, // Related to the bookingId (buddy request)
+        profileImage: fromUser.profile_pic || "https://png.pngtree.com/png-vector/20190223/ourmid/pngtree-profile-glyph-black-icon-png-image_691589.jpg" // Use default profile pic if not available
+      });
 
 
-  // await Booking.update({ isPaid: true }, { where: { bookingId } });
+      console.log("Notification created for buddy request:", notification);
+
+      const buddyRequest = await BuddyRequest.findOne({
+        where: { bookingId: request } // Adjust this if you have a different key for your buddy requests
+      });
+
+      if (buddyRequest) {
+        buddyRequest.status = 'accepted'; // Update the status
+        await buddyRequest.save(); // Save the changes
+        console.log(`Buddy request with ID ${request} has been accepted.`);
+      } else {
+        console.log(`Buddy request with ID ${request} not found.`);
+      }
+
+    } else {
+      console.log(`Booking with ID ${request} not found.`);
+    }
+  }
+
+
+  await Booking.update({ isPaid: true }, { where: { bookingId } });
 
   
 
@@ -378,7 +388,9 @@ exports.razorPayWebhook = async (req, res) => {
         </html>
     `);
   
-
+  } else {
+    res.send("Payment Failed");
+  }
   // if (digest === req.headers['x-razorpay-signature']) {
   //   // Signature verified, process the payment
   //   const paymentData = req.body.payload.payment.entity;
