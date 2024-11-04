@@ -19,18 +19,37 @@ const razorpay = new Razorpay({
 
 // Create a booking
 exports.createBooking = async (req, res) => {
-  const { subscriptionType, slotId, gymId, bookingDate, subscriptionId, duration, price, requestId } = req.body; // Added requestId
+  const { subscriptionType, slotId, gymId, bookingDate, subscriptionId, duration, price, requestId } = req.body;
 
-  
-  // Generate a random booking ID string based on the gymId and a random number
   const stringBookingId = `${gymId.substring(0, 3).toUpperCase()}${Math.floor(100000000 + Math.random() * 900000000)}`;
 
   try {
-    // Check if the requestId is available (this means a friend request is involved)
-    
+    // Raw SQL query to check slot and gym conditions
+    const [results] = await sequelize.query(`
+      SELECT s."timePeriod", g.verified 
+      FROM "Slots" s 
+      JOIN "Gyms" g ON g.id = :gymId 
+      WHERE s.id = :slotId`, {
+        replacements: { gymId, slotId }
+    });
+
+    if (results.length === 0) {
+      return res.status(400).send("Invalid slot or gym.");
+    }
+
+    const { timePeriod, verified } = results[0];
+
+    if (timePeriod <= 0) {
+      return res.status(400).send("Slot is not available for booking at this moment");
+    }
+
+    if (!verified) {
+      return res.status(400).send("Gym is not available please try after sometime");
+    }
+
+    // Format the booking date
     const date = new Date(bookingDate);
     const formattedDate = date.toISOString().slice(0, 10);
-
 
     // Create the booking in the database
     const booking = await Booking.create({
