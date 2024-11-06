@@ -294,6 +294,8 @@ exports.razorPayWebhookPost = async (req, res) => {
   const secret = 'Sourav@1992'; // Set your Razorpay webhook secret
 
   console.log("Webhook triggered");
+  console.log("Request Header is", req.headers);
+  console.log("Request body is", req.body);
   // Verify the webhook signature
   const shasum = crypto.createHmac('sha256', secret);
   shasum.update(JSON.stringify(req.body));
