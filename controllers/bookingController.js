@@ -292,7 +292,7 @@ console.log("Notes:", notes);
 
 exports.razorPayWebhookPost = async (req, res) => {
   const secret = 'Sourav@1992'; // Set your Razorpay webhook secret
-
+  const webhookData = req.body;  // assuming you get the payload as JSON
   console.log("Webhook triggered");
   console.log("Request Header is", req.headers);
   console.log("Request body is", webhookData?.payload?.payment?.entity?.notes);
@@ -301,7 +301,7 @@ exports.razorPayWebhookPost = async (req, res) => {
   shasum.update(JSON.stringify(req.body));
   const digest = shasum.digest('hex');
   const receivedSignature = req.headers['x-razorpay-signature'];
-  const webhookData = req.body;  // assuming you get the payload as JSON
+  
   const {bookingId, request, userId} = webhookData?.payload?.payment?.entity?.notes;
   const paymentId = webhookData?.payload?.payment?.entity?.id; // Extract the payment ID
   console.log("req.headers", req.headers);
