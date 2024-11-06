@@ -259,9 +259,7 @@ exports.createOrder = async (req, res) => {
     const paymentLinkResponse = await razorpay.paymentLink.create({
       amount: amount * 100, // Amount in paise
       currency: 'INR',
-      notes,
-      callback_url: "https://yupluck.com/user/api/booking/webhook", // Add your callback URL
-      callback_method: 'get'
+      notes
     });
 
 
