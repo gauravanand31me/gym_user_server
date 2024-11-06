@@ -1,3 +1,9 @@
+const sequelize = require("../config/db");
+const UserAddress = require("../models/UserAddress"); // Import UserAddress model
+const { Op } = require("sequelize"); // Import Op for query operators
+const { deleteOldNotifications } = require("./getNotification");
+
+// Fetch nearby gyms based on user's current location
 exports.fetchGyms = async (req, res) => {
   const userId = req.user.id; // Get the logged-in user ID
   console.log("Query is", req.query);
