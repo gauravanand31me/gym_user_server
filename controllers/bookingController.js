@@ -282,11 +282,13 @@ exports.createOrder = async (req, res) => {
 
 exports.razorPayWebhook = async (req, res) => {
   console.log("I am called after payment", req.body);
-  const webhookData = req.body;  // assuming you get the payload as JSON
+
+  return res.status(200).send("Payment successful");
 
   // Access the notes
   // const notes = webhookData?.payload?.payment?.entity?.notes;
   // console.log("Notes:", notes);
+
 }
 
 
