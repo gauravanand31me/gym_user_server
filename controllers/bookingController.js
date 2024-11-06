@@ -295,7 +295,7 @@ exports.razorPayWebhookPost = async (req, res) => {
 
   console.log("Webhook triggered");
   console.log("Request Header is", req.headers);
-  console.log("Request body is", req.body);
+  console.log("Request body is", webhookData?.payload?.payment?.entity?.notes);
   // Verify the webhook signature
   const shasum = crypto.createHmac('sha256', secret);
   shasum.update(JSON.stringify(req.body));
