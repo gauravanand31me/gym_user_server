@@ -285,8 +285,8 @@ exports.razorPayWebhook = async (req, res) => {
   const webhookData = req.body;  // assuming you get the payload as JSON
 
   // Access the notes
-  const notes = webhookData.payload.payment.entity.notes;
-console.log("Notes:", notes);
+  // const notes = webhookData?.payload?.payment?.entity?.notes;
+  // console.log("Notes:", notes);
 }
 
 
@@ -304,8 +304,7 @@ exports.razorPayWebhookPost = async (req, res) => {
   
   const {bookingId, request, userId} = webhookData?.payload?.payment?.entity?.notes;
   const paymentId = webhookData?.payload?.payment?.entity?.id; // Extract the payment ID
-  console.log("req.headers", req.headers);
-  console.log("Digest", digest);
+ 
   if (receivedSignature == digest) {
   if (request) {
     // Find the booking that the requestId (bookingId) refers to
