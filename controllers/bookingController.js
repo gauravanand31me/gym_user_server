@@ -334,7 +334,7 @@ exports.razorPayWebhookPost = async (req, res) => {
         profileImage: fromUser.profile_pic || "https://png.pngtree.com/png-vector/20190223/ourmid/pngtree-profile-glyph-black-icon-png-image_691589.jpg" // Use default profile pic if not available
       });
 
-
+    
       const notificationData = await PushNotification.findOne({
         where: { id: relatedBooking.userId }
       });
