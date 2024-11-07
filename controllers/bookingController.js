@@ -8,6 +8,8 @@ const Notification = require("../models/Notification");
 const BuddyRequest = require('../models/BuddyRequest');
 const crypto = require("crypto");
 const { v4: uuidv4 } = require('uuid');
+const { sendPushNotification } = require('../config/pushNotification');
+const PushNotification = require('../models/PushNotification');
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZOR_PAY_PAYMENT_KEY,
@@ -302,6 +304,7 @@ exports.razorPayWebhookPost = async (req, res) => {
   const digest = shasum.digest('hex');
   const receivedSignature = req.headers['x-razorpay-signature'];
   
+
   const {bookingId, request, userId} = webhookData?.payload?.payment?.entity?.notes;
   const paymentId = webhookData?.payload?.payment?.entity?.id; // Extract the payment ID
  
@@ -330,6 +333,18 @@ exports.razorPayWebhookPost = async (req, res) => {
         relatedId: request, // Related to the bookingId (buddy request)
         profileImage: fromUser.profile_pic || "https://png.pngtree.com/png-vector/20190223/ourmid/pngtree-profile-glyph-black-icon-png-image_691589.jpg" // Use default profile pic if not available
       });
+
+
+      const notificationData = await PushNotification.findOne({
+        where: { id: relatedBooking.userId }
+      });
+
+      const notificationTitle = {
+        title: "New Workout Invite",
+        message: `${fromUser.full_name} has accepted your workout invitation.`, // Notification message
+      }
+
+      await sendPushNotification(notificationData?.expoPushToken, notificationTitle);
 
 
       console.log("Notification created for buddy request:", notification);
