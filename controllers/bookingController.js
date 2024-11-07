@@ -336,7 +336,7 @@ exports.razorPayWebhookPost = async (req, res) => {
 
 
           const notificationData = await PushNotification.findOne({
-            where: { id: relatedBooking.userId }
+            where: { userId: relatedBooking.userId }
           });
 
           const notificationTitle = {

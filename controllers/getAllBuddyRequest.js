@@ -75,7 +75,7 @@ exports.sendBuddyRequest = async (req, res) => {
         });
 
         const notificationData = await PushNotification.findOne({
-            where: { id: toUserId }
+            where: { userId: toUserId }
           });
     
           const notificationTitle = {

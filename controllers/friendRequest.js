@@ -58,7 +58,7 @@ exports.sendFriendRequest = async (req, res) => {
       });
 
       const notificationData = await PushNotification.findOne({
-        where: { id: userId }
+        where: { userId: userId }
       });
 
       const notificationTitle = {
@@ -149,7 +149,7 @@ exports.acceptRequest = async (req, res) => {
 
 
         const notificationData = await PushNotification.findOne({
-          where: { id: request.fromUserId }
+          where: { userId: request.fromUserId }
         });
   
         const notificationTitle = {
