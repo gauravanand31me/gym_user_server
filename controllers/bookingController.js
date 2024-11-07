@@ -32,7 +32,7 @@ exports.createBooking = async (req, res) => {
       FROM "Slots" s 
       JOIN "Gyms" g ON g.id = :gymId 
       WHERE s.id = :slotId`, {
-        replacements: { gymId, slotId }
+      replacements: { gymId, slotId }
     });
 
     if (results.length === 0) {
@@ -82,7 +82,7 @@ exports.declineBuddyRequest = async (req, res) => {
     // Find the buddy request
     const { requestId } = req.params; // Added requestId
     const buddyRequest = await BuddyRequest.findOne({
-      where: { bookingId: requestId, toUserId: req.user.id},
+      where: { bookingId: requestId, toUserId: req.user.id },
     });
 
     if (!buddyRequest) {
@@ -96,7 +96,7 @@ exports.declineBuddyRequest = async (req, res) => {
     // Update the status to 'declined'
     if (requestId) {
       // Find the booking that the requestId (bookingId) refers to
- 
+
 
       if (buddyRequest) {
         // Get the user who made the original booking (to notify them)
@@ -121,10 +121,10 @@ exports.declineBuddyRequest = async (req, res) => {
 
 
         console.log("Notification created for buddy request:", notification);
-          buddyRequest.status = 'declined'; // Update the status
-          await buddyRequest.save(); // Save the changes
-          console.log(`Buddy request with ID ${requestId} has been deleted.`);
-       
+        buddyRequest.status = 'declined'; // Update the status
+        await buddyRequest.save(); // Save the changes
+        console.log(`Buddy request with ID ${requestId} has been deleted.`);
+
 
       } else {
         console.log(`Booking with ID ${requestId} not found.`);
@@ -247,7 +247,7 @@ exports.createOrder = async (req, res) => {
   const notes = {
     bookingId: bookingId, // Include bookingId in notes
     userId: userId, // Include userId in notes
-  
+
   }
   if (requestId) {
     notes["request"] = requestId;
@@ -303,73 +303,73 @@ exports.razorPayWebhookPost = async (req, res) => {
   shasum.update(JSON.stringify(req.body));
   const digest = shasum.digest('hex');
   const receivedSignature = req.headers['x-razorpay-signature'];
-  
 
-  const {bookingId, request, userId} = webhookData?.payload?.payment?.entity?.notes;
-  const paymentId = webhookData?.payload?.payment?.entity?.id; // Extract the payment ID
- 
-  if (receivedSignature == digest) {
-  if (request) {
-    // Find the booking that the requestId (bookingId) refers to
-    const relatedBooking = await Booking.findByPk(request);
+  if (webhookData) {
+    const { bookingId, request, userId } = webhookData?.payload?.payment?.entity?.notes;
+    const paymentId = webhookData?.payload?.payment?.entity?.id; // Extract the payment ID
 
-    if (relatedBooking) {
-      // Get the user who made the original booking (to notify them)
-      const toUser = await User.findByPk(relatedBooking.userId); // User who will receive the notification
-      const fromUser = await User.findByPk(userId); // User who is accepting the buddy request
+    if (receivedSignature == digest) {
+      if (request) {
+        // Find the booking that the requestId (bookingId) refers to
+        const relatedBooking = await Booking.findByPk(request);
 
-      await Notification.destroy({
-        where: {
-          relatedId: request // Delete notification buddy request
+        if (relatedBooking) {
+          // Get the user who made the original booking (to notify them)
+          const toUser = await User.findByPk(relatedBooking.userId); // User who will receive the notification
+          const fromUser = await User.findByPk(userId); // User who is accepting the buddy request
+
+          await Notification.destroy({
+            where: {
+              relatedId: request // Delete notification buddy request
+            }
+          });
+
+          // Create a notification for the recipient that the buddy request has been accepted
+          const notification = await Notification.create({
+            userId: relatedBooking.userId, // The user who made the original booking (to be notified)
+            message: `${fromUser.full_name} has accepted your buddy request.`, // Notification message
+            type: 'acceptedBuddyRequest', // Notification type
+            status: 'unread', // Unread by default
+            relatedId: request, // Related to the bookingId (buddy request)
+            profileImage: fromUser.profile_pic || "https://png.pngtree.com/png-vector/20190223/ourmid/pngtree-profile-glyph-black-icon-png-image_691589.jpg" // Use default profile pic if not available
+          });
+
+
+          const notificationData = await PushNotification.findOne({
+            where: { id: relatedBooking.userId }
+          });
+
+          const notificationTitle = {
+            title: "New Workout Invite",
+            message: `${fromUser.full_name} has accepted your workout invitation.`, // Notification message
+          }
+
+          await sendPushNotification(notificationData?.expoPushToken, notificationTitle);
+
+
+
+
+          const buddyRequest = await BuddyRequest.findOne({
+            where: { bookingId: request } // Adjust this if you have a different key for your buddy requests
+          });
+
+          if (buddyRequest) {
+            buddyRequest.status = 'accepted'; // Update the status
+            await buddyRequest.save(); // Save the changes
+            console.log(`Buddy request with ID ${request} has been accepted.`);
+          } else {
+            console.log(`Buddy request with ID ${request} not found.`);
+          }
+
+        } else {
+          console.log(`Booking with ID ${request} not found.`);
         }
-      });
-
-      // Create a notification for the recipient that the buddy request has been accepted
-      const notification = await Notification.create({
-        userId: relatedBooking.userId, // The user who made the original booking (to be notified)
-        message: `${fromUser.full_name} has accepted your buddy request.`, // Notification message
-        type: 'acceptedBuddyRequest', // Notification type
-        status: 'unread', // Unread by default
-        relatedId: request, // Related to the bookingId (buddy request)
-        profileImage: fromUser.profile_pic || "https://png.pngtree.com/png-vector/20190223/ourmid/pngtree-profile-glyph-black-icon-png-image_691589.jpg" // Use default profile pic if not available
-      });
-
-    
-      const notificationData = await PushNotification.findOne({
-        where: { id: relatedBooking.userId }
-      });
-
-      const notificationTitle = {
-        title: "New Workout Invite",
-        message: `${fromUser.full_name} has accepted your workout invitation.`, // Notification message
       }
 
-      await sendPushNotification(notificationData?.expoPushToken, notificationTitle);
+
+      await Booking.update({ isPaid: true, "paymentId": paymentId }, { where: { bookingId } });
 
 
-      console.log("Notification created for buddy request:", notification);
-
-      const buddyRequest = await BuddyRequest.findOne({
-        where: { bookingId: request } // Adjust this if you have a different key for your buddy requests
-      });
-
-      if (buddyRequest) {
-        buddyRequest.status = 'accepted'; // Update the status
-        await buddyRequest.save(); // Save the changes
-        console.log(`Buddy request with ID ${request} has been accepted.`);
-      } else {
-        console.log(`Buddy request with ID ${request} not found.`);
-      }
-
-    } else {
-      console.log(`Booking with ID ${request} not found.`);
-    }
-  }
-
-
-  await Booking.update({ isPaid: true, "paymentId": paymentId }, { where: { bookingId } });
-
-  
 
       // Send an HTML response for successful payment
       res.status(200).send(`
@@ -423,11 +423,15 @@ exports.razorPayWebhookPost = async (req, res) => {
         </body>
         </html>
     `);
-  
+
+    } else {
+      res.send("Payment Failed");
+    }
   } else {
     res.send("Payment Failed");
   }
- 
+
+
 };
 
 
