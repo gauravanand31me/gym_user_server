@@ -340,7 +340,7 @@ exports.razorPayWebhookPost = async (req, res) => {
           });
 
           const notificationTitle = {
-            title: "New Workout Invite",
+            title: "Workout request accepted",
             message: `${fromUser.full_name} has accepted your workout invitation.`, // Notification message
           }
 
