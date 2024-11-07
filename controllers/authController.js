@@ -82,19 +82,19 @@ exports.verifyOTP = async (req, res) => {
 
    
 
-    const notify = await PushNotification.findOne({ where: { userId: user.id } })
-    console.log("notify request received", notify);
-        if (notify) {
-            // If user exists, update the expoPushToken
-            notify.expoPushToken = expoPushToken;
-            await notify.save();
+    // const notify = await PushNotification.findOne({ where: { userId: user.id } })
+    // console.log("notify request received", notify);
+    //     if (notify) {
+    //         // If user exists, update the expoPushToken
+    //         notify.expoPushToken = expoPushToken;
+    //         await notify.save();
         
-        } else {
-            // If user doesn't exist, create a new record
-          const newToken = new PushNotification({ userId: user.id , expoPushToken });
-          await newToken.save();
+    //     } else {
+    //         // If user doesn't exist, create a new record
+    //       const newToken = new PushNotification({ userId: user.id , expoPushToken });
+    //       await newToken.save();
           
-        }
+    //     }
     
 
     // Send the token in the response along with the success message
