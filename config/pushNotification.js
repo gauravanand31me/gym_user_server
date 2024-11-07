@@ -1,4 +1,4 @@
-export const sendPushNotification = async (expoPushToken, message) => {
+exports.sendPushNotification = async (expoPushToken, message) => {
     const body = {
         to: expoPushToken,
         sound: 'default',
