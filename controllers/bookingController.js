@@ -304,7 +304,7 @@ exports.razorPayWebhookPost = async (req, res) => {
   const digest = shasum.digest('hex');
   const receivedSignature = req.headers['x-razorpay-signature'];
 
-  if (webhookData?.payload) {
+  if ("bookingId" in webhookData?.payload?.payment?.entity?.notes) {
     const { bookingId, request, userId } = webhookData?.payload?.payment?.entity?.notes;
     const paymentId = webhookData?.payload?.payment?.entity?.id; // Extract the payment ID
 
