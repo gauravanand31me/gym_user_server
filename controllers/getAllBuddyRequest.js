@@ -80,7 +80,7 @@ exports.sendBuddyRequest = async (req, res) => {
     
           const notificationTitle = {
             title: "New Workout Invite",
-            message: `${fromUser.full_name} has sent you a workout invitation.`, // Notification message
+            body: `${fromUser.full_name} has sent you a workout invitation.`, // Notification message
           }
     
           await sendPushNotification(notificationData?.expoPushToken, notificationTitle);

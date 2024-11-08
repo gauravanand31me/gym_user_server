@@ -63,7 +63,7 @@ exports.sendFriendRequest = async (req, res) => {
 
       const notificationTitle = {
         title: "New Friend Request",
-        message: `${fromUser.full_name} has sent you a friend request.`, // Notification message
+        body: `${fromUser.full_name} has sent you a friend request.`, // Notification message
       }
 
       await sendPushNotification(notificationData?.expoPushToken, notificationTitle);
@@ -154,7 +154,7 @@ exports.acceptRequest = async (req, res) => {
   
         const notificationTitle = {
           title: "Accepted Friend Request",
-          message: `${fromUser.full_name} has accepted your friend request.`, // Notification message
+          body: `${fromUser.full_name} has accepted your friend request.`, // Notification message
         }
   
         await sendPushNotification(notificationData?.expoPushToken, notificationTitle);

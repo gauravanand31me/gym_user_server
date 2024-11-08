@@ -341,7 +341,7 @@ exports.razorPayWebhookPost = async (req, res) => {
 
           const notificationTitle = {
             title: "Workout request accepted",
-            message: `${fromUser.full_name} has accepted your workout invitation.`, // Notification message
+            body: `${fromUser.full_name} has accepted your workout invitation.`, // Notification message
           }
 
           await sendPushNotification(notificationData?.expoPushToken, notificationTitle);
