@@ -335,6 +335,16 @@ exports.razorPayWebhookPost = async (req, res) => {
           });
 
 
+          await Notification.create({
+            userId: userId, // The user who made the original booking (to be notified)
+            message: `you have accepted the buddy request of ${fromUser.full_name}.`, // Notification message
+            type: 'acceptedSelfBuddyRequest', // Notification type
+            status: 'unread', // Unread by default
+            relatedId: request, // Related to the bookingId (buddy request)
+            profileImage: fromUser.profile_pic || "https://png.pngtree.com/png-vector/20190223/ourmid/pngtree-profile-glyph-black-icon-png-image_691589.jpg" // Use default profile pic if not available
+          });
+
+
           const notificationData = await PushNotification.findOne({
             where: { userId: relatedBooking.userId }
           });
