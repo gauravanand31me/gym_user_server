@@ -315,7 +315,7 @@ exports.razorPayWebhookPost = async (req, res) => {
 
         if (relatedBooking) {
           // Get the user who made the original booking (to notify them)
-          const toUser = await User.findByPk(relatedBooking.userId); // User who will receive the notification
+      
           const fromUser = await User.findByPk(userId); // User who is accepting the buddy request
 
           await Notification.destroy({
@@ -350,7 +350,7 @@ exports.razorPayWebhookPost = async (req, res) => {
 
 
           const buddyRequest = await BuddyRequest.findOne({
-            where: { bookingId: request } // Adjust this if you have a different key for your buddy requests
+            where: { bookingId: request, toUserId: userId } // Adjust this if you have a different key for your buddy requests
           });
 
           if (buddyRequest) {
