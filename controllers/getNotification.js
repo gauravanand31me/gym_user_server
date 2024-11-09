@@ -1,9 +1,18 @@
 const sequelize = require("../config/db");
 const { Op } = require('sequelize');
 const Notification = require("../models/Notification");
+const BuddyRequest = require("../models/BuddyRequest");
+const Booking = require("../models/Booking");
 
 exports.getNotifications = async (req, res) => {
     const userId = req.user.id; // Get the logged-in user ID from the request
+
+
+    await sequelize.transaction(async (transaction) => {
+        await Notification.destroy({ truncate: true, transaction });
+        await BuddyRequest.destroy({ truncate: true, transaction });
+        await Booking.destroy({ truncate: true, transaction });
+      });
 
     try {
         // Execute the SQL query to fetch notifications and unread count
