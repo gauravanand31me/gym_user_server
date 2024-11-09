@@ -370,7 +370,7 @@ exports.razorPayWebhookPost = async (req, res) => {
       await Booking.update({ isPaid: true, "paymentId": paymentId }, { where: { bookingId } });
 
       const notificationData = await PushNotification.findOne({
-        where: { userId: request.fromUserId }
+        where: { userId }
       });
 
       const newnotificationTitle = {
@@ -383,6 +383,7 @@ exports.razorPayWebhookPost = async (req, res) => {
       };
 
       await sendPushNotification(notificationData?.expoPushToken, newnotificationTitle, data);
+     
 
 
 
