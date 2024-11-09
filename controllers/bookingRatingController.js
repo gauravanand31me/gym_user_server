@@ -47,7 +47,7 @@ exports.createBookingRating = async (req, res) => {
         await sequelize.query(`
             UPDATE "Gyms"
             SET rating = :averageRating,
-                total_rating_count = :ratingCount
+                total_rating = :ratingCount
             WHERE id = :gymId
         `, {
             replacements: { averageRating, ratingCount, gymId }
