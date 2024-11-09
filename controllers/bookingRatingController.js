@@ -4,6 +4,7 @@ const sequelize = require('../config/db'); // Ensure you have access to your seq
 exports.createBookingRating = async (req, res) => {
     const { bookingId, gymId, rating } = req.body;
     const userId = req.user.id;
+
     try {
         // Check if a rating already exists for this bookingId and userId
         let existingRating = await BookingRating.findOne({
@@ -42,7 +43,7 @@ exports.createBookingRating = async (req, res) => {
             ratedOn: new Date()
         });
 
-        console.log("(averageRating + rating) / 2", (averageRating + rating) / 2);
+      
         // Update the total rating for the gym using a raw query
         await sequelize.query(`
             UPDATE "Gyms"
@@ -52,7 +53,7 @@ exports.createBookingRating = async (req, res) => {
         `, {
             replacements: { averageRating: (averageRating + rating) / 2, gymId } // Update to average with new rating
         });
-
+        console.log("(averageRating + rating) / 2", (averageRating + rating) / 2);
         return res.status(201).json({ message: 'Rating created successfully', rating: newRating });
 
     } catch (error) {
