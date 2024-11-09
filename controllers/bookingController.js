@@ -181,12 +181,14 @@ exports.getAllBookingsByUser = async (req, res) => {
           "Slots"."startTime" AS "slotStartTime",
           "Booking".price AS "subscriptionPrice",
           "Booking"."createdAt" AS "create",
+          "BookingRatings"."rating" AS "rating",
           COUNT("BuddyRequests".id) AS "invitedBuddyCount"  
       FROM "Booking"
       JOIN "Slots" ON "Booking"."slotId" = "Slots".id
       JOIN "Gyms" ON "Slots"."gymId" = "Gyms".id
       JOIN "Subscriptions" ON "Slots"."gymId" = "Subscriptions"."gymId" 
       LEFT JOIN "BuddyRequests" ON "Booking"."bookingId" = "BuddyRequests"."bookingId"
+      LEFT JOIN "BookingRatings" ON "Booking"."bookingId" = "BookingRatings"."bookingId"
       WHERE "Booking"."userId" = :userId
       AND "Booking"."isPaid" = true
     `;
@@ -208,7 +210,7 @@ exports.getAllBookingsByUser = async (req, res) => {
 
     query += `
       GROUP BY "Booking"."bookingId", "Booking"."userId", "Booking"."duration", "Booking"."bookingDate", "Booking"."isPaid", 
-               "Gyms".id, "Gyms".name, "Gyms".rating, "Slots"."startTime", "Subscriptions".daily
+               "Gyms".id, "Gyms".name, "Gyms".rating, "Slots"."startTime", "Subscriptions".daily, "BookingRatings"."rating"
       ORDER BY "Booking"."bookingDate" DESC;
     `;
 
