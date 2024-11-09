@@ -19,12 +19,20 @@ exports.createBookingRating = async (req, res) => {
             existingRating.rating = rating;
             existingRating.ratedOn = new Date();
             await existingRating.save();
-            return res.status(200).json({ message: 'Rating updated successfully', rating: existingRating });
+        } else {
+            // Create a new rating
+            await BookingRating.create({
+                bookingId,
+                gymId,
+                userId,
+                rating,
+                ratedOn: new Date()
+            });
         }
 
-        // Calculate the average rating for the gym using a raw query
+        // Recalculate the average rating for the gym
         const [results] = await sequelize.query(`
-            SELECT AVG(rating) AS averageRating
+            SELECT AVG(rating) AS averageRating, COUNT(rating) AS ratingCount
             FROM "BookingRatings"
             WHERE "gymId" = :gymId
         `, {
@@ -33,29 +41,22 @@ exports.createBookingRating = async (req, res) => {
         });
 
         const averageRating = results.averageRating || 0; // Default to 0 if no ratings exist
+        const ratingCount = results.ratingCount;
 
-        // Create the new rating before updating the gym's rating
-        console.log("(averageRating + rating) / 2", (averageRating + rating) / 2);
-        const newRating = await BookingRating.create({
-            bookingId,
-            gymId,
-            userId,
-            rating,
-            ratedOn: new Date()
-        });
-
-      
-        // Update the total rating for the gym using a raw query
+        // Update the gym's rating and rating count
         await sequelize.query(`
             UPDATE "Gyms"
             SET rating = :averageRating,
-                total_rating_count = total_rating_count + 1
+                total_rating_count = :ratingCount
             WHERE id = :gymId
         `, {
-            replacements: { averageRating: (averageRating + rating) / 2, gymId } // Update to average with new rating
+            replacements: { averageRating, ratingCount, gymId }
         });
-        
-        return res.status(201).json({ message: 'Rating created successfully', rating: newRating });
+
+        return res.status(200).json({
+            message: existingRating ? 'Rating updated successfully' : 'Rating created successfully',
+            rating: existingRating || { bookingId, gymId, userId, rating, ratedOn: new Date() }
+        });
 
     } catch (error) {
         console.error('Error creating/updating booking rating:', error);
