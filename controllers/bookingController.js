@@ -369,6 +369,22 @@ exports.razorPayWebhookPost = async (req, res) => {
 
       await Booking.update({ isPaid: true, "paymentId": paymentId }, { where: { bookingId } });
 
+      const notificationData = await PushNotification.findOne({
+        where: { userId: request.fromUserId }
+      });
+
+      const newnotificationTitle = {
+        title: "Booking Successful",
+        body: `Your booking is successful.`, // Notification message
+      }
+
+      const data = {
+        reloadPayment: true
+      };
+
+      await sendPushNotification(notificationData?.expoPushToken, newnotificationTitle, data);
+
+
 
 
       // Send an HTML response for successful payment

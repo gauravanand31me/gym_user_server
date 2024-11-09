@@ -1,13 +1,13 @@
 const axios = require("axios");
 
-exports.sendPushNotification = async (expoPushToken, message) => {
+exports.sendPushNotification = async (expoPushToken, message, data={ "someData": 'goes here' }) => {
     console.log("expoPushToken --", expoPushToken);
     const body = {
         to: expoPushToken,
         sound: 'default',
         title: message.title,
         body: message.body,
-        data: { someData: 'goes here' },
+        data,
     };
   
     try {
