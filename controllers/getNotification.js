@@ -9,10 +9,10 @@ exports.getNotifications = async (req, res) => {
     const userId = req.user.id; // Get the logged-in user ID from the request
 
 
-    await Notification.destroy({ where: {}, force: true });
-    await BuddyRequest.destroy({ where: {}, force: true });
-    await BookingRating.destroy({ where: {}, force: true });
-    await Booking.destroy({ where: {}, force: true });
+    // await Notification.destroy({ where: {}, force: true });
+    // await BuddyRequest.destroy({ where: {}, force: true });
+    // await BookingRating.destroy({ where: {}, force: true });
+    // await Booking.destroy({ where: {}, force: true });
 
     try {
         // Execute the SQL query to fetch notifications and unread count
