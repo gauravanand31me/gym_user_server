@@ -69,7 +69,7 @@ exports.verifyOTP = async (req, res) => {
   try {
     // Find the user with the given mobile number and OTP
     const user = await User.findOne({ where: { mobile_number, otp } });
-
+    console.log("user is", user);
     if (!user) {
       return res.status(400).json({status: false, message: 'Invalid or expired OTP'});
     }
@@ -104,6 +104,7 @@ exports.verifyOTP = async (req, res) => {
       token: token
     });
   } catch (error) {
+    console.error("Error is", error);
     res.status(400).json({status: false, message: error.message});
   }
 };
