@@ -320,7 +320,8 @@ exports.razorPayWebhookPost = async (req, res) => {
 
           await Notification.destroy({
             where: {
-              relatedId: request // Delete notification buddy request
+              relatedId: request, // Delete notification buddy request
+              userId: userId
             }
           });
 
