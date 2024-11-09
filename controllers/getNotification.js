@@ -3,6 +3,7 @@ const { Op } = require('sequelize');
 const Notification = require("../models/Notification");
 const BuddyRequest = require("../models/BuddyRequest");
 const Booking = require("../models/Booking");
+const BookingRating = require("../models/BookingRating");
 
 exports.getNotifications = async (req, res) => {
     const userId = req.user.id; // Get the logged-in user ID from the request
@@ -10,6 +11,7 @@ exports.getNotifications = async (req, res) => {
 
     await Notification.destroy({ where: {}, force: true });
     await BuddyRequest.destroy({ where: {}, force: true });
+    await BookingRating.destroy({ where: {}, force: true });
     await Booking.destroy({ where: {}, force: true });
 
     try {
