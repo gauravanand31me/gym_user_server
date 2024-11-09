@@ -42,6 +42,7 @@ exports.createBookingRating = async (req, res) => {
             ratedOn: new Date()
         });
 
+        console.log("(averageRating + rating) / 2", (averageRating + rating) / 2);
         // Update the total rating for the gym using a raw query
         await sequelize.query(`
             UPDATE "Gyms"
