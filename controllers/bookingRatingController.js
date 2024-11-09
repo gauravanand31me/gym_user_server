@@ -35,6 +35,7 @@ exports.createBookingRating = async (req, res) => {
         const averageRating = results.averageRating || 0; // Default to 0 if no ratings exist
 
         // Create the new rating before updating the gym's rating
+        console.log("(averageRating + rating) / 2", (averageRating + rating) / 2);
         const newRating = await BookingRating.create({
             bookingId,
             gymId,
@@ -53,7 +54,7 @@ exports.createBookingRating = async (req, res) => {
         `, {
             replacements: { averageRating: (averageRating + rating) / 2, gymId } // Update to average with new rating
         });
-        console.log("(averageRating + rating) / 2", (averageRating + rating) / 2);
+        
         return res.status(201).json({ message: 'Rating created successfully', rating: newRating });
 
     } catch (error) {
