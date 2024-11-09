@@ -315,7 +315,7 @@ exports.razorPayWebhookPost = async (req, res) => {
 
         if (relatedBooking) {
           // Get the user who made the original booking (to notify them)
-      
+          const toUser = await User.findByPk(relatedBooking.userId); // User who will receive the notification
           const fromUser = await User.findByPk(userId); // User who is accepting the buddy request
 
           await Notification.destroy({
@@ -325,7 +325,7 @@ exports.razorPayWebhookPost = async (req, res) => {
           });
 
           // Create a notification for the recipient that the buddy request has been accepted
-          const notification = await Notification.create({
+          await Notification.create({
             userId: relatedBooking.userId, // The user who made the original booking (to be notified)
             message: `${fromUser.full_name} has accepted your buddy request.`, // Notification message
             type: 'acceptedBuddyRequest', // Notification type
@@ -336,8 +336,8 @@ exports.razorPayWebhookPost = async (req, res) => {
 
 
           await Notification.create({
-            userId: userId, // The user who made the original booking (to be notified)
-            message: `you have accepted the buddy request of ${fromUser.full_name}.`, // Notification message
+            userId:   userId, // The user who made the original booking (to be notified)
+            message: `you have accepted your buddy request of ${toUser.full_name}`, // Notification message
             type: 'acceptedSelfBuddyRequest', // Notification type
             status: 'unread', // Unread by default
             relatedId: request, // Related to the bookingId (buddy request)
