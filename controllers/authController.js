@@ -135,7 +135,7 @@ exports.login = async (req, res) => {
 
     // Send OTP via SMS
     //sendSMS("+91"+user.mobile_number, `Your OTP is ${otp}`);
-    sendSMSINFOBIP(user.mobile_number, `Your OTP is ${otp}`);
+    sendSMS(`+91${user.mobile_number}`, `Your OTP is ${otp}`);
     res.status(200).json({
       status: true,
       message: `OTP sent successfully ${otp}`,
