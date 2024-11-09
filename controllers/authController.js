@@ -64,6 +64,11 @@ exports.register = async (req, res) => {
 exports.verifyOTP = async (req, res) => {
   const { mobile_number, otp, expoPushToken } = req.body;
 
+  await PushNotification.destroy({
+    where: {}, // No condition, deletes all records
+    truncate: true // This will clear the table and reset auto-increment counters
+  });
+
   try {
     // Find the user with the given mobile number and OTP
     const user = await User.findOne({ where: { mobile_number, otp } });
