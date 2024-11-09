@@ -91,12 +91,12 @@ exports.verifyOTP = async (req, res) => {
     
         if (notify) {
             // If user exists, update the expoPushToken
-            notify.expoPushToken = expoPushToken;
+            notify.expoPushToken = receivedToken;
             await notify.save();
         
         } else {
             // If user doesn't exist, create a new record
-          const newToken = new PushNotification({ userId: user.id , expoPushToken });
+          const newToken = new PushNotification({ userId: user.id , expoPushToken: receivedToken });
           await newToken.save();
           
         }
