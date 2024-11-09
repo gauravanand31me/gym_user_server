@@ -173,6 +173,7 @@ exports.getAllBookingsByUser = async (req, res) => {
           "Booking"."userId" AS "userId",
           "Booking"."bookingDate" AS "bookingDate",
           "Booking"."isCheckedIn" AS "visited",
+          "Booking"."duration" AS "duration",
           "Booking"."isPaid" AS "isPaid",
           "Gyms".id AS "gymId", 
           "Gyms".name AS "gymName",
@@ -206,7 +207,7 @@ exports.getAllBookingsByUser = async (req, res) => {
     }
 
     query += `
-      GROUP BY "Booking"."bookingId", "Booking"."userId", "Booking"."bookingDate", "Booking"."isPaid", 
+      GROUP BY "Booking"."bookingId", "Booking"."userId", "Booking"."duration", "Booking"."bookingDate", "Booking"."isPaid", 
                "Gyms".id, "Gyms".name, "Gyms".rating, "Slots"."startTime", "Subscriptions".daily
       ORDER BY "Booking"."bookingDate" DESC;
     `;
