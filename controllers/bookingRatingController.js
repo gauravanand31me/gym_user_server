@@ -40,10 +40,11 @@ exports.createBookingRating = async (req, res) => {
             type: sequelize.QueryTypes.SELECT
         });
 
-        console.log("results.averageRating", results.averageRating);
-        const averageRating = results.averageRating || 0; // Default to 0 if no ratings exist
-        const ratingCount = results.ratingCount || 0;
+      
+        const averageRating = results.averageRating || rating; // Default to 0 if no ratings exist
+        let ratingCount = ratingCount + 1;
 
+        console.log("results.averageRating", results.averageRating);
         // Update the gym's rating and rating count
         await sequelize.query(`
             UPDATE "Gyms"
