@@ -41,7 +41,7 @@ exports.createBookingRating = async (req, res) => {
         });
 
         const averageRating = results.averageRating || 0; // Default to 0 if no ratings exist
-        const ratingCount = results.ratingCount;
+        const ratingCount = results.ratingCount || 0;
 
         // Update the gym's rating and rating count
         await sequelize.query(`
@@ -63,6 +63,7 @@ exports.createBookingRating = async (req, res) => {
         return res.status(500).json({ message: 'An error occurred while processing your request', error });
     }
 };
+
 
 
 
