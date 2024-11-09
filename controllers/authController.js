@@ -53,7 +53,7 @@ exports.register = async (req, res) => {
     res.status(201).send({
       status: true,
       message: `User registered successfully, please verify your OTP ${otp}`,
-      otp: otp
+      otp: ""
     });
   } catch (error) {
     res.status(400).json({status: false, message: error.message});
@@ -139,7 +139,7 @@ exports.login = async (req, res) => {
     res.status(200).json({
       status: true,
       message: `OTP sent successfully ${otp}`,
-      otp
+      otp: ""
     });
   } catch (error) {
     res.status(400).json({status: false, message: error.message});
