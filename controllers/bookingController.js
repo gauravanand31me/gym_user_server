@@ -160,8 +160,6 @@ exports.inviteBuddies = async (req, res) => {
 
 
 // Fetch all Booking by User
-const { Sequelize } = require('sequelize');
-
 exports.getAllBookingsByUser = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -219,12 +217,7 @@ exports.getAllBookingsByUser = async (req, res) => {
     // Execute the booking query
     const [results] = await sequelize.query(query, {
       replacements: { userId: userId },
-      type: Sequelize.QueryTypes.SELECT
     });
-
-    // Log the query and current server time for debugging
-    console.log('Executed query:', query);
-    console.log('Current server time:', new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }));
 
     res.status(200).json({ Booking: results });
   } catch (error) {
