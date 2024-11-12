@@ -40,7 +40,7 @@ exports.createBookingRating = async (req, res) => {
             type: sequelize.QueryTypes.SELECT
         });
 
-      
+        console.log("Average ratiung received", results.averageRating);
         const averageRating = results.averageRating || rating; // Default to 0 if no ratings exist
         const ratingCount = results.ratingCount || 0;
 
