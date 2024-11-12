@@ -41,8 +41,8 @@ exports.createBookingRating = async (req, res) => {
         });
 
         console.log("Average ratiung received", results);
-        const averageRating = results.averageRating || rating; // Default to 0 if no ratings exist
-        const ratingCount = results.ratingCount || 0;
+        const averageRating = results.averagerating || rating; // Default to 0 if no ratings exist
+        const ratingCount = results.ratingcount || 0;
 
         console.log("results.averageRating", results.averageRating);
         // Update the gym's rating and rating count
