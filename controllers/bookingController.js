@@ -203,9 +203,9 @@ exports.getAllBookingsByUser = async (req, res) => {
       query += ' AND "Booking"."isCheckedIn" = true'; // Completed bookings
     } else if (selectedTab === 'noShow') {
       query += `
-        AND "Booking"."bookingDate" < (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')::date
+        AND "Booking"."bookingDate" < ((CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')::date - INTERVAL '1 day')
         AND "Booking"."isCheckedIn" = false
-      `; // No Show bookings (past dates with no check-in)
+      `; // No Show bookings (before today with no check-in)
     }
 
     query += `
@@ -225,6 +225,7 @@ exports.getAllBookingsByUser = async (req, res) => {
     res.status(500).send('Server error');
   }
 };
+
 
 
 
