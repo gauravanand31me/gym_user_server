@@ -197,7 +197,7 @@ exports.getAllBookingsByUser = async (req, res) => {
     if (selectedTab === 'Upcoming') {
       query += `
         AND "Booking"."isCheckedIn" = false
-        AND "Booking"."bookingDate" >= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')::date
+        AND "Booking"."bookingDate" >= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')::date - INTERVAL '1 day'
       `; // Only show bookings for today or later
     } else if (selectedTab === 'Completed') {
       query += ' AND "Booking"."isCheckedIn" = true'; // Completed bookings
