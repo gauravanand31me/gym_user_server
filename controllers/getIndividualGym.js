@@ -16,6 +16,8 @@ exports.fetchIndividualGyms = async (req, res) => {
     "Gyms".city, 
     "Gyms"."pinCode", 
     "Gyms".state, 
+    "Gyms".rating,
+    "Gyms".total_rating_count,
     json_agg(DISTINCT "GymImages"."imageUrl") FILTER (WHERE "GymImages".id IS NOT NULL) AS images, 
     json_agg(DISTINCT "Equipment".name) FILTER (WHERE "Equipment".id IS NOT NULL) AS equipment, 
     json_agg(DISTINCT "EquipmentList".*) FILTER (WHERE "EquipmentList".equipment_id IS NOT NULL) AS equipment_list, 
