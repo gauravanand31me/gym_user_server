@@ -142,7 +142,7 @@ exports.searchUsersByUsernameOrLocation = async (req, res) => {
 
         receivedRequests.forEach(request => {
             if (!requestStatuses[request.fromUserId]) {
-                requestStatuses[request.fromUserId] = { id: requestStatuses[request.fromUserId].id, sent: false, accepted: false };
+                requestStatuses[request.fromUserId] = { sent: false, accepted: false };
             }
             requestStatuses[request.fromUserId].received = true;
         });
@@ -153,7 +153,7 @@ exports.searchUsersByUsernameOrLocation = async (req, res) => {
             username: user.username,
             full_name: user.full_name,
             profile_pic: user.profile_pic || "https://via.placeholder.com/150",
-            friendRequestStatus: requestStatuses[user.id] || { id: requestStatuses[request.fromUserId].id, sent: false, accepted: false, received: false },
+            friendRequestStatus: requestStatuses[user.id] || { sent: false, accepted: false, received: false },
         }));
 
         // Return list of users
