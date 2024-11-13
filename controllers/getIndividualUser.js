@@ -64,7 +64,7 @@ exports.searchUsersByUsernameOrLocation = async (req, res) => {
                     [Op.and]: [
                         {
                             [Op.or]: [
-                                { username: { [Op.iLike]: username } },
+                                { username: { [Op.iLike]: `%${username}%` } },
                                 { full_name: { [Op.iLike]: `%${username}%` } }
                             ]
                         },
@@ -112,7 +112,7 @@ exports.searchUsersByUsernameOrLocation = async (req, res) => {
 
         const userIds = users.map(user => user.id);
 
-        // Find all friend requests sent by the logged-in user to the found users
+        // Find friend requests sent by the logged-in user to the found users
         const sentRequests = await FriendRequest.findAll({
             where: {
                 fromUserId: loggedInUserId,
@@ -120,14 +120,31 @@ exports.searchUsersByUsernameOrLocation = async (req, res) => {
             }
         });
 
-        // Map friend request statuses by user ID
+        // Find friend requests received by the logged-in user from the found users
+        const receivedRequests = await FriendRequest.findAll({
+            where: {
+                fromUserId: { [Op.in]: userIds },
+                toUserId: loggedInUserId,
+            }
+        });
+
+        // Map sent and received friend request statuses by user ID
         const requestStatuses = {};
+        
         sentRequests.forEach(request => {
             requestStatuses[request.toUserId] = {
                 id: request.id,
                 sent: request.status === 'pending',
                 accepted: request.status === 'accepted',
+                received: false
             };
+        });
+
+        receivedRequests.forEach(request => {
+            if (!requestStatuses[request.fromUserId]) {
+                requestStatuses[request.fromUserId] = { sent: false, accepted: false };
+            }
+            requestStatuses[request.fromUserId].received = true;
         });
 
         // Prepare user data with friend request status
@@ -136,7 +153,7 @@ exports.searchUsersByUsernameOrLocation = async (req, res) => {
             username: user.username,
             full_name: user.full_name,
             profile_pic: user.profile_pic || "https://via.placeholder.com/150",
-            friendRequestStatus: requestStatuses[user.id] || { sent: false, accepted: false },
+            friendRequestStatus: requestStatuses[user.id] || { sent: false, accepted: false, received: false },
         }));
 
         // Return list of users
@@ -146,6 +163,7 @@ exports.searchUsersByUsernameOrLocation = async (req, res) => {
         res.status(500).send('Server error');
     }
 };
+
 
 
 
@@ -163,7 +181,7 @@ exports.uploadProfileImage = async (req, res) => {
             { profile_pic: profilePicUrl },
             { where: { id: userId } }
         );
-
+        
         res.status(200).json({ message: 'Profile image uploaded successfully', profile_pic: profilePicUrl });
     } catch (error) {
         console.error('Error uploading profile image:', error);
