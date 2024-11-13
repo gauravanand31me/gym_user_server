@@ -142,7 +142,7 @@ exports.searchUsersByUsernameOrLocation = async (req, res) => {
 
         receivedRequests.forEach(request => {
             if (!requestStatuses[request.fromUserId]) {
-                requestStatuses[request.fromUserId] = { sent: false, accepted: false };
+                requestStatuses[request.fromUserId] = { id: request.id, sent: false, accepted: false };
             }
             requestStatuses[request.fromUserId].received = true;
         });
