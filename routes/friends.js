@@ -7,5 +7,5 @@ router.post('/add', authMiddleware, sendFriendRequest);
 router.post('/accept', authMiddleware, acceptRequest);
 router.get('/get', authMiddleware, getFriendRequests);
 router.post('/reject', authMiddleware, rejectRequest);
-router.post('/getindv', authMiddleware, getFriendRequestById);
+router.get('/getindv', authMiddleware, getFriendRequestById);
 module.exports = router;
