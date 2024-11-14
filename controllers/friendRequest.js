@@ -239,29 +239,29 @@ exports.rejectRequest = async (req, res) => {
 };
 
 exports.getFriendRequestById = async (req, res) => {
-  // try {
-  //   const {requestId} = req.query;
-  //   const existingRequest = await FriendRequest.findOne({
-  //     where: {
-  //       id: requestId
-  //     }
-  //   });
-
-  //   res.status(200).json(existingRequest);
-  // } catch (e) {
-  //   res.status(500).json({status: false});
-  // }
-
   try {
-    await Notification.destroy({
-      where: {}, // Deletes all records without any condition
-      truncate: true // This will reset the auto-increment counter as well
+    const {requestId} = req.query;
+    const existingRequest = await FriendRequest.findOne({
+      where: {
+        id: requestId
+      }
     });
 
-    res.status(200).json({ status: true, message: "All notifications deleted successfully." });
+    res.status(200).json(existingRequest);
   } catch (e) {
-    res.status(500).json({ status: false, message: "Failed to delete notifications." });
+    res.status(500).json({status: false});
   }
+
+  // try {
+  //   await Notification.destroy({
+  //     where: {}, // Deletes all records without any condition
+  //     truncate: true // This will reset the auto-increment counter as well
+  //   });
+
+  //   res.status(200).json({ status: true, message: "All notifications deleted successfully." });
+  // } catch (e) {
+  //   res.status(500).json({ status: false, message: "Failed to delete notifications." });
+  // }
   
 }
 
