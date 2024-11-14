@@ -238,6 +238,22 @@ exports.rejectRequest = async (req, res) => {
   }
 };
 
+exports.getFriendRequestById = async (req, res) => {
+  try {
+    const {requestId} = req.query;
+    const existingRequest = await FriendRequest.findOne({
+      where: {
+        id: requestId
+      }
+    });
+
+    res.status(200).json(existingRequest);
+  } catch (e) {
+    res.status(500).json({status: false});
+  }
+  
+}
+
 
 
 
