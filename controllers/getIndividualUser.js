@@ -284,6 +284,22 @@ exports.updateFullName = async (req, res) => {
     }
 };
 
+exports.deleteProfileImage = async (req, res) => {
+    const userId = req.user.id; // Assumes user is authenticated and user ID is available in req.user
+    try {
+    await User.update(
+        { profile_pic: "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png" },
+        { where: { id: userId } }
+    );
+        res.status(200).json({ message: 'Full name updated successfully', profile_pic: "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png" });
+    } catch (err) {
+        res.status(500).json({ message: 'Server error' });
+    }
+    
+
+
+}
+
 
 
 
