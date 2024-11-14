@@ -192,7 +192,7 @@ exports.getAllBookingsByUser = async (req, res) => {
       WHERE "Booking"."userId" = :userId
       AND "Booking"."isPaid" = true
     `;
-
+    console.log("Selected TGab", selectedTab);
     // Conditional filtering based on selectedTab
     if (selectedTab === 'Upcoming') {
       query += `
