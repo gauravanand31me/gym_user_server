@@ -197,15 +197,15 @@ exports.getAllBookingsByUser = async (req, res) => {
     if (selectedTab === 'Upcoming') {
       query += `
         AND "Booking"."isCheckedIn" = false
-        AND ("Booking"."bookingDate" + "Slots"."startTime" * interval '1 minute') > (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')
+        AND "Booking"."bookingDate" > (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')
       `; // Only show future bookings or bookings for today
     } else if (selectedTab === 'Completed') {
       query += ' AND "Booking"."isCheckedIn" = true'; // Completed bookings
     } else if (selectedTab === 'noShow') {
       query += `
-        AND ("Booking"."bookingDate" + "Slots"."startTime" * interval '1 minute' + "Booking"."duration" * interval '1 minute') <= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')
+        AND "Booking"."bookingDate" <= ((CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')::date)
         AND "Booking"."isCheckedIn" = false
-      `; // Only bookings in the past with no check-in
+      `; // Only bookings from exactly one day ago with no check-in
     }
 
     query += `
@@ -225,7 +225,6 @@ exports.getAllBookingsByUser = async (req, res) => {
     res.status(500).send('Server error');
   }
 };
-
 
 
 
