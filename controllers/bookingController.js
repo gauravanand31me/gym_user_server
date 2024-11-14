@@ -116,7 +116,8 @@ exports.declineBuddyRequest = async (req, res) => {
           type: 'declinedBuddyRequest', // Notification type
           status: 'unread', // Unread by default
           relatedId: requestId, // Related to the bookingId (buddy request)
-          profileImage: fromUser.profile_pic || "https://png.pngtree.com/png-vector/20190223/ourmid/pngtree-profile-glyph-black-icon-png-image_691589.jpg" // Use default profile pic if not available
+          profileImage: fromUser.profile_pic || "https://png.pngtree.com/png-vector/20190223/ourmid/pngtree-profile-glyph-black-icon-png-image_691589.jpg", // Use default profile pic if not available
+          forUserId: req.user.id
         });
 
 
@@ -338,7 +339,8 @@ exports.razorPayWebhookPost = async (req, res) => {
             type: 'acceptedBuddyRequest', // Notification type
             status: 'unread', // Unread by default
             relatedId: request, // Related to the bookingId (buddy request)
-            profileImage: fromUser.profile_pic || "https://png.pngtree.com/png-vector/20190223/ourmid/pngtree-profile-glyph-black-icon-png-image_691589.jpg" // Use default profile pic if not available
+            profileImage: fromUser.profile_pic || "https://png.pngtree.com/png-vector/20190223/ourmid/pngtree-profile-glyph-black-icon-png-image_691589.jpg", // Use default profile pic if not available
+            forUserId: req.user.id
           });
 
 
@@ -348,7 +350,8 @@ exports.razorPayWebhookPost = async (req, res) => {
             type: 'acceptedSelfBuddyRequest', // Notification type
             status: 'unread', // Unread by default
             relatedId: request, // Related to the bookingId (buddy request)
-            profileImage: fromUser.profile_pic || "https://png.pngtree.com/png-vector/20190223/ourmid/pngtree-profile-glyph-black-icon-png-image_691589.jpg" // Use default profile pic if not available
+            profileImage: fromUser.profile_pic || "https://png.pngtree.com/png-vector/20190223/ourmid/pngtree-profile-glyph-black-icon-png-image_691589.jpg", // Use default profile pic if not available
+            forUserId: req.user.id
           });
 
 

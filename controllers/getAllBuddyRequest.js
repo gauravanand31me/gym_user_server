@@ -71,7 +71,8 @@ exports.sendBuddyRequest = async (req, res) => {
             type: 'workoutRequestInvite', // Notification type
             status: 'unread', // Set status to unread initially
             relatedId: bookingId, // Store the booking ID for reference (or invite request ID)
-            profileImage: fromUser.profile_pic || "https://png.pngtree.com/png-vector/20190223/ourmid/pngtree-profile-glyph-black-icon-png-image_691589.jpg"
+            profileImage: fromUser.profile_pic || "https://png.pngtree.com/png-vector/20190223/ourmid/pngtree-profile-glyph-black-icon-png-image_691589.jpg",
+            forUserId: req.user.id
         });
 
         const notificationData = await PushNotification.findOne({

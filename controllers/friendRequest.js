@@ -54,7 +54,8 @@ exports.sendFriendRequest = async (req, res) => {
         type: 'friendRequest', // Type of notification
         status: 'unread', // Notification status (you could use 'unread' as default)
         relatedId: friendRequest.id, // Store related friend request ID
-        profileImage: fromUser.profile_pic || "https://png.pngtree.com/png-vector/20190223/ourmid/pngtree-profile-glyph-black-icon-png-image_691589.jpg"
+        profileImage: fromUser.profile_pic || "https://png.pngtree.com/png-vector/20190223/ourmid/pngtree-profile-glyph-black-icon-png-image_691589.jpg",
+        forUserId: req.user.id
       });
 
       const notificationData = await PushNotification.findOne({
@@ -144,8 +145,9 @@ exports.acceptRequest = async (req, res) => {
             type: 'friendRequestAcceptance', // Type of notification
             status: 'unread', // Notification status
             relatedId: requestId, // Store related friend request ID
-            profileImage: fromUser.profile_pic || "https://png.pngtree.com/png-vector/20190223/ourmid/pngtree-profile-glyph-black-icon-png-image_691589.jpg"
-        });
+            profileImage: fromUser.profile_pic || "https://png.pngtree.com/png-vector/20190223/ourmid/pngtree-profile-glyph-black-icon-png-image_691589.jpg",
+            forUserId: req.user.id
+          });
 
 
         const notificationData = await PushNotification.findOne({
@@ -239,29 +241,29 @@ exports.rejectRequest = async (req, res) => {
 };
 
 exports.getFriendRequestById = async (req, res) => {
-  try {
-    const {requestId} = req.query;
-    const existingRequest = await FriendRequest.findOne({
-      where: {
-        id: requestId
-      }
-    });
-
-    res.status(200).json(existingRequest);
-  } catch (e) {
-    res.status(500).json({status: false});
-  }
-
   // try {
-  //   await Notification.destroy({
-  //     where: {}, // Deletes all records without any condition
-  //     truncate: true // This will reset the auto-increment counter as well
+  //   const {requestId} = req.query;
+  //   const existingRequest = await FriendRequest.findOne({
+  //     where: {
+  //       id: requestId
+  //     }
   //   });
 
-  //   res.status(200).json({ status: true, message: "All notifications deleted successfully." });
+  //   res.status(200).json(existingRequest);
   // } catch (e) {
-  //   res.status(500).json({ status: false, message: "Failed to delete notifications." });
+  //   res.status(500).json({status: false});
   // }
+
+  try {
+    await Notification.destroy({
+      where: {}, // Deletes all records without any condition
+      truncate: true // This will reset the auto-increment counter as well
+    });
+
+    res.status(200).json({ status: true, message: "All notifications deleted successfully." });
+  } catch (e) {
+    res.status(500).json({ status: false, message: "Failed to delete notifications." });
+  }
   
 }
 

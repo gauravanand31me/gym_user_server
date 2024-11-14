@@ -42,6 +42,10 @@ const User = require('./User');
       type: DataTypes.UUID,
       allowNull: true, // Can be null, for related entities like FriendRequest, Post, etc.
     },
+    forUserId: {
+      type: DataTypes.UUID,
+      allowNull: true, // Can be null, for related entities like FriendRequest, Post, etc.
+    },
     createdAt: {
       type: DataTypes.DATE,
       allowNull: false,
