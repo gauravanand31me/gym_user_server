@@ -192,7 +192,7 @@ exports.getAllBookingsByUser = async (req, res) => {
       WHERE "Booking"."userId" = :userId
       AND "Booking"."isPaid" = true
     `;
-    console.log("Selected TGab", selectedTab);
+
     // Conditional filtering based on selectedTab
     if (selectedTab === 'Upcoming') {
       query += `
@@ -201,7 +201,7 @@ exports.getAllBookingsByUser = async (req, res) => {
       `;
     } else if (selectedTab === 'Completed') {
       query += ' AND "Booking"."isCheckedIn" = true';
-    } else if (selectedTab === 'noShow') {
+    } else if (selectedTab === 'No Show') {
       query += `
         AND ("Booking"."bookingDate"::date + "Slots"."startTime"::time + ("Booking"."duration" || ' minutes')::interval) <= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')
         AND "Booking"."isCheckedIn" = false
