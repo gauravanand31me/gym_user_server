@@ -196,14 +196,14 @@ exports.getAllBookingsByUser = async (req, res) => {
     // Conditional filtering based on selectedTab
     if (selectedTab === 'Upcoming') {
       query += `
-        AND ("Booking"."bookingDate"::date + "Slots"."startTime"::time + ("Slots"."duration" || ' minutes')::interval) > (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')
+        AND ("Booking"."bookingDate"::date + "Slots"."startTime"::time + ("Booking"."duration" || ' minutes')::interval) > (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')
         AND "Booking"."isCheckedIn" = false
       `;
     } else if (selectedTab === 'Completed') {
       query += ' AND "Booking"."isCheckedIn" = true';
     } else if (selectedTab === 'noShow') {
       query += `
-        AND ("Booking"."bookingDate"::date + "Slots"."startTime"::time + ("Slots"."duration" || ' minutes')::interval) <= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')
+        AND ("Booking"."bookingDate"::date + "Slots"."startTime"::time + ("Booking"."duration" || ' minutes')::interval) <= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')
         AND "Booking"."isCheckedIn" = false
       `;
     }
