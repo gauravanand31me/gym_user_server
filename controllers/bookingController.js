@@ -131,7 +131,7 @@ exports.declineBuddyRequest = async (req, res) => {
       }
       res.status(200).json({
         status: true,
-        message: 'Buddy request has been declined',
+        message: 'workout request has been declined',
       });
     }
   } catch (error) {
@@ -334,7 +334,7 @@ exports.razorPayWebhookPost = async (req, res) => {
           // Create a notification for the recipient that the buddy request has been accepted
           await Notification.create({
             userId: relatedBooking.userId, // The user who made the original booking (to be notified)
-            message: `${fromUser.full_name} has accepted your buddy request.`, // Notification message
+            message: `${fromUser.full_name} has accepted your workout invite.`, // Notification message
             type: 'acceptedBuddyRequest', // Notification type
             status: 'unread', // Unread by default
             relatedId: request, // Related to the bookingId (buddy request)
@@ -344,7 +344,7 @@ exports.razorPayWebhookPost = async (req, res) => {
 
           await Notification.create({
             userId:   userId, // The user who made the original booking (to be notified)
-            message: `you have accepted your buddy request of ${toUser.full_name}`, // Notification message
+            message: `you have accepted workout invite of ${toUser.full_name}`, // Notification message
             type: 'acceptedSelfBuddyRequest', // Notification type
             status: 'unread', // Unread by default
             relatedId: request, // Related to the bookingId (buddy request)
