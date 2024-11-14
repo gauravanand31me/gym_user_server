@@ -196,16 +196,16 @@ exports.getAllBookingsByUser = async (req, res) => {
     // Conditional filtering based on selectedTab
     if (selectedTab === 'Upcoming') {
       query += `
+        AND ("Booking"."bookingDate"::date + "Slots"."startTime"::time + ("Slots"."duration" || ' minutes')::interval) > (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')
         AND "Booking"."isCheckedIn" = false
-        AND "Booking"."bookingDate" > (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')
-      `; // Only show future bookings or bookings for today
+      `;
     } else if (selectedTab === 'Completed') {
-      query += ' AND "Booking"."isCheckedIn" = true'; // Completed bookings
+      query += ' AND "Booking"."isCheckedIn" = true';
     } else if (selectedTab === 'noShow') {
       query += `
-        AND "Booking"."bookingDate" <= ((CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')::date)
+        AND ("Booking"."bookingDate"::date + "Slots"."startTime"::time + ("Slots"."duration" || ' minutes')::interval) <= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')
         AND "Booking"."isCheckedIn" = false
-      `; // Only bookings from exactly one day ago with no check-in
+      `;
     }
 
     query += `
