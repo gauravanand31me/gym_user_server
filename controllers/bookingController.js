@@ -340,7 +340,7 @@ exports.razorPayWebhookPost = async (req, res) => {
             status: 'unread', // Unread by default
             relatedId: request, // Related to the bookingId (buddy request)
             profileImage: fromUser.profile_pic || "https://png.pngtree.com/png-vector/20190223/ourmid/pngtree-profile-glyph-black-icon-png-image_691589.jpg", // Use default profile pic if not available
-            forUserId: toUser.id
+            forUserId: fromUser.id
           });
 
 
@@ -351,7 +351,7 @@ exports.razorPayWebhookPost = async (req, res) => {
             status: 'unread', // Unread by default
             relatedId: request, // Related to the bookingId (buddy request)
             profileImage: fromUser.profile_pic || "https://png.pngtree.com/png-vector/20190223/ourmid/pngtree-profile-glyph-black-icon-png-image_691589.jpg", // Use default profile pic if not available
-            forUserId: req.user.id
+            forUserId: fromUser.id
           });
 
 
