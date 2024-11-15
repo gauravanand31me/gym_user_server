@@ -72,39 +72,7 @@ exports.searchUsersByUsernameOrLocation = async (req, res) => {
                     ]
                 }
             });
-        } else {
-            // Search nearby users based on latitude and longitude, excluding the logged-in user
-            const nearbyUsers = await UserAddress.findAll({
-                where: {
-                    is_selected: true,
-                    user_id: { [Op.ne]: loggedInUserId },
-                },
-                include: [{
-                    model: User,
-                    required: true,
-                }],
-            });
-
-            // Calculate distances for nearby users
-            const usersWithDistances = nearbyUsers.map(userAddress => {
-                const distance = getDistance(
-                    parseFloat(latitude),
-                    parseFloat(longitude),
-                    userAddress.lat,
-                    userAddress.long
-                );
-                return {
-                    user: userAddress.User,
-                    distance,
-                };
-            });
-
-            // Sort users by distance
-            usersWithDistances.sort((a, b) => a.distance - b.distance);
-
-            // Map users excluding the logged-in user
-            users = usersWithDistances.map(u => u.user);
-        }
+        } 
 
         if (!users.length) {
             return res.status(404).json({ message: "No users found" });
