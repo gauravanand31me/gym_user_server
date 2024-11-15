@@ -1,4 +1,5 @@
 const sequelize = require("../config/db");
+const PushNotification = require("../models/PushNotification");
 
 // Fetch all information about a specific gym by gymId
 exports.fetchIndividualGyms = async (req, res) => {
@@ -47,3 +48,22 @@ exports.fetchIndividualGyms = async (req, res) => {
     res.status(500).json({ status: false, message: "Internal server error" });
   }
 };
+
+exports.storePushToken = async (req, res) => {
+    const receivedToken = req.body.expoPushToken;
+    const notify = await PushNotification.findOne({ where: { userId: req.user.id } })
+    
+        if (notify) {
+            // If user exists, update the expoPushToken
+            notify.expoPushToken = receivedToken;
+            await notify.save();
+        
+        } else {
+            // If user doesn't exist, create a new record
+          const newToken = new PushNotification({ userId: req.user.id , expoPushToken: receivedToken });
+          await newToken.save();
+          
+        }
+
+        return res.status(200).json({status: true});
+}
