@@ -64,8 +64,8 @@ exports.searchUsersByUsernameOrLocation = async (req, res) => {
                     [Op.and]: [
                         {
                             [Op.or]: [
-                                { username: { [Op.iLike]: `%${username}%` } },
-                                { full_name: { [Op.iLike]: `%${username}%` } }
+                                { username: { [Op.iLike]: `%${username}%` } }
+                                
                             ]
                         },
                         { id: { [Op.ne]: loggedInUserId } } // Exclude logged-in user
