@@ -73,7 +73,7 @@ exports.searchUsersByUsernameOrLocation = async (req, res) => {
                 }
             });
         } 
-
+        console.log("users received", users);
         if (!users.length) {
             return res.status(404).json({ message: "No users found" });
         }
