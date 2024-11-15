@@ -175,26 +175,28 @@ exports.getFriendRequests = async (req, res) => {
     const userId = req.user.id;
 
     try {
-        const requests = await sequelize.query(
+        // Fetch pending requests
+       
+
+        // Fetch accepted requests
+        const acceptedRequests = await sequelize.query(
             `SELECT fr.*, u.id as "fromUserId", u.full_name, u.profile_pic 
              FROM "FriendRequests" fr
              JOIN "Users" u ON fr."fromUserId" = u.id
-             WHERE fr."toUserId" = :userId AND (fr.status = 'accepted')`,
+             WHERE fr."toUserId" = :userId AND fr.status = 'accepted'`,
             {
                 replacements: { userId },
-                type: sequelize.QueryTypes.SELECT
+                type: sequelize.QueryTypes.SELECT,
             }
         );
 
-        const pendingRequests = requests.filter(req => req.status === 'pending');
-        const acceptedRequests = requests.filter(req => req.status === 'accepted');
-
-        res.status(200).json({ pending: pendingRequests, accepted: acceptedRequests });
+        res.status(200).json({ pending: [], accepted: acceptedRequests });
     } catch (error) {
         console.error('Error fetching friend requests:', error);
         res.status(500).send('Server error');
     }
 };
+
 
 
 
