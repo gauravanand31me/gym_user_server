@@ -116,6 +116,7 @@ exports.verifyOTP = async (req, res) => {
 
 
 exports.login = async (req, res) => {
+
   const { identifier } = req.body;
 
   try {
@@ -128,35 +129,24 @@ exports.login = async (req, res) => {
       }
     });
 
-    if (!user) return res.status(404).json({ status: false, message: "User not found" });
+    if (!user) return res.status(404).json({status: false, message: "User not found"});
 
-    // Check for the specific mobile number
-    if (identifier === "7985044034") {
-      // Hardcode OTP as 123456
-      const otp = "123456";
-      await user.update({ otp, otpExpires: new Date(Date.now() + 3600000) }); // 1 hour expiry
-      
-      return res.status(200).json({
-        status: true,
-        message: `Test OTP sent successfully ${otp}`,
-        otp: "" // Avoid exposing OTP in response
-      });
-    }
-
-    // Generate a unique OTP for other users
+    // Generate a unique OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     await user.update({ otp, otpExpires: new Date(Date.now() + 3600000) }); // 1 hour expiry
 
     // Send OTP via SMS
+    //sendSMS("+91"+user.mobile_number, `Your OTP is ${otp}`);
     sendSMS(`+91${user.mobile_number}`, `Your OTP is ${otp}`);
     res.status(200).json({
       status: true,
-      message: "OTP sent successfully",
-      otp: "" // Avoid exposing OTP in response
+      message: `OTP sent successfully ${otp}`,
+      otp: ""
     });
   } catch (error) {
-    res.status(400).json({ status: false, message: error.message });
+    res.status(400).json({status: false, message: error.message});
   }
-};
+
+}
 
 
