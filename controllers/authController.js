@@ -66,31 +66,15 @@ exports.verifyOTP = async (req, res) => {
 
   await PushNotification.destroy({
     where: {}, // No condition, deletes all records
-    truncate: true // Clears the table and resets auto-increment counters
+    truncate: true // This will clear the table and reset auto-increment counters
   });
 
   try {
-    // Predefined test numbers and OTPs
-    const testNumbers = {
-      "7985044034": "123456",
-      "9999999999": "000000"
-    };
-
-    // Check if the mobile number is a test number
-    if (testNumbers[mobile_number] && testNumbers[mobile_number] === otp) {
-      const token = jwt.sign({ id: mobile_number }, JWT_SECRET, { expiresIn: '20d' });
-      return res.json({
-        status: true,
-        message: 'Test OTP verified successfully',
-        token: token
-      });
-    }
-
     // Find the user with the given mobile number and OTP
     const user = await User.findOne({ where: { mobile_number, otp } });
     console.log("user is", user);
     if (!user) {
-      return res.status(400).json({ status: false, message: 'Invalid or expired OTP' });
+      return res.status(400).json({status: false, message: 'Invalid or expired OTP'});
     }
 
     // Mark the user as verified
@@ -103,17 +87,20 @@ exports.verifyOTP = async (req, res) => {
 
     const receivedToken = expoPushToken || "NA";
 
-    const notify = await PushNotification.findOne({ where: { userId: user.id } });
+    const notify = await PushNotification.findOne({ where: { userId: user.id } })
     
-    if (notify) {
-      // If user exists, update the expoPushToken
-      notify.expoPushToken = receivedToken;
-      await notify.save();
-    } else {
-      // If user doesn't exist, create a new record
-      const newToken = new PushNotification({ userId: user.id, expoPushToken: receivedToken });
-      await newToken.save();
-    }
+        if (notify) {
+            // If user exists, update the expoPushToken
+            notify.expoPushToken = receivedToken;
+            await notify.save();
+        
+        } else {
+            // If user doesn't exist, create a new record
+          const newToken = new PushNotification({ userId: user.id , expoPushToken: receivedToken });
+          await newToken.save();
+          
+        }
+    
 
     // Send the token in the response along with the success message
     res.json({
@@ -123,14 +110,12 @@ exports.verifyOTP = async (req, res) => {
     });
   } catch (error) {
     console.error("Error is", error);
-    res.status(400).json({ status: false, message: error.message });
+    res.status(400).json({status: false, message: error.message});
   }
 };
 
 
-
 exports.login = async (req, res) => {
-
   const { identifier } = req.body;
 
   try {
@@ -143,24 +128,35 @@ exports.login = async (req, res) => {
       }
     });
 
-    if (!user) return res.status(404).json({status: false, message: "User not found"});
+    if (!user) return res.status(404).json({ status: false, message: "User not found" });
 
-    // Generate a unique OTP
+    // Check for the specific mobile number
+    if (identifier === "7985044034") {
+      // Hardcode OTP as 123456
+      const otp = "123456";
+      await user.update({ otp, otpExpires: new Date(Date.now() + 3600000) }); // 1 hour expiry
+      
+      return res.status(200).json({
+        status: true,
+        message: `Test OTP sent successfully ${otp}`,
+        otp: "" // Avoid exposing OTP in response
+      });
+    }
+
+    // Generate a unique OTP for other users
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     await user.update({ otp, otpExpires: new Date(Date.now() + 3600000) }); // 1 hour expiry
 
     // Send OTP via SMS
-    //sendSMS("+91"+user.mobile_number, `Your OTP is ${otp}`);
     sendSMS(`+91${user.mobile_number}`, `Your OTP is ${otp}`);
     res.status(200).json({
       status: true,
-      message: `OTP sent successfully ${otp}`,
-      otp: ""
+      message: "OTP sent successfully",
+      otp: "" // Avoid exposing OTP in response
     });
   } catch (error) {
-    res.status(400).json({status: false, message: error.message});
+    res.status(400).json({ status: false, message: error.message });
   }
-
-}
+};
 
 
