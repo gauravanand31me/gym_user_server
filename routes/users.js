@@ -13,5 +13,5 @@ router.post('/uploadImage', authMiddleware, upload.single('postImage'), uploadPo
 router.get('/getImage/:userId', authMiddleware, getUserImage);
 router.put('/update-fullname', authMiddleware, updateFullName);
 router.put('/delete-profileimage', authMiddleware, deleteProfileImage);
-router.delete('/deleteuseraccount', authMiddleware, deleteProfile);
+router.delete('/deleteaccount', authMiddleware, deleteProfile);
 module.exports = router;
