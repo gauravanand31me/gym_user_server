@@ -279,7 +279,7 @@ exports.deleteProfile = async (req, res) => {
       // Wrap everything in a transaction for consistency
       await sequelize.transaction(async (transaction) => {
         // Delete bookings
-        await Booking.destroy({ where: { userId: id }, transaction });
+       
   
         // Delete booking ratings
         await BookingRating.destroy({ where: { userId: id }, transaction });
@@ -297,7 +297,7 @@ exports.deleteProfile = async (req, res) => {
   
         // Delete push notifications
         await PushNotification.destroy({ where: { userId: id }, transaction });
-  
+        await Booking.destroy({ where: { userId: id }, transaction });
         // Finally, delete the user
         await User.destroy({ where: { id }, transaction });
       });
