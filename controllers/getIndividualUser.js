@@ -10,6 +10,7 @@ const Booking = require('../models/Booking');
 const BookingRating = require('../models/BookingRating');
 const BuddyRequest = require('../models/BuddyRequest');
 const PushNotification = require('../models/PushNotification');
+const Notification = require('../models/Notification');
 
 const getDistance = (lat1, lon1, lat2, lon2) => {
     const R = 6371; // Radius of the Earth in kilometers
