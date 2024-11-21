@@ -66,15 +66,31 @@ exports.verifyOTP = async (req, res) => {
 
   await PushNotification.destroy({
     where: {}, // No condition, deletes all records
-    truncate: true // This will clear the table and reset auto-increment counters
+    truncate: true // Clears the table and resets auto-increment counters
   });
 
   try {
+    // Predefined test numbers and OTPs
+    const testNumbers = {
+      "7985044034": "123456",
+      "9999999999": "000000"
+    };
+
+    // Check if the mobile number is a test number
+    if (testNumbers[mobile_number] && testNumbers[mobile_number] === otp) {
+      const token = jwt.sign({ id: mobile_number }, JWT_SECRET, { expiresIn: '20d' });
+      return res.json({
+        status: true,
+        message: 'Test OTP verified successfully',
+        token: token
+      });
+    }
+
     // Find the user with the given mobile number and OTP
     const user = await User.findOne({ where: { mobile_number, otp } });
     console.log("user is", user);
     if (!user) {
-      return res.status(400).json({status: false, message: 'Invalid or expired OTP'});
+      return res.status(400).json({ status: false, message: 'Invalid or expired OTP' });
     }
 
     // Mark the user as verified
@@ -87,20 +103,17 @@ exports.verifyOTP = async (req, res) => {
 
     const receivedToken = expoPushToken || "NA";
 
-    const notify = await PushNotification.findOne({ where: { userId: user.id } })
+    const notify = await PushNotification.findOne({ where: { userId: user.id } });
     
-        if (notify) {
-            // If user exists, update the expoPushToken
-            notify.expoPushToken = receivedToken;
-            await notify.save();
-        
-        } else {
-            // If user doesn't exist, create a new record
-          const newToken = new PushNotification({ userId: user.id , expoPushToken: receivedToken });
-          await newToken.save();
-          
-        }
-    
+    if (notify) {
+      // If user exists, update the expoPushToken
+      notify.expoPushToken = receivedToken;
+      await notify.save();
+    } else {
+      // If user doesn't exist, create a new record
+      const newToken = new PushNotification({ userId: user.id, expoPushToken: receivedToken });
+      await newToken.save();
+    }
 
     // Send the token in the response along with the success message
     res.json({
@@ -110,9 +123,10 @@ exports.verifyOTP = async (req, res) => {
     });
   } catch (error) {
     console.error("Error is", error);
-    res.status(400).json({status: false, message: error.message});
+    res.status(400).json({ status: false, message: error.message });
   }
 };
+
 
 
 exports.login = async (req, res) => {
