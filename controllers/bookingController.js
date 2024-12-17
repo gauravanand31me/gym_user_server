@@ -240,6 +240,8 @@ exports.createOrder = async (req, res) => {
   const { amount, bookingId, requestId } = req.body; // Get amount from frontend
   const userId = req.user.id;  // Assuming the user is authenticated and userId is available
 
+  const user = await User.findByPk(req.user.id); // User who is deleting the buddy request
+
   // Generate a custom bookingId
 
 
@@ -268,7 +270,11 @@ exports.createOrder = async (req, res) => {
     const paymentLinkResponse = await razorpay.paymentLink.create({
       amount: amount * 100, // Amount in paise
       currency: 'INR',
-      notes
+      notes,
+      customer: {
+        contact: user.mobile_number,
+        name: user.full_name
+      }
     });
 
 
