@@ -283,7 +283,9 @@ exports.createOrder = async (req, res) => {
             contact: user.mobile_number, // Explicitly prefill mobile number
           }
         }
-      }
+      },
+      callback_url: 'yupluck://payment-success', // Deep link back to your app
+      callback_method: 'get' // HTTP method to use for callback (get or post)
     });
 
 
