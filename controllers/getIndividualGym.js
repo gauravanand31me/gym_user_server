@@ -50,7 +50,7 @@ exports.fetchIndividualGyms = async (req, res) => {
 };
 
 exports.storePushToken = async (req, res) => {
-    const receivedToken = req.body.expoPushToken;
+    const receivedToken = req.body.expoPushToken || "NA";
     const notify = await PushNotification.findOne({ where: { userId: req.user.id } })
     
         if (notify) {
