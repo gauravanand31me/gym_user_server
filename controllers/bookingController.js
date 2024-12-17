@@ -266,6 +266,9 @@ exports.createOrder = async (req, res) => {
     // Step 1: Create Razorpay order
     const orderResponse = await razorpay.orders.create(options);
 
+    console.log("user.mobile_number", user.mobile_number);
+    console.log("user.full_name", user.full_name);
+
     // Step 2: Create Razorpay payment link
     const paymentLinkResponse = await razorpay.paymentLink.create({
       amount: amount * 100, // Amount in paise
