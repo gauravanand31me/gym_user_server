@@ -5,6 +5,12 @@ const sequelize = new Sequelize(process.env.DB_FITZOO_DATABASE, process.env.DB_F
   host: process.env.DB_FITZOO_HOST,
   dialect: process.env.DB_FITZOO_DIALECT,
   logging: false,
+  dialectOptions: {
+    ssl: {
+      require: true, // This will help you. But you will see nwe error
+      rejectUnauthorized: false // This line will fix new error
+    }
+  },
 });
 
 sequelize.authenticate()
