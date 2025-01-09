@@ -97,9 +97,9 @@ exports.acceptRequest = async (req, res) => {
         }
 
         // Update the status to 'accepted'
-        request.status = 'accepted';
-        request.acceptedOn = new Date(); // Adding accepted timestamp
-        await request.save();
+        // request.status = 'accepted';
+        // request.acceptedOn = new Date(); // Adding accepted timestamp
+        // await request.save();
 
         // Fetch the user who sent the friend request
         const fromUser = await User.findOne({
@@ -189,7 +189,6 @@ exports.getFriendRequests = async (req, res) => {
                 type: sequelize.QueryTypes.SELECT,
             }
         );
-
         res.status(200).json({ pending: [], accepted: acceptedRequests });
     } catch (error) {
         console.error('Error fetching friend requests:', error);
