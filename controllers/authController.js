@@ -48,7 +48,7 @@ exports.register = async (req, res) => {
     });
 
     // Send OTP via SMS
-    sendSMS("+91"+mobile_number, `Your Yupluck OTP is ${otp}. Please use this code to complete your login. Do not share this OTP with anyone. – Yupluck Team`);
+    sendSMS("+91"+mobile_number, `Welcome to Yupluck! Your OTP for registration is ${otp}. Please use this code to verify your account. Do not share this OTP with anyone. – Yupluck Team`);
 
     res.status(201).send({
       status: true,
@@ -148,7 +148,7 @@ exports.login = async (req, res) => {
     await user.update({ otp, otpExpires: new Date(Date.now() + 3600000) }); // 1 hour expiry
 
     // Send OTP via SMS
-    sendSMS(`+91${user.mobile_number}`, `Welcome to Yupluck! Your OTP for registration is ${otp}. Please use this code to verify your account. Do not share this OTP with anyone. – Yupluck Team`);
+    sendSMS(`+91${user.mobile_number}`, `Your Yupluck OTP is ${otp}. Please use this code to complete your login. Do not share this OTP with anyone. – Yupluck Team`);
     res.status(200).json({
       status: true,
       message: "OTP sent successfully",
