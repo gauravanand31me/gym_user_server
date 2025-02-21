@@ -209,7 +209,7 @@ exports.getAllBookingsByUser = async (req, res) => {
         AND "Booking"."isCheckedIn" = false
       `;
     } else if (selectedTab === 'Completed') {
-      query += ' AND "Booking"."isCheckedIn" = true';
+      query += ` AND "Booking"."isCheckedIn" = true AND "Booking"."type" = 'daily'`;
     } else if (selectedTab === 'No Show') {
       query += `
         AND ("Booking"."bookingDate"::date + "Slots"."startTime"::time + ("Booking"."duration" || ' minutes')::interval) <= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')
