@@ -68,7 +68,7 @@ exports.createBooking = async (req, res) => {
       gymId,
       userId: req.user.id,
       bookingDate: formattedDate,
-      type: subscriptionType,
+      type: subscriptionType.toLowerCase(),
       subscriptionId,
       duration,
       price,
