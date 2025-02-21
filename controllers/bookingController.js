@@ -21,37 +21,46 @@ const razorpay = new Razorpay({
 
 // Create a booking
 exports.createBooking = async (req, res) => {
-  const { subscriptionType, slotId, gymId, bookingDate, subscriptionId, duration, price, requestId } = req.body;
+  let { subscriptionType, slotId, gymId, bookingDate, subscriptionId, duration, price, requestId } = req.body;
 
   const stringBookingId = `${gymId.substring(0, 3).toUpperCase()}${Math.floor(100000000 + Math.random() * 900000000)}`;
 
   try {
+
+    if (subscriptionType === "Daily") {
+      const [results] = await sequelize.query(`
+        SELECT s."timePeriod", g.verified 
+        FROM "Slots" s 
+        JOIN "Gyms" g ON g.id = :gymId 
+        WHERE s.id = :slotId`, {
+        replacements: { gymId, slotId }
+      });
+  
+      if (results.length === 0) {
+        return res.status(400).send("Invalid slot or gym.");
+      }
+  
+      const { timePeriod, verified } = results[0];
+  
+      if (timePeriod <= 0) {
+        return res.status(400).send("Slot is not available for booking at this moment");
+      }
+  
+      if (!verified) {
+        return res.status(400).send("Gym is not available please try after sometime");
+      }
+    }
     // Raw SQL query to check slot and gym conditions
-    const [results] = await sequelize.query(`
-      SELECT s."timePeriod", g.verified 
-      FROM "Slots" s 
-      JOIN "Gyms" g ON g.id = :gymId 
-      WHERE s.id = :slotId`, {
-      replacements: { gymId, slotId }
-    });
-
-    if (results.length === 0) {
-      return res.status(400).send("Invalid slot or gym.");
-    }
-
-    const { timePeriod, verified } = results[0];
-
-    if (timePeriod <= 0) {
-      return res.status(400).send("Slot is not available for booking at this moment");
-    }
-
-    if (!verified) {
-      return res.status(400).send("Gym is not available please try after sometime");
-    }
+    
 
     // Format the booking date
     const date = new Date(bookingDate);
     const formattedDate = date.toISOString().slice(0, 10);
+
+    if (subscriptionType === "Yearly" || subscriptionType === "Monthly") {
+      slotId = "d5f9b7de-8cf4-485c-96e9-49f0f5e4a771";
+    }
+     
 
     // Create the booking in the database
     const booking = await Booking.create({
