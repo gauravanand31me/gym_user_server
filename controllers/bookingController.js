@@ -214,6 +214,7 @@ exports.getAllBookingsByUser = async (req, res) => {
       query += `
         AND ("Booking"."bookingDate"::date + "Slots"."startTime"::time + ("Booking"."duration" || ' minutes')::interval) <= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')
         AND "Booking"."isCheckedIn" = false
+        AND "Booking"."type" = 'daily'
       `;
     }
 
