@@ -57,9 +57,7 @@ exports.createBooking = async (req, res) => {
     const date = new Date(bookingDate);
     const formattedDate = date.toISOString().slice(0, 10);
 
-    if (subscriptionType === "Yearly" || subscriptionType === "Monthly") {
-      slotId = "d5f9b7de-8cf4-485c-96e9-49f0f5e4a771";
-    }
+    
      
 
     // Create the booking in the database
