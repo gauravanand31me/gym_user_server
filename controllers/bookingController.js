@@ -58,7 +58,7 @@ exports.createBooking = async (req, res) => {
     const formattedDate = date.toISOString().slice(0, 10);
 
     
-     
+    
 
     // Create the booking in the database
     const booking = await Booking.create({
@@ -183,6 +183,7 @@ exports.getAllBookingsByUser = async (req, res) => {
           "Booking"."isCheckedIn" AS "visited",
           "Booking"."duration" AS "duration",
           "Booking"."isPaid" AS "isPaid",
+          "Booking"."type" AS "type",
           "Gyms".id AS "gymId", 
           "Gyms".name AS "gymName",
           "Gyms".rating AS "gymRating",
