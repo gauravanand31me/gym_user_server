@@ -33,7 +33,7 @@ const Booking = sequelize.define('Booking', {
     }
   },
   type: {
-    type: DataTypes.ENUM('daily', 'monthly', 'yearly'),
+    type: DataTypes.ENUM('daily', 'monthly', 'quarterly', 'halfyearly', 'yearly'),
     allowNull: false
   },
   gymId: {
