@@ -3,10 +3,10 @@
 module.exports = {
   up: async (queryInterface, Sequelize) => {
     await queryInterface.sequelize.query(`
-      ALTER TYPE "type" ADD VALUE IF NOT EXISTS 'quarterly';
+      ALTER TYPE "enum_Booking_type" ADD VALUE IF NOT EXISTS 'quarterly';
     `);
     await queryInterface.sequelize.query(`
-      ALTER TYPE "type" ADD VALUE IF NOT EXISTS 'halfyearly';
+      ALTER TYPE "enum_Booking_type" ADD VALUE IF NOT EXISTS 'halfyearly';
     `);
   },
 
