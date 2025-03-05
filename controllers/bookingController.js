@@ -35,30 +35,30 @@ exports.createBooking = async (req, res) => {
         WHERE s.id = :slotId`, {
         replacements: { gymId, slotId }
       });
-  
+
       if (results.length === 0) {
         return res.status(400).send("Invalid slot or gym.");
       }
-  
+
       const { timePeriod, verified } = results[0];
-  
+
       if (timePeriod <= 0) {
         return res.status(400).send("Slot is not available for booking at this moment");
       }
-  
+
       if (!verified) {
         return res.status(400).send("Gym is not available please try after sometime");
       }
     }
     // Raw SQL query to check slot and gym conditions
-    
+
 
     // Format the booking date
     const date = new Date(bookingDate);
     const formattedDate = date.toISOString().slice(0, 10);
 
-    
-    
+
+
 
     // Create the booking in the database
     const booking = await Booking.create({
@@ -205,8 +205,29 @@ exports.getAllBookingsByUser = async (req, res) => {
     // Conditional filtering based on selectedTab
     if (selectedTab === 'Upcoming') {
       query += `
+        AND (
+    (
+        "Booking"."type" = 'daily'
         AND ("Booking"."bookingDate"::date + "Slots"."startTime"::time + ("Booking"."duration" || ' minutes')::interval) > (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')
-        AND "Booking"."isCheckedIn" = false
+    )
+    OR (
+        "Booking"."type" = 'monthly'
+        AND "Booking"."bookingDate"::date + INTERVAL '1 month' >= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')::date
+    )
+    OR (
+        "Booking"."type" = 'quarterly'
+        AND "Booking"."bookingDate"::date + INTERVAL '3 months' >= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')::date
+    )
+    OR (
+        "Booking"."type" = 'halfyearly'
+        AND "Booking"."bookingDate"::date + INTERVAL '6 months' >= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')::date
+    )
+    OR (
+        "Booking"."type" = 'yearly'
+        AND "Booking"."bookingDate"::date + INTERVAL '1 year' >= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')::date
+    )
+)
+AND "Booking"."isCheckedIn" = false
       `;
     } else if (selectedTab === 'Completed') {
       query += ` AND "Booking"."isCheckedIn" = true AND "Booking"."type" = 'daily'`;
@@ -275,7 +296,7 @@ exports.createOrder = async (req, res) => {
     // Step 1: Create Razorpay order
     const orderResponse = await razorpay.orders.create(options);
 
-   
+
 
     // Step 2: Create Razorpay payment link
     const paymentLinkResponse = await razorpay.paymentLink.create({
@@ -371,7 +392,7 @@ exports.razorPayWebhookPost = async (req, res) => {
 
 
           await Notification.create({
-            userId:   userId, // The user who made the original booking (to be notified)
+            userId: userId, // The user who made the original booking (to be notified)
             message: `you have accepted workout invite of ${toUser.full_name}`, // Notification message
             type: 'acceptedSelfBuddyRequest', // Notification type
             status: 'unread', // Unread by default
@@ -429,7 +450,7 @@ exports.razorPayWebhookPost = async (req, res) => {
       };
 
       await sendPushNotification(notificationData?.expoPushToken, newnotificationTitle, data);
-     
+
 
 
 
