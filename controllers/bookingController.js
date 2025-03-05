@@ -205,37 +205,57 @@ exports.getAllBookingsByUser = async (req, res) => {
     // Conditional filtering based on selectedTab
     if (selectedTab === 'Upcoming') {
       query += `
-        AND (
-    (
-        "Booking"."type" = 'daily'
-        AND ("Booking"."bookingDate"::date + "Slots"."startTime"::time + ("Booking"."duration" || ' minutes')::interval) > (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')
-    )
-    OR (
-        "Booking"."type" = 'monthly'
-        AND "Booking"."bookingDate"::date + INTERVAL '1 month' >= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')::date
-    )
-    OR (
-        "Booking"."type" = 'quarterly'
-        AND "Booking"."bookingDate"::date + INTERVAL '3 months' >= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')::date
-    )
-    OR (
-        "Booking"."type" = 'halfyearly'
-        AND "Booking"."bookingDate"::date + INTERVAL '6 months' >= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')::date
-    )
-    OR (
-        "Booking"."type" = 'yearly'
-        AND "Booking"."bookingDate"::date + INTERVAL '1 year' >= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')::date
-    )
-)
-AND "Booking"."isCheckedIn" = false
+          AND (
+              (
+                  "Booking"."type" = 'daily'
+                  AND ("Booking"."bookingDate"::date + "Slots"."startTime"::time + ("Booking"."duration" || ' minutes')::interval) > (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')
+                  AND "Booking"."isCheckedIn" = false
+              )
+              OR (
+                  "Booking"."type" = 'monthly'
+                  AND "Booking"."bookingDate"::date + INTERVAL '1 month' >= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')::date
+              )
+              OR (
+                  "Booking"."type" = 'quarterly'
+                  AND "Booking"."bookingDate"::date + INTERVAL '3 months' >= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')::date
+              )
+              OR (
+                  "Booking"."type" = 'halfyearly'
+                  AND "Booking"."bookingDate"::date + INTERVAL '6 months' >= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')::date
+              )
+              OR (
+                  "Booking"."type" = 'yearly'
+                  AND "Booking"."bookingDate"::date + INTERVAL '1 year' >= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')::date
+              )
+          )
       `;
     } else if (selectedTab === 'Completed') {
-      query += ` AND "Booking"."isCheckedIn" = true AND "Booking"."type" = 'daily'`;
+      query += `
+          AND (
+              ("Booking"."type" = 'daily' AND "Booking"."isCheckedIn" = true)
+              OR (
+                  "Booking"."type" = 'monthly' 
+                  AND "Booking"."bookingDate"::date + INTERVAL '1 month' < (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')::date
+              )
+              OR (
+                  "Booking"."type" = 'quarterly'
+                  AND "Booking"."bookingDate"::date + INTERVAL '3 months' < (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')::date
+              )
+              OR (
+                  "Booking"."type" = 'halfyearly'
+                  AND "Booking"."bookingDate"::date + INTERVAL '6 months' < (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')::date
+              )
+              OR (
+                  "Booking"."type" = 'yearly'
+                  AND "Booking"."bookingDate"::date + INTERVAL '1 year' < (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')::date
+              )
+          )
+      `;
     } else if (selectedTab === 'No Show') {
       query += `
-        AND ("Booking"."bookingDate"::date + "Slots"."startTime"::time + ("Booking"."duration" || ' minutes')::interval) <= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')
-        AND "Booking"."isCheckedIn" = false
-        AND "Booking"."type" = 'daily'
+          AND ("Booking"."bookingDate"::date + "Slots"."startTime"::time + ("Booking"."duration" || ' minutes')::interval) <= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')
+          AND "Booking"."isCheckedIn" = false
+          AND "Booking"."type" = 'daily'
       `;
     }
 
