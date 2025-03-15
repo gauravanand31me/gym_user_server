@@ -671,6 +671,7 @@ exports.getAllVisitedGymsWithWorkoutHours = async (req, res) => {
     });
 
     // Send the results as a response
+    console.loh("results", results);
     res.status(200).json({ visitedGyms: results });
   } catch (error) {
     console.error("Error fetching visited gyms with workout hours:", error);
