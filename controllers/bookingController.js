@@ -683,33 +683,36 @@ exports.getAllBuddiesWithWorkoutHours = async (req, res) => {
   try {
     const userId = req.query.id || req.user.id; // Get the logged-in user's ID
 
-    // SQL query to fetch all buddies (toUserId) and their total workout hours where fromUserId is the logged-in user
+    // SQL query to fetch all buddies (toUserId) and their total workout hours from BookingCheckins
     const query = `
       SELECT 
         "Users"."id" AS "buddyId",
         "Users"."full_name" AS "buddyName",
-        SUM("Booking"."duration") AS "totalWorkoutHours" -- Sum of workout hours for each buddy
+        COALESCE(SUM("BookingCheckins"."duration"), 0) AS "totalWorkoutHours"
       FROM "BuddyRequests"
       JOIN "Users" ON "BuddyRequests"."toUserId" = "Users"."id"
-      LEFT JOIN "Booking" ON "Booking"."userId" = "Users"."id" 
+      LEFT JOIN "Booking" ON "Booking"."userId" = "Users"."id"
+      LEFT JOIN "BookingCheckins" ON "Booking"."stringBookingId" = "BookingCheckins"."bookingId"
       WHERE "BuddyRequests"."fromUserId" = :userId
       AND "BuddyRequests"."status" = 'accepted'
       GROUP BY "Users"."id", "Users"."full_name"
-      ORDER BY "totalWorkoutHours" DESC; -- Order by workout hours in descending order
+      ORDER BY "totalWorkoutHours" DESC;
     `;
 
-    // Execute the query using Sequelize or any database connection
-    const [results] = await sequelize.query(query, {
+    // Execute the query using Sequelize
+    const results = await sequelize.query(query, {
       replacements: { userId },
+      type: sequelize.QueryTypes.SELECT, // Ensures the result is an array
     });
 
-    // Send the buddy workout data as a response
-    res.status(200).json({ buddiesWithWorkoutHours: results });
+    // Send the response ensuring it's always an array
+    res.status(200).json({ buddiesWithWorkoutHours: Array.isArray(results) ? results : [] });
   } catch (error) {
-    console.error('Error fetching buddies with workout hours:', error);
-    res.status(500).send('Server error');
+    console.error("Error fetching buddies with workout hours:", error);
+    res.status(500).json({ error: "Server error" });
   }
 };
+
 
 
 
