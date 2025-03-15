@@ -649,33 +649,35 @@ exports.getAllVisitedGymsWithWorkoutHours = async (req, res) => {
   try {
     const userId = req.query.id || req.user.id; // Get the logged-in user's ID
 
-    // Query to fetch all visited gyms with total workout hours for the user
+    // Query to fetch all visited gyms with total workout hours from BookingCheckins
     const query = `
       SELECT 
-    "Gyms"."id" AS "gymId",
-    "Gyms"."name" AS "gymName",
-    "Gyms"."rating" AS "gymRating",
-    SUM("Booking"."duration") AS "totalWorkoutHours" -- Sum of workout duration at each gym
-FROM "Booking"
-JOIN "Gyms" ON "Booking"."gymId" = "Gyms"."id"
-WHERE "Booking"."isCheckedIn" = 'true'
-AND "Booking"."userId" = :userId
-GROUP BY "Gyms"."id", "Gyms"."name", "Gyms"."rating"
-ORDER BY "totalWorkoutHours" DESC;
+          "Gyms"."id" AS "gymId",
+          "Gyms"."name" AS "gymName",
+          "Gyms"."rating" AS "gymRating",
+          COALESCE(SUM("BookingCheckins"."duration"), 0) AS "totalWorkoutHours" -- Sum of workout duration at each gym
+      FROM "BookingCheckins"
+      JOIN "Booking" ON "BookingCheckins"."bookingId" = "Booking"."stringBookingId"
+      JOIN "Gyms" ON "Booking"."gymId" = "Gyms"."id"
+      WHERE "Booking"."userId" = :userId
+      GROUP BY "Gyms"."id", "Gyms"."name", "Gyms"."rating"
+      ORDER BY "totalWorkoutHours" DESC;
     `;
 
     // Execute the query
     const [results] = await sequelize.query(query, {
       replacements: { userId },
+      type: sequelize.QueryTypes.SELECT,
     });
 
     // Send the results as a response
     res.status(200).json({ visitedGyms: results });
   } catch (error) {
-    console.error('Error fetching visited gyms with workout hours:', error);
-    res.status(500).send('Server error');
+    console.error("Error fetching visited gyms with workout hours:", error);
+    res.status(500).send("Server error");
   }
 };
+
 
 
 exports.getAllBuddiesWithWorkoutHours = async (req, res) => {
