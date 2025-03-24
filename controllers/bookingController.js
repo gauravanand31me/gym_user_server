@@ -405,7 +405,7 @@ exports.razorPayWebhookPost = async (req, res) => {
             message: `${fromUser.full_name} has accepted your workout invite.`, // Notification message
             type: 'acceptedBuddyRequest', // Notification type
             status: 'unread', // Unread by default
-            relatedId: request, // Related to the bookingId (buddy request)
+            relatedId: bookingId, // Related to the bookingId (buddy request)
             profileImage: fromUser.profile_pic || "https://png.pngtree.com/png-vector/20190223/ourmid/pngtree-profile-glyph-black-icon-png-image_691589.jpg", // Use default profile pic if not available
             forUserId: fromUser.id
           });
@@ -416,7 +416,7 @@ exports.razorPayWebhookPost = async (req, res) => {
             message: `you have accepted workout invite of ${toUser.full_name}`, // Notification message
             type: 'acceptedSelfBuddyRequest', // Notification type
             status: 'unread', // Unread by default
-            relatedId: request, // Related to the bookingId (buddy request)
+            relatedId: bookingId, // Related to the bookingId (buddy request)
             profileImage: fromUser.profile_pic || "https://png.pngtree.com/png-vector/20190223/ourmid/pngtree-profile-glyph-black-icon-png-image_691589.jpg", // Use default profile pic if not available
             forUserId: fromUser.id
           });
