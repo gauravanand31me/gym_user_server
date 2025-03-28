@@ -5,7 +5,7 @@ const { deleteOldNotifications } = require("./getNotification");
 
 // Fetch nearby gyms based on user's current location
 exports.fetchGyms = async (req, res) => {
-  const userId = req.user.id; // Get the logged-in user ID
+  const userId = req?.user?.id; // Get the logged-in user ID
   console.log("Query is", req.query);
   
   // Get pagination parameters from the request query or use defaults
