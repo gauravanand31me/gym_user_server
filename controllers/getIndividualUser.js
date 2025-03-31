@@ -311,20 +311,31 @@ exports.deleteProfile = async (req, res) => {
   
 
 
-exports.getTopUsersByWorkoutTime = async (req, res) => {
+  exports.getTopUsersByWorkoutTime = async (req, res) => {
     try {
         const users = await User.findAll({
             attributes: ['full_name', 'username', 'total_work_out_time'],
             order: [['total_work_out_time', 'DESC']],
             limit: 10,
         });
+
         console.log("Users are", users);
-        return res.status(200).json(users);
+
+        return res.status(200).json({
+            success: true,
+            message: "Top 10 users retrieved successfully",
+            data: users
+        });
     } catch (error) {
         console.error('Error fetching top users:', error);
-        throw error;
+
+        return res.status(500).json({
+            success: false,
+            message: "Failed to fetch top users",
+            error: error.message
+        });
     }
-}
+};
 
 
 
