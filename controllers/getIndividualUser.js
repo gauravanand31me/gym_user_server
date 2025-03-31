@@ -311,6 +311,23 @@ exports.deleteProfile = async (req, res) => {
   
 
 
+exports.getTopUsersByWorkoutTime() = async (req, res) => {
+    try {
+        const users = await User.findAll({
+            attributes: ['full_name', 'username', 'total_work_out_time'],
+            order: [['total_work_out_time', 'DESC']],
+            limit: 10,
+        });
+
+        return users;
+    } catch (error) {
+        console.error('Error fetching top users:', error);
+        throw error;
+    }
+}
+
+
+
 
 
 
