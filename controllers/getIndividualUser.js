@@ -311,7 +311,7 @@ exports.deleteProfile = async (req, res) => {
   
 
 
-exports.getTopUsersByWorkoutTime() = async (req, res) => {
+exports.getTopUsersByWorkoutTime = async (req, res) => {
     try {
         const users = await User.findAll({
             attributes: ['full_name', 'username', 'total_work_out_time'],
