@@ -319,7 +319,7 @@ exports.getTopUsersByWorkoutTime = async (req, res) => {
             limit: 10,
         });
 
-        return users;
+        return res.status(200).json(users);
     } catch (error) {
         console.error('Error fetching top users:', error);
         throw error;
