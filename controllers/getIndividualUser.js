@@ -318,7 +318,7 @@ exports.getTopUsersByWorkoutTime = async (req, res) => {
             order: [['total_work_out_time', 'DESC']],
             limit: 10,
         });
-
+        console.log("Users are", users);
         return res.status(200).json(users);
     } catch (error) {
         console.error('Error fetching top users:', error);
