@@ -1,7 +1,6 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
 
-
 const BookingRating = sequelize.define('BookingRating', {
   ratingId: {
     type: DataTypes.UUID,
@@ -12,7 +11,7 @@ const BookingRating = sequelize.define('BookingRating', {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
-      model: 'Booking', // The name of the Booking table
+      model: 'Booking',
       key: 'bookingId'
     }
   },
@@ -20,7 +19,7 @@ const BookingRating = sequelize.define('BookingRating', {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
-      model: 'Gyms', // The name of the Gyms table
+      model: 'Gyms',
       key: 'id'
     }
   },
@@ -28,29 +27,32 @@ const BookingRating = sequelize.define('BookingRating', {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
-      model: 'Users', // The name of the Users table
+      model: 'Users',
       key: 'id'
     }
   },
   rating: {
-    type: DataTypes.FLOAT, // Adjust based on how you want to represent ratings
+    type: DataTypes.FLOAT,
     allowNull: false,
     validate: {
       min: 1,
       max: 5
     }
   },
+  description: {
+    type: DataTypes.TEXT,
+    allowNull: true // ✅ Newly added
+  },
   ratedOn: {
     type: DataTypes.DATE,
     allowNull: false,
-    defaultValue: DataTypes.NOW // Sets the current date as default
+    defaultValue: DataTypes.NOW
   }
 }, {
-  tableName: 'BookingRatings', // Define the table name in the database
-  timestamps: true // Adds createdAt and updatedAt fields
+  tableName: 'BookingRatings',
+  timestamps: true
 });
 
-// Associations
 BookingRating.associate = (models) => {
   BookingRating.belongsTo(models.Booking, { foreignKey: 'bookingId' });
   BookingRating.belongsTo(models.Gym, { foreignKey: 'gymId' });
