@@ -98,18 +98,20 @@ exports.getBookingRating = async (req, res) => {
 
 
 exports.getRatingsByGymId = async (req, res) => {
-    const { gymId } = req.params; // Or use req.query.gymId if you send it that way
-    
-    
+    const { gymId } = req.params;
+  
     try {
       const ratings = await BookingRating.findAll({
-        where: {
-          gymId
-          
-        },
+        where: { gymId },
+        include: [
+          {
+            model: User,
+            attributes: ['id', 'username'], // Add fields as needed
+          }
+        ],
         order: [['ratedOn', 'DESC']]
       });
-      
+  
       if (!ratings || ratings.length === 0) {
         return res.status(404).json({ message: 'No ratings found for this gym' });
       }
