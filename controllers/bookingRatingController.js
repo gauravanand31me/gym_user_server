@@ -71,7 +71,7 @@ exports.createBookingRating = async (req, res) => {
 
 
 
-exports.getBookingRating = async (req, res) => {
+exports.getBookingsRating = async (req, res) => {
     const { bookingId } = req.query; // Extract bookingId from query parameters
     const userId = req.user.id; // Assuming you're using middleware to populate req.user with the authenticated user's details
 
@@ -95,3 +95,28 @@ exports.getBookingRating = async (req, res) => {
         res.status(500).json({ message: 'An error occurred while fetching the booking rating', error });
     }
 };
+
+
+exports.getRatingsByGymId = async (req, res) => {
+    const { gymId } = req.params; // Or use req.query.gymId if you send it that way
+    const userId = req.user.id;
+  
+    try {
+      const ratings = await BookingRating.findAll({
+        where: {
+          gymId,
+          userId
+        },
+        order: [['ratedOn', 'DESC']]
+      });
+  
+      if (!ratings || ratings.length === 0) {
+        return res.status(404).json({ message: 'No ratings found for this gym' });
+      }
+  
+      res.status(200).json({ ratings });
+    } catch (error) {
+      console.error('Error fetching ratings by gymId:', error);
+      res.status(500).json({ message: 'An error occurred while fetching the ratings', error });
+    }
+  };
