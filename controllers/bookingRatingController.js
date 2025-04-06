@@ -109,7 +109,7 @@ exports.getRatingsByGymId = async (req, res) => {
         },
         order: [['ratedOn', 'DESC']]
       });
-      console.log("Ratings received", ratings);
+      
       if (!ratings || ratings.length === 0) {
         return res.status(404).json({ message: 'No ratings found for this gym' });
       }
