@@ -2,7 +2,7 @@ const BookingRating = require('../models/BookingRating');
 const sequelize = require('../config/db'); // Ensure you have access to your sequelize instance
 
 exports.createBookingRating = async (req, res) => {
-    const { bookingId, gymId, rating } = req.body;
+    const { bookingId, gymId, rating, description } = req.body;
     const userId = req.user.id;
 
     try {
@@ -26,6 +26,7 @@ exports.createBookingRating = async (req, res) => {
                 gymId,
                 userId,
                 rating,
+                description,
                 ratedOn: new Date()
             });
         }
