@@ -99,13 +99,13 @@ exports.getBookingRating = async (req, res) => {
 
 exports.getRatingsByGymId = async (req, res) => {
     const { gymId } = req.params; // Or use req.query.gymId if you send it that way
-    const userId = req.user.id;
+    
   
     try {
       const ratings = await BookingRating.findAll({
         where: {
-          gymId,
-          userId
+          gymId
+          
         },
         order: [['ratedOn', 'DESC']]
       });
