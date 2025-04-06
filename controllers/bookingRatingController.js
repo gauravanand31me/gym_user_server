@@ -1,6 +1,5 @@
 const BookingRating = require('../models/BookingRating');
 const sequelize = require('../config/db'); // Ensure you have access to your sequelize instance
-const Users = require('../models/User');
 
 exports.createBookingRating = async (req, res) => {
     const { bookingId, gymId, rating, description } = req.body;
@@ -99,20 +98,18 @@ exports.getBookingRating = async (req, res) => {
 
 
 exports.getRatingsByGymId = async (req, res) => {
-    const { gymId } = req.params;
-  
+    const { gymId } = req.params; // Or use req.query.gymId if you send it that way
+    
+    
     try {
       const ratings = await BookingRating.findAll({
-        where: { gymId },
-        include: [
-          {
-            model: Users,
-            attributes: ['id', 'username'], // Add fields as needed
-          }
-        ],
+        where: {
+          gymId
+          
+        },
         order: [['ratedOn', 'DESC']]
       });
-  
+      
       if (!ratings || ratings.length === 0) {
         return res.status(404).json({ message: 'No ratings found for this gym' });
       }
