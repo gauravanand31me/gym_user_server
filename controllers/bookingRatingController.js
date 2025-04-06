@@ -1,6 +1,6 @@
 const BookingRating = require('../models/BookingRating');
 const sequelize = require('../config/db'); // Ensure you have access to your sequelize instance
-const User = require('../models/User');
+const Users = require('../models/User');
 
 exports.createBookingRating = async (req, res) => {
     const { bookingId, gymId, rating, description } = req.body;
@@ -106,7 +106,7 @@ exports.getRatingsByGymId = async (req, res) => {
         where: { gymId },
         include: [
           {
-            model: User,
+            model: Users,
             attributes: ['id', 'username'], // Add fields as needed
           }
         ],
