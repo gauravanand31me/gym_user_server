@@ -100,7 +100,7 @@ exports.getBookingRating = async (req, res) => {
 exports.getRatingsByGymId = async (req, res) => {
     const { gymId } = req.params; // Or use req.query.gymId if you send it that way
     
-    console.log("Gym Id Received", gymId);
+    
     try {
       const ratings = await BookingRating.findAll({
         where: {
@@ -109,7 +109,7 @@ exports.getRatingsByGymId = async (req, res) => {
         },
         order: [['ratedOn', 'DESC']]
       });
-  
+      console.log("Ratings received", ratings);
       if (!ratings || ratings.length === 0) {
         return res.status(404).json({ message: 'No ratings found for this gym' });
       }
