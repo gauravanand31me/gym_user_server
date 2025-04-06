@@ -4,6 +4,6 @@ const { createBookingRating, getBookingRating } = require('../controllers/bookin
 const router = express.Router();
 
 router.post('/post', authMiddleware, createBookingRating)
-router.get('/get', authMiddleware, getBookingRating);
+router.get('/get  ', authMiddleware, getBookingRating);
 
 module.exports = router;
