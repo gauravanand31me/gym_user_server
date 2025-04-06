@@ -11,7 +11,7 @@ const BookingDetailedRating = sequelize.define('BookingDetailedRating', {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
-      model: 'Bookings', // Should match your table name
+      model: 'Booking', // Should match your table name
       key: 'bookingId'
     }
   },
