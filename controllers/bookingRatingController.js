@@ -1,6 +1,5 @@
-
+const BookingRating = require('../models/BookingRating');
 const sequelize = require('../config/db'); // Ensure you have access to your sequelize instance
-const BookingDetailedRating = require('../models/BookingDetailedRating');
 
 exports.createBookingRating = async (req, res) => {
     const { bookingId, gymId, rating } = req.body;
@@ -8,7 +7,7 @@ exports.createBookingRating = async (req, res) => {
 
     try {
         // Check if a rating already exists for this bookingId and userId
-        let existingRating = await BookingDetailedRating.findOne({
+        let existingRating = await BookingRating.findOne({
             where: {
                 bookingId,
                 userId
@@ -22,7 +21,7 @@ exports.createBookingRating = async (req, res) => {
             await existingRating.save();
         } else {
             // Create a new rating
-            await BookingDetailedRating.create({
+            await BookingRating.create({
                 bookingId,
                 gymId,
                 userId,
@@ -34,7 +33,7 @@ exports.createBookingRating = async (req, res) => {
         // Recalculate the average rating for the gym
         const [results] = await sequelize.query(`
             SELECT AVG(rating) AS averageRating, COUNT(rating) AS ratingCount
-            FROM "BookingDetailedRatings"
+            FROM "BookingRatings"
             WHERE "gymId" = :gymId
         `, {
             replacements: { gymId },
@@ -77,7 +76,7 @@ exports.getBookingRating = async (req, res) => {
 
     try {
         // Fetch the booking rating for the given bookingId and userId
-        const bookingRating = await BookingDetailedRating.findOne({
+        const bookingRating = await BookingRating.findOne({
             where: {
                 bookingId,
                 userId
