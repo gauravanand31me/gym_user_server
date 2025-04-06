@@ -71,7 +71,7 @@ exports.createBookingRating = async (req, res) => {
 
 
 
-exports.getBookingsRating = async (req, res) => {
+exports.getBookingRating = async (req, res) => {
     const { bookingId } = req.query; // Extract bookingId from query parameters
     const userId = req.user.id; // Assuming you're using middleware to populate req.user with the authenticated user's details
 
