@@ -558,6 +558,7 @@ exports.getAllGymCoupons = async (req, res) => {
     );
     return res.status(200).json(results);
   } catch (e) {
+    console.log("Error is", e);
     return res.status(500).json({error: "Some error occured"});
   }
   
