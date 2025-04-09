@@ -542,7 +542,7 @@ exports.getAllGymCoupons = async (req, res) => {
   try {
     const gymId = req.query.gym_id;
 
-    const [results, metadata] = await sequelize.query(
+    const results = await sequelize.query(
       `
       SELECT c.id, c.coupon_code, c.discount_amount, c.discount_type, c.valid_from, c.valid_to, c.is_active
       FROM coupons c
