@@ -538,6 +538,31 @@ exports.razorPayWebhookPost = async (req, res) => {
 
 };
 
+exports.getAllGymCoupons = async (req, res) => {
+  try {
+    const gymId = req.query.gym_id;
+
+    const [results, metadata] = await sequelize.query(
+      `
+      SELECT c.coupon_code, c.discount_amount, c.discount_type, c.valid_from, c.valid_to, c.is_active
+      FROM coupons c
+      INNER JOIN coupon_gyms cg ON cg.coupon_id = c.id
+      WHERE cg.gym_id = :gymId
+        AND c.is_active = true
+        AND CURRENT_DATE BETWEEN c.valid_from AND c.valid_to
+      `,
+      {
+        replacements: { gymId },
+        type: sequelize.QueryTypes.SELECT
+      }
+    );
+    return res.status(200).json(results);
+  } catch (e) {
+    return res.status(500).json({error: "Some error occured"});
+  }
+  
+}
+
 
 
 exports.verifyBooking = async (req, res) => {
