@@ -544,7 +544,7 @@ exports.getAllGymCoupons = async (req, res) => {
 
     const [results, metadata] = await sequelize.query(
       `
-      SELECT c.coupon_code, c.discount_amount, c.discount_type, c.valid_from, c.valid_to, c.is_active
+      SELECT c.id, c.coupon_code, c.discount_amount, c.discount_type, c.valid_from, c.valid_to, c.is_active
       FROM coupons c
       INNER JOIN coupon_gyms cg ON cg.coupon_id = c.id
       WHERE cg.gym_id = :gymId
