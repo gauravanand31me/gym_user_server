@@ -21,7 +21,7 @@ const razorpay = new Razorpay({
 
 // Create a booking
 exports.createBooking = async (req, res) => {
-  let { subscriptionType, slotId, gymId, bookingDate, subscriptionId, duration, price, requestId } = req.body;
+  let { subscriptionType, slotId, gymId, bookingDate, subscriptionId, duration, price, requestId, discountedPrice, couponApplied } = req.body;
 
   const stringBookingId = `${gymId.substring(0, 3).toUpperCase()}${Math.floor(100000000 + Math.random() * 900000000)}`;
 
@@ -70,7 +70,9 @@ exports.createBooking = async (req, res) => {
       subscriptionId,
       duration,
       price,
-      stringBookingId
+      discountedPrice,
+      stringBookingId,
+      couponApplied
     });
 
     // Send the booking as a response

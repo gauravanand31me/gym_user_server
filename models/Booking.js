@@ -90,6 +90,14 @@ const Booking = sequelize.define('Booking', {
     type: DataTypes.FLOAT, // Adjust the type as needed for your use case
     allowNull: false,
   },
+  discountedPrice: {
+    type: DataTypes.FLOAT,
+    allowNull: true,
+  },
+  couponApplied: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
 }, {
   tableName: 'Booking',
   timestamps: true, // Adds createdAt and updatedAt fields
