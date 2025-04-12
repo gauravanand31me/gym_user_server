@@ -126,7 +126,7 @@ exports.searchUsersByUsernameOrLocation = async (req, res) => {
             id: user.id,
             username: user.username,
             full_name: user.full_name,
-            profile_pic: user.profile_pic || "https://via.placeholder.com/150",
+            profile_pic: user.profile_pic || "https://cdn-icons-png.flaticon.com/512/149/149071.png",
             friendRequestStatus: requestStatuses[user.id] || { sent: false, accepted: false, received: false },
         }));
 
