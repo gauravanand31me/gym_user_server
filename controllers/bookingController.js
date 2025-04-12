@@ -70,7 +70,7 @@ exports.createBooking = async (req, res) => {
       subscriptionId,
       duration,
       price,
-      discountedPrice,
+      discountedPrice: Math.floor(discountedPrice),
       stringBookingId,
       couponApplied
     });
