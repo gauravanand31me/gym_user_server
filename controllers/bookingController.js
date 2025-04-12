@@ -292,6 +292,7 @@ exports.getAllBookingsByUser = async (req, res) => {
 // Create Order with custom bookingId and userId
 exports.createOrder = async (req, res) => {
   const { amount, bookingId, requestId } = req.body; // Get amount from frontend
+  console.log("Request body received", req.body);
   const userId = req.user.id;  // Assuming the user is authenticated and userId is available
 
   const user = await User.findByPk(req.user.id); // User who is deleting the buddy request
