@@ -292,7 +292,8 @@ exports.getAllBookingsByUser = async (req, res) => {
 // Create Order with custom bookingId and userId
 exports.createOrder = async (req, res) => {
   const { amount, bookingId, requestId } = req.body; // Get amount from frontend
-  console.log("Request body received", req.body);
+  
+
   const userId = req.user.id;  // Assuming the user is authenticated and userId is available
 
   const user = await User.findByPk(req.user.id); // User who is deleting the buddy request
@@ -301,7 +302,7 @@ exports.createOrder = async (req, res) => {
 
 
   const options = {
-    amount: amount * 100, // Razorpay expects amount in paise (1 INR = 100 paise)
+    amount: Math.floor(amount) * 100, // Razorpay expects amount in paise (1 INR = 100 paise)
     currency: 'INR',
     receipt: bookingId, // Using bookingId as the receipt
     payment_capture: 1 // Automatic payment capture
@@ -325,7 +326,7 @@ exports.createOrder = async (req, res) => {
 
     // Step 2: Create Razorpay payment link
     const paymentLinkResponse = await razorpay.paymentLink.create({
-      amount: amount * 100, // Amount in paise
+      amount: Math.floor(amount) * 100, // Amount in paise
       currency: 'INR',
       notes,
       customer: {
@@ -348,7 +349,7 @@ exports.createOrder = async (req, res) => {
     res.json({
       orderId: orderResponse.id,
       currency: orderResponse.currency,
-      amount: orderResponse.amount,
+      amount: Math.floor(orderResponse.amount),
       bookingId: bookingId,
       userId: userId, // Send userId in the response
       paymentLink: paymentLinkResponse.short_url // Dynamic payment link
