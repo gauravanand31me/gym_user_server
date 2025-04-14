@@ -143,25 +143,44 @@ exports.searchUsersByUsernameOrLocation = async (req, res) => {
 
 exports.uploadProfileImage = async (req, res) => {
     const userId = req.user.id;
-
+  
     try {
-        if (!req.file) {
-            return res.status(400).json({ message: 'No file uploaded' });
-        }
-
-        const profilePicUrl = req.file.location;
-
-        await User.update(
-            { profile_pic: profilePicUrl },
-            { where: { id: userId } }
-        );
-        
-        res.status(200).json({ message: 'Profile image uploaded successfully', profile_pic: profilePicUrl });
+      if (!req.file) {
+        return res.status(400).json({ message: 'No file uploaded' });
+      }
+  
+      const profilePicUrl = req.file.location;
+  
+      // Update user's profile picture
+      await User.update(
+        { profile_pic: profilePicUrl },
+        { where: { id: userId } }
+      );
+  
+      // ✅ Respond immediately
+      res.status(200).json({
+        message: 'Profile image uploaded successfully',
+        profile_pic: profilePicUrl
+      });
+  
+      // ✅ Log feed entry in background (non-blocking)
+      Feed.create({
+        userId,
+        activityType: 'general',
+        title: 'Profile Picture Updated',
+        description: 'Updated their profile image 📸',
+        imageUrl: profilePicUrl,
+        timestamp: new Date()
+      }).catch(err => {
+        console.error('Feed creation failed (non-blocking):', err.message);
+      });
+  
     } catch (error) {
-        console.error('Error uploading profile image:', error);
-        res.status(500).send('Server error');
+      console.error('Error uploading profile image:', error);
+      res.status(500).send('Server error');
     }
 };
+
 
 exports.uploadPostImage = async (req, res) => {
     const userId = req.user.id;
@@ -336,6 +355,10 @@ exports.deleteProfile = async (req, res) => {
         });
     }
 };
+
+exports.getUserFeed = async (req, res) => {
+
+}
 
 
 
