@@ -375,7 +375,8 @@ exports.getUserFeed = async (req, res) => {
           ]
         }
       });
-  
+      
+      console.log("All buddies", buddyRequests);
       // 2. Extract unique friend user IDs + include self
       const friendIds = new Set([userId]); // include logged-in user
       for (const buddy of buddyRequests) {
@@ -404,7 +405,7 @@ exports.getUserFeed = async (req, res) => {
         limit: parseInt(req.query.limit || 10),
         offset: parseInt(req.query.offset || 0)
       });
-  
+      
       return res.status(200).json({ feed: feedItems });
   
     } catch (error) {
