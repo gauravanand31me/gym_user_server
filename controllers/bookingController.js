@@ -10,6 +10,7 @@ const crypto = require("crypto");
 const { v4: uuidv4 } = require('uuid');
 const { sendPushNotification } = require('../config/pushNotification');
 const PushNotification = require('../models/PushNotification');
+const Feed = require('../models/Feed');
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZOR_PAY_PAYMENT_KEY,
@@ -466,6 +467,9 @@ exports.razorPayWebhookPost = async (req, res) => {
         where: { userId }
       });
 
+
+      
+
       const newnotificationTitle = {
         title: "Booking Successful",
         body: `Your booking is successful.`, // Notification message
@@ -533,6 +537,23 @@ exports.razorPayWebhookPost = async (req, res) => {
         </body>
         </html>
     `);
+
+    
+    Feed.create({
+      userId,
+      gymId: relatedBooking.gymId,
+      activityType: 'general',
+      title: 'Booked Gym',
+      description: `Booked a session at a gym 💪`,
+      imageUrl: null,
+      timestamp: new Date()
+    })
+    .then(() => {
+      console.log('✅ Feed entry created for gym booking');
+    })
+    .catch(err => {
+      console.error('❌ Failed to create gym booking feed:', err.message);
+    });
 
     } else {
       res.send("Payment Failed");
