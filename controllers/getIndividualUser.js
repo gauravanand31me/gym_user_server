@@ -398,7 +398,7 @@ exports.getUserFeed = async (req, res) => {
         include: [
           {
             model: User,
-            attributes: ['id', 'name', 'profile_pic']
+            attributes: ['id', 'full_name', 'profile_pic']
           }
         ],
         order: [['timestamp', 'DESC']],
