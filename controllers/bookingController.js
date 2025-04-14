@@ -293,7 +293,7 @@ exports.getAllBookingsByUser = async (req, res) => {
 // Create Order with custom bookingId and userId
 exports.createOrder = async (req, res) => {
   const { amount, bookingId, requestId } = req.body; // Get amount from frontend
-  
+
 
   const userId = req.user.id;  // Assuming the user is authenticated and userId is available
 
@@ -376,17 +376,16 @@ exports.razorPayWebhook = async (req, res) => {
 exports.razorPayWebhookPost = async (req, res) => {
   const secret = 'Sourav@1992'; // Set your Razorpay webhook secret
   const webhookData = req.body;  // assuming you get the payload as JSON
-  console.log("Webhook triggered");
-  console.log("Request Header is", req.headers);
-  console.log("Request body is", webhookData?.payload?.payment?.entity?.notes);
+  
   // Verify the webhook signature
   const shasum = crypto.createHmac('sha256', secret);
   shasum.update(JSON.stringify(req.body));
   const digest = shasum.digest('hex');
   const receivedSignature = req.headers['x-razorpay-signature'];
-
+  
   if (webhookData?.payload?.payment?.entity?.notes && "bookingId" in webhookData?.payload?.payment?.entity?.notes) {
     const { bookingId, request, userId } = webhookData?.payload?.payment?.entity?.notes;
+    const bookingData = await Booking.findByPk(bookingId);
     const paymentId = webhookData?.payload?.payment?.entity?.id; // Extract the payment ID
 
     if (receivedSignature == digest) {
@@ -468,7 +467,7 @@ exports.razorPayWebhookPost = async (req, res) => {
       });
 
 
-      
+
 
       const newnotificationTitle = {
         title: "Booking Successful",
@@ -538,22 +537,22 @@ exports.razorPayWebhookPost = async (req, res) => {
         </html>
     `);
 
-    
-    Feed.create({
-      userId,
-      gymId: relatedBooking.gymId,
-      activityType: 'general',
-      title: 'Booked Gym',
-      description: `Booked a session at a gym 💪`,
-      imageUrl: null,
-      timestamp: new Date()
-    })
-    .then(() => {
-      console.log('✅ Feed entry created for gym booking');
-    })
-    .catch(err => {
-      console.error('❌ Failed to create gym booking feed:', err.message);
-    });
+
+      Feed.create({
+        userId,
+        gymId: bookingData.gymId,
+        activityType: 'general',
+        title: 'Booked Gym',
+        description: `Booked a session at a gym 💪`,
+        imageUrl: null,
+        timestamp: new Date()
+      })
+        .then(() => {
+          console.log('✅ Feed entry created for gym booking');
+        })
+        .catch(err => {
+          console.error('❌ Failed to create gym booking feed:', err.message);
+        });
 
     } else {
       res.send("Payment Failed");
@@ -586,9 +585,9 @@ exports.getAllGymCoupons = async (req, res) => {
     return res.status(200).json(results);
   } catch (e) {
     console.log("Error is", e);
-    return res.status(500).json({error: "Some error occured"});
+    return res.status(500).json({ error: "Some error occured" });
   }
-  
+
 }
 
 
