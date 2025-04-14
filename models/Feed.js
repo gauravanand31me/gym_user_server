@@ -1,0 +1,82 @@
+const { DataTypes } = require('sequelize');
+const sequelize = require('../config/db');
+const User = require('./User');
+
+const Feed = sequelize.define('Feed', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true,
+  },
+  userId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    references: {
+      model: 'Users',
+      key: 'id'
+    }
+  },
+  activityType: {
+    type: DataTypes.ENUM('checkin', 'workoutInvite', 'milestone', 'questionPrompt', 'gymAd', 'aiPromo'),
+    allowNull: false
+  },
+  title: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  description: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  gymId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: 'Gyms',
+      key: 'id'
+    }
+  },
+  relatedUserId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: 'Users',
+      key: 'id'
+    }
+  },
+  hours: {
+    type: DataTypes.INTEGER,
+    allowNull: true
+  },
+  question: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  price: {
+    type: DataTypes.INTEGER,
+    allowNull: true
+  },
+  imageUrl: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  timestamp: {
+    type: DataTypes.DATE,
+    allowNull: false,
+    defaultValue: DataTypes.NOW
+  }
+}, {
+  tableName: 'Feeds',
+  timestamps: true
+});
+
+// Associations
+User.hasMany(Feed, { foreignKey: 'userId' });
+Feed.belongsTo(User, { foreignKey: 'userId' });
+
+Feed.associate = (models) => {
+  Feed.belongsTo(models.Gym, { foreignKey: 'gymId' });
+  Feed.belongsTo(models.User, { foreignKey: 'relatedUserId', as: 'relatedUser' });
+};
+
+module.exports = Feed;
