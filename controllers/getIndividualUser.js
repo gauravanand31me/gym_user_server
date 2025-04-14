@@ -397,8 +397,7 @@ exports.getUserFeed = async (req, res) => {
           f.*,
           u.full_name AS "user.full_name",
           u.profile_pic AS "user.profile_pic",
-          g.name AS "gym.name",
-          g.coverImage AS "gym.coverImage"
+          g.name AS "gym.name"
         FROM "Feeds" f
         LEFT JOIN "Users" u ON f."userId" = u.id
         LEFT JOIN "Gyms" g ON f."gymId" = g.id
