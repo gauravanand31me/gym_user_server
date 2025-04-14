@@ -369,7 +369,7 @@ exports.getUserFeed = async (req, res) => {
     const userId = req.user.id;
   
     try {
-      // 1. Get all accepted buddy relationships
+      // Step 1: Get accepted buddies
       const buddyRequests = await BuddyRequest.findAll({
         where: {
           status: 'accepted',
@@ -379,49 +379,49 @@ exports.getUserFeed = async (req, res) => {
           ]
         }
       });
-      
-      
-      // 2. Extract unique friend user IDs + include self
-      const friendIds = new Set([userId]); // include logged-in user
+  
+      // Step 2: Extract unique friend IDs
+      const friendIds = new Set([userId]);
       for (const buddy of buddyRequests) {
-        if (buddy.fromUserId !== userId) {
-          friendIds.add(buddy.fromUserId);
-        }
-        if (buddy.toUserId !== userId) {
-          friendIds.add(buddy.toUserId);
-        }
+        if (buddy.fromUserId !== userId) friendIds.add(buddy.fromUserId);
+        if (buddy.toUserId !== userId) friendIds.add(buddy.toUserId);
       }
-     
-     
-     // 3. Fetch feed entries for self and friends
-      const feedItems = await Feed.findAll({
-        where: {
-          userId: {
-            [Op.in]: Array.from(friendIds)
-          }
+  
+      // Step 3: Raw query to fetch feed + user + gym (if exists)
+      const idsArray = Array.from(friendIds);
+      const limit = parseInt(req.query.limit || 10);
+      const offset = parseInt(req.query.offset || 0);
+  
+      const query = `
+        SELECT
+          f.*,
+          u.full_name AS "user.full_name",
+          u.profile_pic AS "user.profile_pic",
+          g.name AS "gym.name",
+          g.coverImage AS "gym.coverImage"
+        FROM "Feeds" f
+        LEFT JOIN "Users" u ON f."userId" = u.id
+        LEFT JOIN "Gyms" g ON f."gymId" = g.id
+        WHERE f."userId" IN (:ids)
+        ORDER BY f."timestamp" DESC
+        LIMIT :limit OFFSET :offset
+      `;
+  
+      const [feedItems] = await sequelize.query(query, {
+        replacements: {
+          ids: idsArray,
+          limit,
+          offset
         },
-        include: [
-          {
-            model: User,
-            attributes: ['id', 'full_name', 'profile_pic']
-          }
-        ],
-        order: [['timestamp', 'DESC']],
-        limit: parseInt(req.query.limit || 10),
-        offset: parseInt(req.query.offset || 0)
+        type: sequelize.QueryTypes.SELECT,
+        nest: true // for nested result under 'user' and 'gym'
       });
-
-
-
-
-
-
-    
+  
       return res.status(200).json({ feed: feedItems });
   
     } catch (error) {
-      console.error('Error fetching user feed:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      console.error('Error fetching user feed (raw):', error);
+      return res.status(500).json({ message: 'Internal server error' });
     }
 };
 
