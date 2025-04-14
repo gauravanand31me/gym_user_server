@@ -17,7 +17,7 @@ const Feed = sequelize.define('Feed', {
     }
   },
   activityType: {
-    type: DataTypes.ENUM('checkin', 'workoutInvite', 'milestone', 'questionPrompt', 'gymAd', 'aiPromo'),
+    type: DataTypes.ENUM('checkin', 'workoutInvite', 'milestone', 'questionPrompt', 'gymAd', 'aiPromo', 'general'),
     allowNull: false
   },
   title: {
