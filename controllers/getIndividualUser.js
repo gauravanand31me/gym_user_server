@@ -11,6 +11,7 @@ const BookingRating = require('../models/BookingRating');
 const BuddyRequest = require('../models/BuddyRequest');
 const PushNotification = require('../models/PushNotification');
 const Notification = require('../models/Notification');
+const Feed = require('../models/Feed');
 
 const getDistance = (lat1, lon1, lat2, lon2) => {
     const R = 6371; // Radius of the Earth in kilometers
@@ -356,9 +357,62 @@ exports.deleteProfile = async (req, res) => {
     }
 };
 
-exports.getUserFeed = async (req, res) => {
 
-}
+
+
+
+exports.getUserFeed = async (req, res) => {
+    const userId = req.user.id;
+  
+    try {
+      // 1. Get all accepted buddy relationships
+      const buddyRequests = await BuddyRequest.findAll({
+        where: {
+          status: 'accepted',
+          [Op.or]: [
+            { fromUserId: userId },
+            { toUserId: userId }
+          ]
+        }
+      });
+  
+      // 2. Extract unique friend user IDs + include self
+      const friendIds = new Set([userId]); // include logged-in user
+      for (const buddy of buddyRequests) {
+        if (buddy.fromUserId !== userId) {
+          friendIds.add(buddy.fromUserId);
+        }
+        if (buddy.toUserId !== userId) {
+          friendIds.add(buddy.toUserId);
+        }
+      }
+  
+      // 3. Fetch feed entries for self and friends
+      const feedItems = await Feed.findAll({
+        where: {
+          userId: {
+            [Op.in]: Array.from(friendIds)
+          }
+        },
+        include: [
+          {
+            model: User,
+            attributes: ['id', 'name', 'profile_pic']
+          }
+        ],
+        order: [['timestamp', 'DESC']],
+        limit: parseInt(req.query.limit || 10),
+        offset: parseInt(req.query.offset || 0)
+      });
+  
+      return res.status(200).json({ feed: feedItems });
+  
+    } catch (error) {
+      console.error('Error fetching user feed:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
 
 
 
