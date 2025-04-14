@@ -390,23 +390,34 @@ exports.getUserFeed = async (req, res) => {
      
      
       // 3. Fetch feed entries for self and friends
-      const feedItems = await Feed.findAll({
-        where: {
-          userId: {
-            [Op.in]: Array.from(friendIds)
-          }
-        },
-        include: [
-          {
-            model: User,
-            attributes: ['id', 'full_name', 'profile_pic']
-          }
-        ],
+    //   const feedItems = await Feed.findAll({
+    //     where: {
+    //       userId: {
+    //         [Op.in]: Array.from(friendIds)
+    //       }
+    //     },
+    //     include: [
+    //       {
+    //         model: User,
+    //         attributes: ['id', 'full_name', 'profile_pic']
+    //       }
+    //     ],
+    //     order: [['timestamp', 'DESC']],
+    //     limit: parseInt(req.query.limit || 10),
+    //     offset: parseInt(req.query.offset || 0)
+    //   });
+
+
+
+
+
+
+    const feedItems = await Feed.findAll({
+        include: [{ model: User, attributes: ['id', 'full_name', 'profile_pic'] }],
         order: [['timestamp', 'DESC']],
-        limit: parseInt(req.query.limit || 10),
-        offset: parseInt(req.query.offset || 0)
+        limit: 5
       });
-      console.log("All buddies", feedItems);
+     
       return res.status(200).json({ feed: feedItems });
   
     } catch (error) {
