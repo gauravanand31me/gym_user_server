@@ -406,7 +406,7 @@ exports.getUserFeed = async (req, res) => {
         LIMIT :limit OFFSET :offset
       `;
   
-      const [feedItems] = await sequelize.query(query, {
+      const feedItems = await sequelize.query(query, {
         replacements: {
           ids: idsArray,
           limit,
