@@ -417,7 +417,7 @@ exports.getUserFeed = async (req, res) => {
         order: [['timestamp', 'DESC']],
         limit: 5
       });
-     
+      console.log("feedItems", feedItems);
       return res.status(200).json({ feed: feedItems });
   
     } catch (error) {
