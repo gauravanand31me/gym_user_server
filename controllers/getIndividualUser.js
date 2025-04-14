@@ -172,8 +172,12 @@ exports.uploadProfileImage = async (req, res) => {
         description: 'Updated their profile image 📸',
         imageUrl: profilePicUrl,
         timestamp: new Date()
-      }).catch(err => {
-        console.error('Feed creation failed (non-blocking):', err.message);
+      })
+      .then(() => {
+        console.log('✅ Feed entry created successfully (non-blocking)');
+      })
+      .catch(err => {
+        console.error('❌ Feed creation failed (non-blocking):', err.message);
       });
   
     } catch (error) {
