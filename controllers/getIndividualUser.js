@@ -426,6 +426,31 @@ exports.getUserFeed = async (req, res) => {
 
 
 
+exports.uploadFeed = async (req, res) => {
+    try {
+      const { answer } = req.body;
+      const userId = req.user.id;
+
+      const imageUrl = req.file ? req.file.location : null;
+  
+      const feed = await Feed.create({
+        userId,
+        activityType: 'general',
+        title: 'User Shared a Thought 💬',
+        description: answer,
+        imageUrl,
+        timestamp: new Date(),
+      });
+  
+      res.status(201).json({ success: true, feed });
+    } catch (err) {
+      console.error('❌ Feed upload failed:', err.message);
+      res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
+  };
+
+
+
 
 
 
