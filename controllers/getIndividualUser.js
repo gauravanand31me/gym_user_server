@@ -435,7 +435,7 @@ exports.uploadFeed = async (req, res) => {
   
       const feed = await Feed.create({
         userId,
-        activityType: 'general',
+        activityType: 'questionPrompt',
         title: 'User Shared a Thought 💬',
         description: answer,
         imageUrl,
