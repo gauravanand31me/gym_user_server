@@ -4,6 +4,7 @@ const { getNearbyUsers } = require('../controllers/getNearbyUsers');
 const upload = require('../middleware/upload');
 const { getIndividualUser, searchUsersByUsernameOrLocation, uploadProfileImage,uploadPostImage,  getUserImage, updateFullName, deleteProfileImage, deleteProfile, getTopUsersByWorkoutTime, getUserFeed, uploadFeed} = require('../controllers/getIndividualUser');
 const { reactToPost } = require('../controllers/PostReaction');
+const { createComment, deleteComment, getCommentsByPost } = require('../controllers/createComment');
 const router = express.Router();
 
 router.get('/nearby-users', authMiddleware, searchUsersByUsernameOrLocation);
@@ -16,7 +17,10 @@ router.put('/update-fullname', authMiddleware, updateFullName);
 router.put('/delete-profileimage', authMiddleware, deleteProfileImage);
 router.delete('/deleteaccount', authMiddleware, deleteProfile);
 router.get('/leaderboard',  getTopUsersByWorkoutTime);
-router.get('/feed',  authMiddleware,  getUserFeed)
-router.post('/feed/upload',  authMiddleware, upload.single('image'),  uploadFeed)
-router.post('/feed/react', authMiddleware,  reactToPost)
+router.get('/feed',  authMiddleware,  getUserFeed);
+router.post('/feed/upload',  authMiddleware, upload.single('image'),  uploadFeed);
+router.post('/feed/react', authMiddleware,  reactToPost);
+router.post('/feed/comment', authMiddleware,  createComment);
+router.delete('/feed/comment', authMiddleware,  deleteComment);
+router.get('/feed/comment/:postId', authMiddleware,  getCommentsByPost);
 module.exports = router;
