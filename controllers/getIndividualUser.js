@@ -422,6 +422,47 @@ exports.getUserFeed = async (req, res) => {
       return res.status(500).json({ message: 'Internal server error' });
     }
 };
+
+
+
+
+exports.getMyFeed = async (req, res) => {
+    const userId = req.user.id;
+  
+    try {
+      const limit = parseInt(req.query.limit || 10);
+      const offset = parseInt(req.query.offset || 0);
+  
+      const query = `
+        SELECT
+          f.*,
+          u.full_name AS "user.full_name",
+          u.profile_pic AS "user.profile_pic",
+          g.name AS "gym.name",
+          COUNT(r."id") AS "reactionCount"
+        FROM "Feeds" f
+        LEFT JOIN "Users" u ON f."userId" = u.id
+        LEFT JOIN "Gyms" g ON f."gymId" = g.id
+        LEFT JOIN "PostReactions" r ON f."id" = r."postId"
+        WHERE f."userId" = :userId
+        GROUP BY f.id, u.id, g.id
+        ORDER BY f."timestamp" DESC
+        LIMIT :limit OFFSET :offset
+      `;
+  
+      const feedItems = await sequelize.query(query, {
+        replacements: { userId, limit, offset },
+        type: sequelize.QueryTypes.SELECT,
+        nest: true,
+      });
+  
+      return res.status(200).json({ feed: feedItems });
+  
+    } catch (error) {
+      console.error('Error fetching my posts feed:', error);
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+  };
   
 
 
