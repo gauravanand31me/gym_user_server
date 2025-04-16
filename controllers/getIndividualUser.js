@@ -387,7 +387,7 @@ exports.getUserFeed = async (req, res) => {
         if (buddy.toUserId !== userId) friendIds.add(buddy.toUserId);
       }
   
-      // Step 3: Raw query to fetch feed + user + gym (if exists)
+      // Step 3: Raw query with reactions count
       const idsArray = Array.from(friendIds);
       const limit = parseInt(req.query.limit || 10);
       const offset = parseInt(req.query.offset || 0);
@@ -397,23 +397,22 @@ exports.getUserFeed = async (req, res) => {
           f.*,
           u.full_name AS "user.full_name",
           u.profile_pic AS "user.profile_pic",
-          g.name AS "gym.name"
+          g.name AS "gym.name",
+          COUNT(r."id") AS "reactionCount"
         FROM "Feeds" f
         LEFT JOIN "Users" u ON f."userId" = u.id
         LEFT JOIN "Gyms" g ON f."gymId" = g.id
+        LEFT JOIN "PostReactions" r ON f."id" = r."postId"
         WHERE f."userId" IN (:ids)
+        GROUP BY f.id, u.id, g.id
         ORDER BY f."timestamp" DESC
         LIMIT :limit OFFSET :offset
       `;
   
       const feedItems = await sequelize.query(query, {
-        replacements: {
-          ids: idsArray,
-          limit,
-          offset
-        },
+        replacements: { ids: idsArray, limit, offset },
         type: sequelize.QueryTypes.SELECT,
-        nest: true // for nested result under 'user' and 'gym'
+        nest: true,
       });
   
       return res.status(200).json({ feed: feedItems });
@@ -423,6 +422,7 @@ exports.getUserFeed = async (req, res) => {
       return res.status(500).json({ message: 'Internal server error' });
     }
 };
+  
 
 
 
