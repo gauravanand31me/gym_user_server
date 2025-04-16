@@ -3,6 +3,7 @@ const { authMiddleware } = require('../middleware/authMiddleware');
 const { getNearbyUsers } = require('../controllers/getNearbyUsers');
 const upload = require('../middleware/upload');
 const { getIndividualUser, searchUsersByUsernameOrLocation, uploadProfileImage,uploadPostImage,  getUserImage, updateFullName, deleteProfileImage, deleteProfile, getTopUsersByWorkoutTime, getUserFeed, uploadFeed} = require('../controllers/getIndividualUser');
+const { reactToPost } = require('../controllers/PostReaction');
 const router = express.Router();
 
 router.get('/nearby-users', authMiddleware, searchUsersByUsernameOrLocation);
@@ -17,4 +18,5 @@ router.delete('/deleteaccount', authMiddleware, deleteProfile);
 router.get('/leaderboard',  getTopUsersByWorkoutTime);
 router.get('/feed',  authMiddleware,  getUserFeed)
 router.post('/feed/upload',  authMiddleware, upload.single('image'),  uploadFeed)
+router.post('/feed/react', authMiddleware,  reactToPost)
 module.exports = router;
