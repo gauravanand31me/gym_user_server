@@ -411,13 +411,13 @@ exports.getUserFeed = async (req, res) => {
   LEFT JOIN (
     SELECT
       "postId",
-      json_agg(json_build_object('type', reaction_type, 'count', COUNT(*))) AS reactions
+      json_agg(json_build_object('type', "reactionType", 'count', COUNT(*))) AS reactions
     FROM "PostReactions"
     GROUP BY "postId"
   ) AS reactions_summary ON reactions_summary."postId" = f.id
 
   WHERE f."userId" IN (:ids)
-  GROUP BY f.id, u.id, g.id, ur.reaction_type, reactions_summary.reactions
+  GROUP BY f.id, u.id, g.id, ur.reactionType, reactions_summary.reactions
   ORDER BY f."timestamp" DESC
   LIMIT :limit OFFSET :offset
 `;
