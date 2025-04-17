@@ -426,7 +426,7 @@ exports.getUserFeed = async (req, res) => {
 
 
     const feedItems = await sequelize.query(query, {
-      replacements: { ids: idsArray, limit, offset },
+      replacements: { ids: idsArray, limit, offset, userId },
       type: sequelize.QueryTypes.SELECT,
       nest: true,
     });
