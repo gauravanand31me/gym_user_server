@@ -399,7 +399,7 @@ exports.getUserFeed = async (req, res) => {
     u.profile_pic AS "user.profile_pic",
     g.name AS "gym.name",
     COUNT(r."id") AS "reactionCount",
-    ur.reaction_type AS "userReaction",
+    ur."reactionType" AS "userReaction",
     COALESCE(reactions_summary.reactions, '[]') AS reactionsBreakdown
   FROM "Feeds" f
   LEFT JOIN "Users" u ON f."userId" = u.id
@@ -428,7 +428,7 @@ exports.getUserFeed = async (req, res) => {
   ) AS reactions_summary ON reactions_summary."postId" = f.id
 
   WHERE f."userId" IN (:ids)
-  GROUP BY f.id, u.id, g.id, ur.reaction_type, reactions_summary.reactions
+  GROUP BY f.id, u.id, g.id, ur."reactionType", reactions_summary.reactions
   ORDER BY f."timestamp" DESC
   LIMIT :limit OFFSET :offset
 `;
