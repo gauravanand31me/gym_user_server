@@ -415,7 +415,7 @@ exports.getUserFeed = async (req, res) => {
   LEFT JOIN (
     SELECT
       sub."postId",
-      json_agg(json_build_object('type', sub.reactionType, 'count', sub.reaction_count)) AS reactions
+      json_agg(json_build_object('type', sub."reactionType", 'count', sub.reaction_count)) AS reactions
     FROM (
       SELECT
         "postId",
