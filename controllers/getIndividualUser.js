@@ -393,45 +393,46 @@ exports.getUserFeed = async (req, res) => {
     const offset = parseInt(req.query.offset || 0);
 
     const query = `
-  SELECT
-    f.*,
-    u.full_name AS "user.full_name",
-    u.profile_pic AS "user.profile_pic",
-    g.name AS "gym.name",
-    COUNT(r."id") AS "reactionCount",
-    ur."reactionType" AS "userReaction",
-    COALESCE(reactions_summary.reactions, '[]') AS reactionsBreakdown
-  FROM "Feeds" f
-  LEFT JOIN "Users" u ON f."userId" = u.id
-  LEFT JOIN "Gyms" g ON f."gymId" = g.id
-
-  -- All reactions for total count
-  LEFT JOIN "PostReactions" r ON f."id" = r."postId"
-
-  -- Logged-in user’s reaction
-  LEFT JOIN "PostReactions" ur ON f."id" = ur."postId" AND ur."userId" = :userId
-
-  -- Reactions grouped by type (fixed version)
-  LEFT JOIN (
     SELECT
-      sub."postId",
-      json_agg(json_build_object('type', sub."reactionType", 'count', sub.reaction_count)) AS reactions
-    FROM (
+      f.*,
+      u.full_name AS "user.full_name",
+      u.profile_pic AS "user.profile_pic",
+      g.name AS "gym.name",
+      COUNT(r."id") AS "reactionCount",
+      ur."reactionType" AS "userReaction",
+      COALESCE(reactions_summary.reactions, '[]') AS reactionsBreakdown
+    FROM "Feeds" f
+    LEFT JOIN "Users" u ON f."userId" = u.id
+    LEFT JOIN "Gyms" g ON f."gymId" = g.id
+  
+    -- Total reactions
+    LEFT JOIN "PostReactions" r ON f."id" = r."postId"
+  
+    -- Logged-in user’s reaction
+    LEFT JOIN "PostReactions" ur ON f."id" = ur."postId" AND ur."userId" = :userId
+  
+    -- Reactions grouped by type (nested subquery to avoid nested aggregation issues)
+    LEFT JOIN (
       SELECT
-        "postId",
-        "reactionType",
-        COUNT(*) AS reaction_count
-      FROM "PostReactions"
-      GROUP BY "postId", "reactionType"
-    ) AS sub
-    GROUP BY sub."postId"
-  ) AS reactions_summary ON reactions_summary."postId" = f.id
-
-  WHERE f."userId" IN (:ids)
-  GROUP BY f.id, u.id, g.id, ur."reactionType", reactions_summary.reactions
-  ORDER BY f."timestamp" DESC
-  LIMIT :limit OFFSET :offset
-`;
+        sub."postId",
+        json_agg(json_build_object('type', sub."reactionType", 'count', sub.reaction_count)) AS reactions
+      FROM (
+        SELECT
+          "postId",
+          "reactionType",
+          COUNT(*) AS reaction_count
+        FROM "PostReactions"
+        GROUP BY "postId", "reactionType"
+      ) AS sub
+      GROUP BY sub."postId"
+    ) AS reactions_summary ON reactions_summary."postId" = f.id
+  
+    WHERE f."userId" IN (:ids)
+    GROUP BY f.id, u.id, g.id, ur."reactionType"
+    ORDER BY f."timestamp" DESC
+    LIMIT :limit OFFSET :offset
+  `;
+  
 
 
 
