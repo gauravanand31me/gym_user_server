@@ -3,7 +3,7 @@ const PostReaction = require('../models/PostReaction');
 exports.reactToPost = async (req, res) => {
   const { postId, reactionType } = req.body;
   const userId = req.user.id;
-
+  console.log("Request Body", req.body);
   try {
     const existingReaction = await PostReaction.findOne({ where: { postId, userId } });
 
