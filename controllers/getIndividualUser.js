@@ -411,11 +411,11 @@ exports.getUserFeed = async (req, res) => {
   -- Logged-in user’s reaction
   LEFT JOIN "PostReactions" ur ON f."id" = ur."postId" AND ur."userId" = :userId
 
-  -- Reactions grouped by type
+  -- Reactions grouped by type (fixed version)
   LEFT JOIN (
     SELECT
-      inner."postId",
-      json_agg(json_build_object('type', inner."reactionType", 'count', inner.reaction_count)) AS reactions
+      sub."postId",
+      json_agg(json_build_object('type', sub.reactionType, 'count', sub.reaction_count)) AS reactions
     FROM (
       SELECT
         "postId",
@@ -423,8 +423,8 @@ exports.getUserFeed = async (req, res) => {
         COUNT(*) AS reaction_count
       FROM "PostReactions"
       GROUP BY "postId", "reactionType"
-    ) AS inner
-    GROUP BY inner."postId"
+    ) AS sub
+    GROUP BY sub."postId"
   ) AS reactions_summary ON reactions_summary."postId" = f.id
 
   WHERE f."userId" IN (:ids)
@@ -432,6 +432,7 @@ exports.getUserFeed = async (req, res) => {
   ORDER BY f."timestamp" DESC
   LIMIT :limit OFFSET :offset
 `;
+
 
 
 
