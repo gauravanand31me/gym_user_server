@@ -56,7 +56,8 @@ exports.deleteComment = async (req, res) => {
     const { postId } = req.params;
     const limit = parseInt(req.query.limit) || 10;
     const offset = parseInt(req.query.offset) || 0;
-  
+    const loggedInUserId = req.user.id;
+    
     try {
       const comments = await PostComment.findAll({
         where: { postId },
@@ -80,6 +81,7 @@ exports.deleteComment = async (req, res) => {
         },
         commentText: comment.commentText,
         timestamp: comment.createdAt,
+        canDelete: comment.User.id === loggedInUserId
       }));
   
       return res.status(200).json({ comments: formatted });
