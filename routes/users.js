@@ -23,6 +23,6 @@ router.get('/my-feed', authMiddleware, getMyFeed);
 router.post('/feed/upload',  authMiddleware, upload.single('image'),  uploadFeed);
 router.post('/feed/react', authMiddleware,  reactToPost);
 router.post('/feed/comment', authMiddleware,  createComment);
-router.delete('/feed/comment', authMiddleware,  deleteComment);
+router.delete('/feed/comment/:commentId', authMiddleware,  deleteComment);
 router.get('/feed/comment/:postId', authMiddleware,  getCommentsByPost);
 module.exports = router;
