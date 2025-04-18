@@ -12,6 +12,8 @@ const BuddyRequest = require('../models/BuddyRequest');
 const PushNotification = require('../models/PushNotification');
 const Notification = require('../models/Notification');
 const Feed = require('../models/Feed');
+const PostReaction = require('../models/PostReaction');
+const PostComment = require('../models/PostComment');
 
 const getDistance = (lat1, lon1, lat2, lon2) => {
   const R = 6371; // Radius of the Earth in kilometers
@@ -453,6 +455,39 @@ exports.getUserFeed = async (req, res) => {
 
   } catch (error) {
     console.error('Error fetching user feed (raw):', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+
+
+// DELETE /posts/:postId
+exports.deletePost = async (req, res) => {
+  const userId = req.user.id;
+  const postId = req.params.postId;
+
+  try {
+    // Step 1: Find the post
+    const post = await Feed.findOne({ where: { id: postId } });
+
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+
+    // Step 2: Verify that the logged-in user owns the post
+    if (post.userId !== userId) {
+      return res.status(403).json({ message: 'You are not authorized to delete this post' });
+    }
+
+    // Step 3: Delete associated reactions
+    await PostReaction.destroy({ where: { postId } });
+    await PostComment.destroy({ where: { postId } });
+    // Step 4: Delete the post
+    await post.destroy();
+
+    return res.status(200).json({ message: 'Post and associated reactions deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting post:', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
