@@ -436,20 +436,20 @@ exports.getUserFeed = async (req, res) => {
   LIMIT :limit OFFSET :offset
 `;
 
-  
-
-
-
-
-
-
-    const feedItems = await sequelize.query(query, {
+  const feedItems = await sequelize.query(query, {
       replacements: { ids: idsArray, limit, offset, userId },
       type: sequelize.QueryTypes.SELECT,
       nest: true,
     });
 
-    return res.status(200).json({ feed: feedItems });
+    const feedItemsWithPermissions = feedItems.map(feed => ({
+      ...feed,
+      canDelete: feed.userId === userId,
+      canReport: feed.userId !== userId,
+    }));
+    
+
+    return res.status(200).json({ feed: feedItemsWithPermissions });
 
   } catch (error) {
     console.error('Error fetching user feed (raw):', error);
