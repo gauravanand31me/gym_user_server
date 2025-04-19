@@ -1,5 +1,4 @@
 const FriendRequest = require('../models/FriendRequest');
-const UserAddress = require('../models/UserAddress');
 const UserImage = require('../models/UserImages');
 const User = require('../models/User');
 // controllers/userController.js
@@ -373,7 +372,7 @@ exports.getUserFeed = async (req, res) => {
   
   try {
     // Step 1: Get accepted buddies
-    const buddyRequests = await BuddyRequest.findAll({
+    const friendRequest = await FriendRequest.findAll({
       where: {
         status: 'accepted',
         [Op.or]: [
@@ -385,9 +384,9 @@ exports.getUserFeed = async (req, res) => {
 
     // Step 2: Extract unique friend IDs
     const friendIds = new Set([userId]);
-    for (const buddy of buddyRequests) {
-      if (buddy.fromUserId !== userId) friendIds.add(buddy.fromUserId);
-      if (buddy.toUserId !== userId) friendIds.add(buddy.toUserId);
+    for (const friend of friendRequest) {
+      if (friend.fromUserId !== userId) friendIds.add(friend.fromUserId);
+      if (friend.toUserId !== userId) friendIds.add(friend.toUserId);
     }
 
     
