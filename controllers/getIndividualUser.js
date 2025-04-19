@@ -399,6 +399,7 @@ exports.getUserFeed = async (req, res) => {
     f.*,
     u.full_name AS "user.full_name",
     u.profile_pic AS "user.profile_pic",
+    g.id AS "gym.id",
     g.name AS "gym.name",
     COALESCE(rc.reaction_count, 0) AS "reactionCount",
     ur."reactionType" AS "userReaction",
