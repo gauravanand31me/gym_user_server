@@ -369,7 +369,7 @@ exports.getTopUsersByWorkoutTime = async (req, res) => {
 
 exports.getUserFeed = async (req, res) => {
   const userId = req.user.id;
-
+  console.log("Req,user.id", req.user.id);
   try {
     // Step 1: Get accepted buddies
     const buddyRequests = await BuddyRequest.findAll({
