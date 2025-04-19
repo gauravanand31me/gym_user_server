@@ -2,10 +2,16 @@ const PostReaction = require('../models/PostReaction');
 const { sendPushNotification } = require('../config/pushNotification');
 const Feed = require('../models/Feed');
 const User = require('../models/User');
+const Notification = require('../models/Notification');
+const PushNotification = require('../models/PushNotification'); // Make sure this model exists
 
 exports.reactToPost = async (req, res) => {
   const { postId, reactionType } = req.body;
   const userId = req.user.id;
+
+  if (reactionType !== 'like') {
+    return res.status(400).json({ message: 'Only "like" reaction is supported' });
+  }
 
   try {
     const post = await Feed.findOne({ where: { id: postId } });
@@ -21,24 +27,33 @@ exports.reactToPost = async (req, res) => {
     if (!existingReaction) {
       // Create new reaction
       await PostReaction.create({ postId, userId, reactionType });
+
+      // Increment like_count
+      post.like_count += 1;
+      await post.save();
+
       actionMessage = 'added';
     } else if (existingReaction.reactionType === reactionType) {
-      // Remove existing reaction
+      // Remove reaction
       await existingReaction.destroy();
+
+      // Decrement like_count (ensure not negative)
+      post.like_count = Math.max(0, post.like_count - 1);
+      await post.save();
+
       actionMessage = 'removed';
     } else {
-      // Update existing reaction
+      // If needed to support switching reaction types in the future
       existingReaction.reactionType = reactionType;
       await existingReaction.save();
       actionMessage = 'updated';
     }
 
-    // Don't notify if reacting to own post
+    // Send notification (if not reacting to own post and it's not a removal)
     if (userId !== toUserId && actionMessage !== 'removed') {
-      // Create notification
       await Notification.create({
-        userId: toUserId, // Recipient of notification
-        message: `${fromUser.full_name} reacted to your post with ${reactionType} ${REACTIONS_EMOJI[reactionType] || ''}`,
+        userId: toUserId,
+        message: `${fromUser.full_name} liked your post ❤️`,
         type: 'postReaction',
         status: 'unread',
         relatedId: postId,
@@ -46,11 +61,10 @@ exports.reactToPost = async (req, res) => {
         forUserId: userId,
       });
 
-      // Send push notification
       const notificationData = await PushNotification.findOne({ where: { userId: toUserId } });
       const notificationTitle = {
-        title: "New Reaction on Your Post",
-        body: `${fromUser.full_name} reacted to your post.`,
+        title: "New Like on Your Post",
+        body: `${fromUser.full_name} liked your post.`,
       };
 
       if (notificationData?.expoPushToken) {
@@ -61,7 +75,6 @@ exports.reactToPost = async (req, res) => {
     return res.status(200).json({ message: `Reaction ${actionMessage}` });
   } catch (error) {
     console.error('Error reacting to post:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
-

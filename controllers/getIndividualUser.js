@@ -405,38 +405,15 @@ exports.getUserFeed = async (req, res) => {
     u.profile_pic AS "user.profile_pic",
     g.id AS "gym.id",
     g.name AS "gym.name",
-    COALESCE(rc.reaction_count, 0) AS "reactionCount",
-    ur."reactionType" AS "userReaction",
-    COALESCE(reactions_summary.reactions, '[]') AS reactionsBreakdown
+    f.like_count AS "likeCount",
+    f.comment_count AS "commentCount",
+    CASE WHEN ur."reactionType" = 'like' THEN true ELSE false END AS "userLiked"
   FROM "Feeds" f
   LEFT JOIN "Users" u ON f."userId" = u.id
   LEFT JOIN "Gyms" g ON f."gymId" = g.id
 
-  -- Reaction count per post
-  LEFT JOIN (
-    SELECT "postId", COUNT(*) AS reaction_count
-    FROM "PostReactions"
-    GROUP BY "postId"
-  ) AS rc ON rc."postId" = f.id
-
-  -- Logged-in user’s reaction
-  LEFT JOIN "PostReactions" ur ON f."id" = ur."postId" AND ur."userId" = :userId
-
-  -- Breakdown of reactions by type
-  LEFT JOIN (
-    SELECT
-      sub."postId",
-      json_agg(json_build_object('type', sub."reactionType", 'count', sub.reaction_count)) AS reactions
-    FROM (
-      SELECT
-        "postId",
-        "reactionType",
-        COUNT(*) AS reaction_count
-      FROM "PostReactions"
-      GROUP BY "postId", "reactionType"
-    ) AS sub
-    GROUP BY sub."postId"
-  ) AS reactions_summary ON reactions_summary."postId" = f.id
+  -- Logged-in user's reaction (only checking if it's a 'like')
+  LEFT JOIN "PostReactions" ur ON f.id = ur."postId" AND ur."userId" = :userId
 
   WHERE f."userId" IN (:ids)
   ORDER BY f."timestamp" DESC
