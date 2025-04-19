@@ -50,27 +50,27 @@ exports.reactToPost = async (req, res) => {
     }
 
     // Send notification (if not reacting to own post and it's not a removal)
-    if (userId !== toUserId && actionMessage !== 'removed') {
-      await Notification.create({
-        userId: toUserId,
-        message: `${fromUser.full_name} liked your post ❤️`,
-        type: 'postReaction',
-        status: 'unread',
-        relatedId: postId,
-        profileImage: fromUser.profile_pic || "https://png.pngtree.com/png-vector/20190223/ourmid/pngtree-profile-glyph-black-icon-png-image_691589.jpg",
-        forUserId: userId,
-      });
+    // if (userId !== toUserId && actionMessage !== 'removed') {
+    //   await Notification.create({
+    //     userId: toUserId,
+    //     message: `${fromUser.full_name} liked your post ❤️`,
+    //     type: 'postReaction',
+    //     status: 'unread',
+    //     relatedId: postId,
+    //     profileImage: fromUser.profile_pic || "https://png.pngtree.com/png-vector/20190223/ourmid/pngtree-profile-glyph-black-icon-png-image_691589.jpg",
+    //     forUserId: userId,
+    //   });
 
-      const notificationData = await PushNotification.findOne({ where: { userId: toUserId } });
-      const notificationTitle = {
-        title: "New Like on Your Post",
-        body: `${fromUser.full_name} liked your post.`,
-      };
+    //   const notificationData = await PushNotification.findOne({ where: { userId: toUserId } });
+    //   const notificationTitle = {
+    //     title: "New Like on Your Post",
+    //     body: `${fromUser.full_name} liked your post.`,
+    //   };
 
-      if (notificationData?.expoPushToken) {
-        await sendPushNotification(notificationData.expoPushToken, notificationTitle);
-      }
-    }
+    //   if (notificationData?.expoPushToken) {
+    //     await sendPushNotification(notificationData.expoPushToken, notificationTitle);
+    //   }
+    // }
 
     return res.status(200).json({ message: `Reaction ${actionMessage}` });
   } catch (error) {

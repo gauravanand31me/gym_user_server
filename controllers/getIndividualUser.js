@@ -166,20 +166,20 @@ exports.uploadProfileImage = async (req, res) => {
     });
 
     // ✅ Log feed entry in background (non-blocking)
-    Feed.create({
-      userId,
-      activityType: 'general',
-      title: 'Profile Picture Updated',
-      description: 'Updated their profile image 📸',
-      imageUrl: profilePicUrl,
-      timestamp: new Date()
-    })
-      .then(() => {
-        console.log('✅ Feed entry created successfully (non-blocking)');
-      })
-      .catch(err => {
-        console.error('❌ Feed creation failed (non-blocking):', err.message);
-      });
+    // Feed.create({
+    //   userId,
+    //   activityType: 'general',
+    //   title: 'Profile Picture Updated',
+    //   description: 'Updated their profile image 📸',
+    //   imageUrl: profilePicUrl,
+    //   timestamp: new Date()
+    // })
+    //   .then(() => {
+    //     console.log('✅ Feed entry created successfully (non-blocking)');
+    //   })
+    //   .catch(err => {
+    //     console.error('❌ Feed creation failed (non-blocking):', err.message);
+    //   });
 
   } catch (error) {
     console.error('Error uploading profile image:', error);
