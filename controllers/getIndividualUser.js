@@ -524,6 +524,8 @@ exports.uploadFeed = async (req, res) => {
 
     const imageUrl = req.file ? req.file.location : null;
 
+    console.log("image url received", imageUrl);
+
     const feed = await Feed.create({
       userId,
       activityType: 'questionPrompt',
