@@ -369,7 +369,8 @@ exports.getTopUsersByWorkoutTime = async (req, res) => {
 
 exports.getUserFeed = async (req, res) => {
   const userId = req.user.id;
-  console.log("Req,user.id", req.user.id);
+  const publicUserId = '0bd86c87-99b8-4638-813d-f4d8b399f28e';
+  
   try {
     // Step 1: Get accepted buddies
     const buddyRequests = await BuddyRequest.findAll({
@@ -388,6 +389,9 @@ exports.getUserFeed = async (req, res) => {
       if (buddy.fromUserId !== userId) friendIds.add(buddy.fromUserId);
       if (buddy.toUserId !== userId) friendIds.add(buddy.toUserId);
     }
+
+    
+    friendIds.add(publicUserId);
 
     // Step 3: Raw query with reactions count
     const idsArray = Array.from(friendIds);
