@@ -60,6 +60,16 @@ const Feed = sequelize.define('Feed', {
     type: DataTypes.TEXT,
     allowNull: true
   },
+  like_count: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    defaultValue: 0
+  },
+  comment_count: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    defaultValue: 0
+  },
   timestamp: {
     type: DataTypes.DATE,
     allowNull: false,
