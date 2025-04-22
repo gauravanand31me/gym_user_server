@@ -372,7 +372,7 @@ exports.getFeedById = async (req, res) => {
       SELECT
         f.*,
         u.full_name AS "user.full_name",
-        u.profilePic AS "user.profilePic",
+        u."profilePic" AS "user.profilePic",
         u.id AS "user.id",
         ru.full_name AS "relatedUser.full_name",
         ru.id AS "relatedUser.id",
