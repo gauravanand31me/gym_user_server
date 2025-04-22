@@ -363,7 +363,27 @@ exports.getTopUsersByWorkoutTime = async (req, res) => {
 };
 
 
+exports.getFeedById = async (req, res) => {
+  const { id } = req.params;
 
+  try {
+    const feed = await Feed.findOne({
+      where: { id },
+      include: [
+        { model: User, attributes: ['id', 'full_name', 'profilePic'] },
+        { model: User, as: 'relatedUser', attributes: ['id', 'full_name'] },
+        { model: Gym, attributes: ['id', 'name'] }
+      ]
+    });
+
+    if (!feed) return res.status(404).json({ message: 'Feed not found' });
+
+    res.json(feed);
+  } catch (err) {
+    console.error('Error fetching feed by ID:', err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
 
 
 exports.getUserFeed = async (req, res) => {
