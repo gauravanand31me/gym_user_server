@@ -367,20 +367,39 @@ exports.getFeedById = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const feed = await Feed.findOne({
-      where: { id },
-      include: [
-        { model: User, attributes: ['id', 'full_name', 'profilePic'] },
-        { model: User, as: 'relatedUser', attributes: ['id', 'full_name'] },
-        { model: Gym, attributes: ['id', 'name'] }
-      ]
-    });
+    const feedResult = await sequelize.query(
+      `
+      SELECT
+        f.*,
+        u.full_name AS "user.full_name",
+        u.profilePic AS "user.profilePic",
+        u.id AS "user.id",
+        ru.full_name AS "relatedUser.full_name",
+        ru.id AS "relatedUser.id",
+        g.name AS "gym.name",
+        g.id AS "gym.id"
+      FROM "Feeds" f
+      LEFT JOIN "Users" u ON u.id = f."userId"
+      LEFT JOIN "Users" ru ON ru.id = f."relatedUserId"
+      LEFT JOIN "Gyms" g ON g.id = f."gymId"
+      WHERE f.id = :id
+      LIMIT 1
+      `,
+      {
+        type: sequelize.QueryTypes.SELECT,
+        replacements: { id },
+        raw: true,
+        nest: true, // to allow nested objects like user, gym, etc.
+      }
+    );
+
+    const feed = feedResult[0];
 
     if (!feed) return res.status(404).json({ message: 'Feed not found' });
 
     res.json(feed);
   } catch (err) {
-    console.error('Error fetching feed by ID:', err);
+    console.error('Error fetching feed by ID (raw):', err);
     res.status(500).json({ message: 'Internal server error' });
   }
 };
