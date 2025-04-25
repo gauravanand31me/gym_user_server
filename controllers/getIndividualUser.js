@@ -54,6 +54,7 @@ exports.getIndividualUser = async (req, res) => {
 
 
 exports.uploadReel = async (req, res) => {
+  console.log('🎥 Video URL received:');
   try {
     const { title, description, postType } = req.body;
     const userId = req.user.id;
