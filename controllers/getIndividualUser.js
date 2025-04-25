@@ -13,6 +13,7 @@ const Notification = require('../models/Notification');
 const Feed = require('../models/Feed');
 const PostReaction = require('../models/PostReaction');
 const PostComment = require('../models/PostComment');
+const Reel = require('../models/Reel'); 
 
 const getDistance = (lat1, lon1, lat2, lon2) => {
   const R = 6371; // Radius of the Earth in kilometers
@@ -52,7 +53,35 @@ exports.getIndividualUser = async (req, res) => {
 
 
 
+exports.uploadReel = async (req, res) => {
+  try {
+    const { title, description, postType } = req.body;
+    const userId = req.user.id;
 
+    const videoUrl = req.file ? req.file.location : null;
+
+    console.log('🎥 Video URL received:', videoUrl);
+
+    if (!videoUrl) {
+      return res.status(400).json({ success: false, message: 'Video file is required.' });
+    }
+
+    const reel = await Reel.create({
+      userId,
+      videoUrl,
+      title: title || null,
+      description: description || null,
+      postType: postType || 'public', // default public
+      isPublic: postType === 'public', // set isPublic true/false
+      timestamp: new Date(),
+    });
+
+    res.status(201).json({ success: true, reel });
+  } catch (err) {
+    console.error('❌ Reel upload failed:', err.message);
+    res.status(500).json({ success: false, message: 'Internal Server Error' });
+  }
+};
 
 
 
