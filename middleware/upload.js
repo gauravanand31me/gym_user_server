@@ -8,7 +8,6 @@ const upload = multer({
   storage: multerS3({
     s3: s3,
     bucket: process.env.AWS_S3_BUCKET_NAME,
-    acl: 'public-read', // optional: makes file publicly accessible
     key: (req, file, cb) => {
       const userId = req.user.id; // Assuming req.user is populated by auth middleware
       console.log("userId", userId);
