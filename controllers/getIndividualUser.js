@@ -435,6 +435,72 @@ exports.getFeedById = async (req, res) => {
 };
 
 
+
+exports.getUserReels = async (req, res) => {
+  const userId = req.user.id;
+
+  try {
+    // Step 1: Get accepted buddies
+    const friendRequest = await FriendRequest.findAll({
+      where: {
+        status: 'accepted',
+        [Op.or]: [
+          { fromUserId: userId },
+          { toUserId: userId }
+        ]
+      }
+    });
+
+    // Step 2: Extract unique friend IDs
+    const friendIds = new Set([userId]);
+    for (const friend of friendRequest) {
+      if (friend.fromUserId !== userId) friendIds.add(friend.fromUserId);
+      if (friend.toUserId !== userId) friendIds.add(friend.toUserId);
+    }
+
+    const idsArray = Array.from(friendIds);
+    const limit = parseInt(req.query.limit || 10);
+    const offset = parseInt(req.query.offset || 0);
+
+    // Step 3: Raw SQL query to fetch Reels based on postType logic
+    const query = `
+      SELECT
+        r.*,
+        u.full_name AS "user.full_name",
+        u.profile_pic AS "user.profile_pic"
+      FROM "Reels" r
+      LEFT JOIN "Users" u ON r."userId" = u.id
+
+      WHERE (
+          r."postType" = 'public'
+          OR (r."postType" = 'private' AND r."userId" IN (:ids))
+          OR (r."postType" = 'onlyme' AND r."userId" = :userId)
+      )
+      ORDER BY r."timestamp" DESC
+      LIMIT :limit OFFSET :offset
+    `;
+
+    const reels = await sequelize.query(query, {
+      replacements: { ids: idsArray, limit, offset, userId },
+      type: sequelize.QueryTypes.SELECT,
+      nest: true,
+    });
+
+    const reelsWithPermissions = reels.map(reel => ({
+      ...reel,
+      canDelete: reel.userId === userId,
+      canReport: reel.userId !== userId,
+    }));
+
+    return res.status(200).json({ reels: reelsWithPermissions });
+
+  } catch (error) {
+    console.error('Error fetching user reels:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+
 exports.getUserFeed = async (req, res) => {
   const userId = req.user.id;
 
