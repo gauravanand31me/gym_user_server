@@ -407,8 +407,7 @@ exports.getFeedById = async (req, res) => {
 
 exports.getUserFeed = async (req, res) => {
   const userId = req.user.id;
-  const publicUserId = '0bd86c87-99b8-4638-813d-f4d8b399f28e';
-  
+
   try {
     // Step 1: Get accepted buddies
     const friendRequest = await FriendRequest.findAll({
@@ -428,37 +427,36 @@ exports.getUserFeed = async (req, res) => {
       if (friend.toUserId !== userId) friendIds.add(friend.toUserId);
     }
 
-    
-    friendIds.add(publicUserId);
-
-    // Step 3: Raw query with reactions count
     const idsArray = Array.from(friendIds);
     const limit = parseInt(req.query.limit || 10);
     const offset = parseInt(req.query.offset || 0);
 
+    // Step 3: Raw query with postType logic
     const query = `
-  SELECT
-    f.*,
-    u.full_name AS "user.full_name",
-    u.profile_pic AS "user.profile_pic",
-    g.id AS "gym.id",
-    g.name AS "gym.name",
-    f.like_count AS "likeCount",
-    f.comment_count AS "commentCount",
-    CASE WHEN ur."reactionType" = 'like' THEN true ELSE false END AS "userLiked"
-  FROM "Feeds" f
-  LEFT JOIN "Users" u ON f."userId" = u.id
-  LEFT JOIN "Gyms" g ON f."gymId" = g.id
+      SELECT
+        f.*,
+        u.full_name AS "user.full_name",
+        u.profile_pic AS "user.profile_pic",
+        g.id AS "gym.id",
+        g.name AS "gym.name",
+        f.like_count AS "likeCount",
+        f.comment_count AS "commentCount",
+        CASE WHEN ur."reactionType" = 'like' THEN true ELSE false END AS "userLiked"
+      FROM "Feeds" f
+      LEFT JOIN "Users" u ON f."userId" = u.id
+      LEFT JOIN "Gyms" g ON f."gymId" = g.id
+      LEFT JOIN "PostReactions" ur ON f.id = ur."postId" AND ur."userId" = :userId
 
-  -- Logged-in user's reaction (only checking if it's a 'like')
-  LEFT JOIN "PostReactions" ur ON f.id = ur."postId" AND ur."userId" = :userId
+      WHERE (
+          f."postType" = 'public'
+          OR (f."postType" = 'private' AND f."userId" IN (:ids))
+          OR (f."postType" = 'onlyme' AND f."userId" = :userId)
+      )
+      ORDER BY f."timestamp" DESC
+      LIMIT :limit OFFSET :offset
+    `;
 
-  WHERE f."userId" IN (:ids)
-  ORDER BY f."timestamp" DESC
-  LIMIT :limit OFFSET :offset
-`;
-
-  const feedItems = await sequelize.query(query, {
+    const feedItems = await sequelize.query(query, {
       replacements: { ids: idsArray, limit, offset, userId },
       type: sequelize.QueryTypes.SELECT,
       nest: true,
@@ -469,15 +467,15 @@ exports.getUserFeed = async (req, res) => {
       canDelete: feed.userId === userId,
       canReport: feed.userId !== userId,
     }));
-    
 
     return res.status(200).json({ feed: feedItemsWithPermissions });
 
   } catch (error) {
-    console.error('Error fetching user feed (raw):', error);
+    console.error('Error fetching user feed:', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
+
 
 
 
@@ -555,10 +553,9 @@ exports.getMyFeed = async (req, res) => {
 
 
 
-
 exports.uploadFeed = async (req, res) => {
   try {
-    const { answer } = req.body;
+    const { answer, postType } = req.body;
     const userId = req.user.id;
 
     const imageUrl = req.file ? req.file.location : null;
@@ -572,6 +569,7 @@ exports.uploadFeed = async (req, res) => {
       description: answer,
       imageUrl,
       timestamp: new Date(),
+      postType: postType || 'public' // 👈 default to 'public' if not provided
     });
 
     res.status(201).json({ success: true, feed });
@@ -580,6 +578,7 @@ exports.uploadFeed = async (req, res) => {
     res.status(500).json({ success: false, message: 'Internal Server Error' });
   }
 };
+
 
 
 
