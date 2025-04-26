@@ -14,6 +14,31 @@ const Feed = require('../models/Feed');
 const PostReaction = require('../models/PostReaction');
 const PostComment = require('../models/PostComment');
 const Reel = require('../models/Reel'); 
+const ffmpeg = require('fluent-ffmpeg');
+const ffmpegPath = require('ffmpeg-static');
+const fs = require('fs');
+const path = require('path');
+const s3 = require('../config/aws'); // your s3 config
+
+ffmpeg.setFfmpegPath(ffmpegPath);
+
+
+const compressVideo = (inputPath, outputPath) => {
+  return new Promise((resolve, reject) => {
+    ffmpeg(inputPath)
+      .outputOptions([
+        '-vcodec libx264',
+        '-crf 28',
+        '-preset fast',
+        '-movflags +faststart'
+      ])
+      .save(outputPath)
+      .on('end', () => resolve(outputPath))
+      .on('error', reject);
+  });
+};
+
+
 
 const getDistance = (lat1, lon1, lat2, lon2) => {
   const R = 6371; // Radius of the Earth in kilometers
@@ -53,29 +78,49 @@ exports.getIndividualUser = async (req, res) => {
 
 
 
+
 exports.uploadReel = async (req, res) => {
-  console.log('🎥 Video URL received:');
+  console.log('🎥 Video upload started');
   try {
     const { title, description, postType } = req.body;
     const userId = req.user.id;
 
-    const videoUrl = req.file ? req.file.location : null;
-
-    console.log('🎥 Video URL received:', videoUrl);
-
-    if (!videoUrl) {
+    if (!req.file) {
       return res.status(400).json({ success: false, message: 'Video file is required.' });
     }
 
+    const uploadedFilePath = req.file.path; // Local uploaded path
+    const compressedFilePath = path.join(__dirname, '../temp', `compressed-${Date.now()}.mp4`);
+
+    // Step 1: Compress video
+    await compressVideo(uploadedFilePath, compressedFilePath);
+
+    // Step 2: Upload compressed video to S3
+    const compressedStream = fs.createReadStream(compressedFilePath);
+    const uploadResult = await s3.upload({
+      Bucket: process.env.AWS_S3_BUCKET_NAME,
+      Key: `reels/${Date.now()}-compressed.mp4`,
+      Body: compressedStream,
+      ContentType: 'video/mp4',
+      CacheControl: 'public, max-age=31536000',
+    }).promise();
+
+    const videoUrl = uploadResult.Location;
+
+    // Step 3: Save into DB
     const reel = await Reel.create({
       userId,
       videoUrl,
       title: title || null,
       description: description || null,
-      postType: postType || 'public', // default public
-      isPublic: postType === 'public', // set isPublic true/false
+      postType: postType || 'public',
+      isPublic: postType === 'public',
       timestamp: new Date(),
     });
+
+    // Step 4: Cleanup temp files
+    fs.unlinkSync(uploadedFilePath);
+    fs.unlinkSync(compressedFilePath);
 
     res.status(201).json({ success: true, reel });
   } catch (err) {
@@ -83,6 +128,39 @@ exports.uploadReel = async (req, res) => {
     res.status(500).json({ success: false, message: 'Internal Server Error' });
   }
 };
+
+
+
+// exports.uploadReel = async (req, res) => {
+//   console.log('🎥 Video URL received:');
+//   try {
+//     const { title, description, postType } = req.body;
+//     const userId = req.user.id;
+
+//     const videoUrl = req.file ? req.file.location : null;
+
+//     console.log('🎥 Video URL received:', videoUrl);
+
+//     if (!videoUrl) {
+//       return res.status(400).json({ success: false, message: 'Video file is required.' });
+//     }
+
+//     const reel = await Reel.create({
+//       userId,
+//       videoUrl,
+//       title: title || null,
+//       description: description || null,
+//       postType: postType || 'public', // default public
+//       isPublic: postType === 'public', // set isPublic true/false
+//       timestamp: new Date(),
+//     });
+
+//     res.status(201).json({ success: true, reel });
+//   } catch (err) {
+//     console.error('❌ Reel upload failed:', err.message);
+//     res.status(500).json({ success: false, message: 'Internal Server Error' });
+//   }
+// };
 
 
 
