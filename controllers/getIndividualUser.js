@@ -1,3 +1,4 @@
+const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 const FriendRequest = require('../models/FriendRequest');
 const UserImage = require('../models/UserImages');
 const User = require('../models/User');
@@ -19,6 +20,14 @@ const ffmpegPath = require('ffmpeg-static');
 const fs = require('fs');
 const path = require('path');
 const s3 = require('../config/aws'); // your s3 config
+
+const s3Client = new S3Client({ 
+  region: process.env.AWS_REGION, 
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  }
+});
 
 ffmpeg.setFfmpegPath(ffmpegPath);
 
@@ -81,33 +90,38 @@ exports.getIndividualUser = async (req, res) => {
 
 exports.uploadReel = async (req, res) => {
   console.log('🎥 Video upload started');
+  
+  if (!req.file) {
+    return res.status(400).json({ success: false, message: 'Video file is required.' });
+  }
+
+  const { title, description, postType } = req.body;
+  const userId = req.user.id;
+
+  const uploadedFilePath = req.file.path; // Temporary local uploaded video
+  const compressedFilePath = path.join(__dirname, '../temp', `compressed-${Date.now()}.mp4`);
+
   try {
-    const { title, description, postType } = req.body;
-    const userId = req.user.id;
-
-    if (!req.file) {
-      return res.status(400).json({ success: false, message: 'Video file is required.' });
-    }
-
-    const uploadedFilePath = req.file.path; // Local uploaded path
-    const compressedFilePath = path.join(__dirname, '../temp', `compressed-${Date.now()}.mp4`);
-
-    // Step 1: Compress video
+    // Step 1: Compress the video
     await compressVideo(uploadedFilePath, compressedFilePath);
 
     // Step 2: Upload compressed video to S3
     const compressedStream = fs.createReadStream(compressedFilePath);
-    const uploadResult = await s3.upload({
+    const s3Key = `reels/${Date.now()}-compressed.mp4`;
+
+    const command = new PutObjectCommand({
       Bucket: process.env.AWS_S3_BUCKET_NAME,
-      Key: `reels/${Date.now()}-compressed.mp4`,
+      Key: s3Key,
       Body: compressedStream,
       ContentType: 'video/mp4',
       CacheControl: 'public, max-age=31536000',
-    }).promise();
+    });
 
-    const videoUrl = uploadResult.Location;
+    await s3Client.send(command);
 
-    // Step 3: Save into DB
+    const videoUrl = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.amazonaws.com/${s3Key}`;
+
+    // Step 3: Save in Database
     const reel = await Reel.create({
       userId,
       videoUrl,
@@ -118,14 +132,15 @@ exports.uploadReel = async (req, res) => {
       timestamp: new Date(),
     });
 
-    // Step 4: Cleanup temp files
-    fs.unlinkSync(uploadedFilePath);
-    fs.unlinkSync(compressedFilePath);
-
     res.status(201).json({ success: true, reel });
+
   } catch (err) {
     console.error('❌ Reel upload failed:', err.message);
     res.status(500).json({ success: false, message: 'Internal Server Error' });
+  } finally {
+    // Always cleanup temp files even if upload failed
+    try { if (fs.existsSync(uploadedFilePath)) fs.unlinkSync(uploadedFilePath); } catch {}
+    try { if (fs.existsSync(compressedFilePath)) fs.unlinkSync(compressedFilePath); } catch {}
   }
 };
 
