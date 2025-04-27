@@ -39,7 +39,9 @@ const compressVideo = (inputPath, outputPath) => {
         '-vcodec libx264',
         '-crf 28',
         '-preset fast',
-        '-movflags +faststart'
+        '-movflags +faststart',
+        '-acodec aac',
+        '-b:a 128k'
       ])
       .save(outputPath)
       .on('end', () => resolve(outputPath))
@@ -89,8 +91,6 @@ exports.deleteReel = async (req, res) => {
   const { reelId } = req.params; // Get reelId from route params
   const userId = req.user.id; // Logged-in user
 
-  console.log("Reel id received", reelId);
-
   if (!reelId) {
     return res.status(400).json({ success: false, message: 'reelId is required.' });
   }
@@ -139,8 +139,8 @@ exports.deleteReel = async (req, res) => {
 
 
 exports.uploadReel = async (req, res) => {
-  console.log('🎥 Video upload started');
-  
+  console.log('🤖 AI Promo upload started');
+
   if (!req.file) {
     return res.status(400).json({ success: false, message: 'Video file is required.' });
   }
@@ -148,7 +148,7 @@ exports.uploadReel = async (req, res) => {
   const { title, description, postType } = req.body;
   const userId = req.user.id;
 
-  const uploadedFilePath = req.file.path; // Temporary local uploaded video
+  const uploadedFilePath = req.file.path;
   const compressedFilePath = path.join(__dirname, '../temp', `compressed-${Date.now()}.mp4`);
 
   try {
@@ -157,7 +157,7 @@ exports.uploadReel = async (req, res) => {
 
     // Step 2: Upload compressed video to S3
     const compressedStream = fs.createReadStream(compressedFilePath);
-    const s3Key = `reels/${Date.now()}-compressed.mp4`;
+    const s3Key = `aiPromos/${Date.now()}-compressed.mp4`;
 
     const command = new PutObjectCommand({
       Bucket: process.env.AWS_S3_BUCKET_NAME,
@@ -171,7 +171,7 @@ exports.uploadReel = async (req, res) => {
 
     const videoUrl = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.amazonaws.com/${s3Key}`;
 
-    // Step 3: Save in Database
+    // Step 3: Save in Reel table first
     const reel = await Reel.create({
       userId,
       videoUrl,
@@ -182,10 +182,22 @@ exports.uploadReel = async (req, res) => {
       timestamp: new Date(),
     });
 
-    res.status(201).json({ success: true, reel });
+    // Step 4: Save in Feed table using same ID
+    const feed = await Feed.create({
+      id: reel.id, // 👈 setting feed id same as reel id
+      userId,
+      activityType: 'aiPromo',
+      title: title || 'AI Promotional Video 🤖',
+      description: description || null,
+      imageUrl: videoUrl, // Storing video link in imageUrl
+      timestamp: new Date(),
+      postType: postType || 'public',
+    });
+
+    res.status(201).json({ success: true, feed, reel });
 
   } catch (err) {
-    console.error('❌ Reel upload failed:', err.message);
+    console.error('❌ AI Promo upload failed:', err.message);
     res.status(500).json({ success: false, message: 'Internal Server Error' });
   } finally {
     // Always cleanup temp files even if upload failed
@@ -193,6 +205,7 @@ exports.uploadReel = async (req, res) => {
     try { if (fs.existsSync(compressedFilePath)) fs.unlinkSync(compressedFilePath); } catch {}
   }
 };
+
 
 
 
