@@ -29,5 +29,5 @@ router.delete('/feed/comment/:commentId', authMiddleware,  deleteComment);
 router.get('/feed/comment/:postId', authMiddleware,  getCommentsByPost);
 router.post('/reel/upload',  authMiddleware, uploadVideo.single('video'),  uploadReel);
 router.get('/reel',  authMiddleware,  getUserReels);
-router.get('/reel/:reelId',  authMiddleware,  deleteReel);
+router.delete('/reel/:reelId',  authMiddleware,  deleteReel);
 module.exports = router;
