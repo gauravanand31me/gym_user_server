@@ -485,10 +485,9 @@ exports.getFeedById = async (req, res) => {
 };
 
 
-
 exports.getUserReels = async (req, res) => {
   const loggedInUserId = req.user.id;
-  const { user_id, reel_id } = req.query; // 👈 take from query params
+  const { user_id, reel_id } = req.query; // user_id = whose reels to fetch (optional)
 
   try {
     const limit = parseInt(req.query.limit || 10);
@@ -510,21 +509,48 @@ exports.getUserReels = async (req, res) => {
       whereConditions = `WHERE r."id" = :reelId`;
       replacements.reelId = reel_id;
     }
-    // 👉 Case 2: If user_id is passed ➔ fetch all reels of that user
+    // 👉 Case 2: If user_id is passed ➔ fetch reels of that user
     else if (user_id) {
-      whereConditions = `
-        WHERE (
-          r."userId" = :userId
-          AND (
-            r."postType" = 'public'
-            OR (r."postType" = 'private' AND r."userId" = :userId)
-            OR (r."postType" = 'onlyme' AND r."userId" = :userId)
-          )
-        )
-      `;
+      // Check if the requested userId is same as logged-in userId
+      const isSelf = (user_id === loggedInUserId);
+
+      if (isSelf) {
+        // Fetch all reels uploaded by the user (public, private, onlyme)
+        whereConditions = `
+          WHERE r."userId" = :userId
+        `;
+      } else {
+        // Fetch only allowed reels (public + private if buddies + onlyme hidden)
+        // Step 1: Check if loggedInUserId and user_id are buddies
+        const friendRequest = await FriendRequest.findOne({
+          where: {
+            status: 'accepted',
+            [Op.or]: [
+              { fromUserId: loggedInUserId, toUserId: user_id },
+              { fromUserId: user_id, toUserId: loggedInUserId },
+            ]
+          }
+        });
+
+        const areFriends = !!friendRequest;
+
+        if (areFriends) {
+          // if friends ➔ allow 'public' and 'private' reels
+          whereConditions = `
+            WHERE r."userId" = :userId
+            AND (r."postType" = 'public' OR r."postType" = 'private')
+          `;
+        } else {
+          // if not friends ➔ allow only 'public' reels
+          whereConditions = `
+            WHERE r."userId" = :userId
+            AND r."postType" = 'public'
+          `;
+        }
+      }
       replacements.userId = user_id;
     }
-    // 👉 Case 3: Default case ➔ fetch friends' and public reels
+    // 👉 Case 3: Default case ➔ fetch feed (friends + public reels)
     else {
       // Step 1: Get accepted buddies
       const friendRequest = await FriendRequest.findAll({
@@ -583,6 +609,7 @@ exports.getUserReels = async (req, res) => {
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
+
 
 
 
