@@ -147,7 +147,7 @@ exports.uploadReel = async (req, res) => {
   const userId = req.user.id;
 
   const uploadedFilePath = req.file.path;
-  const compressedFilePath = path.join(__dirname, '../temp', compressed-${Date.now()}.mp4);
+  const compressedFilePath = path.join(__dirname, '../temp', `compressed-${Date.now()}.mp4`);
 
   try {
     // Step 1: Compress the video
