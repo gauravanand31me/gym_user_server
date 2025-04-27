@@ -89,6 +89,8 @@ exports.deleteReel = async (req, res) => {
   const { reelId } = req.params; // Get reelId from route params
   const userId = req.user.id; // Logged-in user
 
+  console.log("Reel id received", reelId);
+
   if (!reelId) {
     return res.status(400).json({ success: false, message: 'reelId is required.' });
   }
