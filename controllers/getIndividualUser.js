@@ -171,34 +171,48 @@ exports.uploadReel = async (req, res) => {
 
     const videoUrl = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.amazonaws.com/${s3Key}`;
 
-    // Step 3: Save in Reel table first
-    const reel = await Reel.create({
-      userId,
-      videoUrl,
-      title: title || null,
-      description: description || null,
-      postType: postType || 'public',
-      isPublic: postType === 'public',
-      timestamp: new Date(),
+    // 👉 Step 3: Send Success Response Immediately
+    res.status(201).json({
+      success: true,
+      message: 'Video uploaded successfully!',
+      videoUrl,  // Give back video URL so client can use immediately
     });
 
-    // Step 4: Save in Feed table using same ID
-    const feed = await Feed.create({
-      id: reel.id, // 👈 setting feed id same as reel id
-      userId,
-      activityType: 'aiPromo',
-      title: title || 'AI Promotional Video 🤖',
-      description: description || null,
-      imageUrl: videoUrl, // Storing video link in imageUrl
-      timestamp: new Date(),
-      postType: postType || 'public',
-    });
+    // 👉 Step 4: Now Save in Database in Background (no await blocking response)
+    (async () => {
+      try {
+        const reel = await Reel.create({
+          userId,
+          videoUrl,
+          title: title || null,
+          description: description || null,
+          postType: postType || 'public',
+          isPublic: postType === 'public',
+          timestamp: new Date(),
+        });
 
-    res.status(201).json({ success: true, feed, reel });
+        await Feed.create({
+          id: reel.id, // same ID as reel
+          userId,
+          activityType: 'aiPromo',
+          title: title || 'AI Promotional Video 🤖',
+          description: description || null,
+          imageUrl: videoUrl, // video URL stored as imageUrl
+          timestamp: new Date(),
+          postType: postType || 'public',
+        });
+
+        console.log('✅ Reel and Feed saved successfully in background.');
+      } catch (dbError) {
+        console.error('❌ Failed to save Reel/Feed after upload:', dbError.message);
+      }
+    })();
 
   } catch (err) {
-    console.error('❌ AI Promo upload failed:', err.message);
-    res.status(500).json({ success: false, message: 'Internal Server Error' });
+    console.error('❌ Reel upload failed:', err.message);
+    if (!res.headersSent) {
+      res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
   } finally {
     // Always cleanup temp files even if upload failed
     try { if (fs.existsSync(uploadedFilePath)) fs.unlinkSync(uploadedFilePath); } catch {}
