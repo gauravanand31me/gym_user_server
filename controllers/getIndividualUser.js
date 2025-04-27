@@ -146,36 +146,7 @@ exports.uploadReel = async (req, res) => {
 
 
 
-// exports.uploadReel = async (req, res) => {
-//   console.log('🎥 Video URL received:');
-//   try {
-//     const { title, description, postType } = req.body;
-//     const userId = req.user.id;
 
-//     const videoUrl = req.file ? req.file.location : null;
-
-//     console.log('🎥 Video URL received:', videoUrl);
-
-//     if (!videoUrl) {
-//       return res.status(400).json({ success: false, message: 'Video file is required.' });
-//     }
-
-//     const reel = await Reel.create({
-//       userId,
-//       videoUrl,
-//       title: title || null,
-//       description: description || null,
-//       postType: postType || 'public', // default public
-//       isPublic: postType === 'public', // set isPublic true/false
-//       timestamp: new Date(),
-//     });
-
-//     res.status(201).json({ success: true, reel });
-//   } catch (err) {
-//     console.error('❌ Reel upload failed:', err.message);
-//     res.status(500).json({ success: false, message: 'Internal Server Error' });
-//   }
-// };
 
 
 
@@ -288,21 +259,7 @@ exports.uploadProfileImage = async (req, res) => {
       profile_pic: profilePicUrl
     });
 
-    // ✅ Log feed entry in background (non-blocking)
-    // Feed.create({
-    //   userId,
-    //   activityType: 'general',
-    //   title: 'Profile Picture Updated',
-    //   description: 'Updated their profile image 📸',
-    //   imageUrl: profilePicUrl,
-    //   timestamp: new Date()
-    // })
-    //   .then(() => {
-    //     console.log('✅ Feed entry created successfully (non-blocking)');
-    //   })
-    //   .catch(err => {
-    //     console.error('❌ Feed creation failed (non-blocking):', err.message);
-    //   });
+   
 
   } catch (error) {
     console.error('Error uploading profile image:', error);
@@ -530,59 +487,93 @@ exports.getFeedById = async (req, res) => {
 
 
 exports.getUserReels = async (req, res) => {
-  const userId = req.user.id;
+  const loggedInUserId = req.user.id;
+  const { user_id, reel_id } = req.query; // 👈 take from query params
 
   try {
-    // Step 1: Get accepted buddies
-    const friendRequest = await FriendRequest.findAll({
-      where: {
-        status: 'accepted',
-        [Op.or]: [
-          { fromUserId: userId },
-          { toUserId: userId }
-        ]
-      }
-    });
-
-    // Step 2: Extract unique friend IDs
-    const friendIds = new Set([userId]);
-    for (const friend of friendRequest) {
-      if (friend.fromUserId !== userId) friendIds.add(friend.fromUserId);
-      if (friend.toUserId !== userId) friendIds.add(friend.toUserId);
-    }
-
-    const idsArray = Array.from(friendIds);
     const limit = parseInt(req.query.limit || 10);
     const offset = parseInt(req.query.offset || 0);
 
-    // Step 3: Raw SQL query to fetch Reels based on postType logic
-    const query = `
+    let query = `
       SELECT
         r.*,
         u.full_name AS "user.full_name",
         u.profile_pic AS "user.profile_pic"
       FROM "Reels" r
       LEFT JOIN "Users" u ON r."userId" = u.id
+    `;
+    let whereConditions = '';
+    let replacements = { limit, offset };
 
-      WHERE (
+    // 👉 Case 1: If reel_id is passed ➔ fetch specific Reel
+    if (reel_id) {
+      whereConditions = `WHERE r."id" = :reelId`;
+      replacements.reelId = reel_id;
+    }
+    // 👉 Case 2: If user_id is passed ➔ fetch all reels of that user
+    else if (user_id) {
+      whereConditions = `
+        WHERE (
+          r."userId" = :userId
+          AND (
+            r."postType" = 'public'
+            OR (r."postType" = 'private' AND r."userId" = :userId)
+            OR (r."postType" = 'onlyme' AND r."userId" = :userId)
+          )
+        )
+      `;
+      replacements.userId = user_id;
+    }
+    // 👉 Case 3: Default case ➔ fetch friends' and public reels
+    else {
+      // Step 1: Get accepted buddies
+      const friendRequest = await FriendRequest.findAll({
+        where: {
+          status: 'accepted',
+          [Op.or]: [
+            { fromUserId: loggedInUserId },
+            { toUserId: loggedInUserId }
+          ]
+        }
+      });
+
+      // Step 2: Extract unique friend IDs
+      const friendIds = new Set([loggedInUserId]);
+      for (const friend of friendRequest) {
+        if (friend.fromUserId !== loggedInUserId) friendIds.add(friend.fromUserId);
+        if (friend.toUserId !== loggedInUserId) friendIds.add(friend.toUserId);
+      }
+
+      const idsArray = Array.from(friendIds);
+
+      whereConditions = `
+        WHERE (
           r."postType" = 'public'
           OR (r."postType" = 'private' AND r."userId" IN (:ids))
-          OR (r."postType" = 'onlyme' AND r."userId" = :userId)
-      )
+          OR (r."postType" = 'onlyme' AND r."userId" = :loggedInUserId)
+        )
+      `;
+      replacements.ids = idsArray;
+      replacements.loggedInUserId = loggedInUserId;
+    }
+
+    // 👉 Final Query
+    query += `
+      ${whereConditions}
       ORDER BY r."timestamp" DESC
       LIMIT :limit OFFSET :offset
     `;
 
     const reels = await sequelize.query(query, {
-      replacements: { ids: idsArray, limit, offset, userId },
+      replacements,
       type: sequelize.QueryTypes.SELECT,
       nest: true,
     });
 
     const reelsWithPermissions = reels.map(reel => ({
       ...reel,
-      canDelete: reel.userId === userId,
-      canReport: reel.userId !== userId,
+      canDelete: reel.userId === loggedInUserId,
+      canReport: reel.userId !== loggedInUserId,
     }));
 
     return res.status(200).json({ reels: reelsWithPermissions });
@@ -592,6 +583,7 @@ exports.getUserReels = async (req, res) => {
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
+
 
 
 exports.getUserFeed = async (req, res) => {
