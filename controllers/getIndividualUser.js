@@ -39,9 +39,7 @@ const compressVideo = (inputPath, outputPath) => {
         '-vcodec libx264',
         '-crf 28',
         '-preset fast',
-        '-movflags +faststart',
-        '-acodec aac',
-        '-b:a 128k'
+        '-movflags +faststart'
       ])
       .save(outputPath)
       .on('end', () => resolve(outputPath))
