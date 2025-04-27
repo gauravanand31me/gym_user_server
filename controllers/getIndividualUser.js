@@ -1,4 +1,4 @@
-const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
+const { S3Client, PutObjectCommand, DeleteObjectCommand  } = require('@aws-sdk/client-s3');
 const FriendRequest = require('../models/FriendRequest');
 const UserImage = require('../models/UserImages');
 const User = require('../models/User');
@@ -85,7 +85,55 @@ exports.getIndividualUser = async (req, res) => {
 };
 
 
+exports.deleteReel = async (req, res) => {
+  const { reelId } = req.params; // Get reelId from route params
+  const userId = req.user.id; // Logged-in user
 
+  if (!reelId) {
+    return res.status(400).json({ success: false, message: 'reelId is required.' });
+  }
+
+  try {
+    // Step 1: Find the Reel from DB
+    const reel = await Reel.findOne({ where: { id: reelId } });
+
+    if (!reel) {
+      return res.status(404).json({ success: false, message: 'Reel not found.' });
+    }
+
+    // Step 2: Check ownership
+    if (reel.userId !== userId) {
+      return res.status(403).json({ success: false, message: 'You are not authorized to delete this reel.' });
+    }
+
+    // Step 3: Extract S3 Key from video URL
+    const videoUrl = reel.videoUrl;
+    const s3UrlPrefix = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.amazonaws.com/`;
+
+    if (!videoUrl.startsWith(s3UrlPrefix)) {
+      return res.status(400).json({ success: false, message: 'Invalid video URL.' });
+    }
+
+    const s3Key = videoUrl.replace(s3UrlPrefix, '');
+
+    // Step 4: Delete file from S3
+    const deleteCommand = new DeleteObjectCommand({
+      Bucket: process.env.AWS_S3_BUCKET_NAME,
+      Key: s3Key,
+    });
+
+    await s3Client.send(deleteCommand);
+
+    // Step 5: Delete Reel record from database
+    await reel.destroy();
+
+    return res.status(200).json({ success: true, message: 'Reel deleted successfully.' });
+
+  } catch (error) {
+    console.error('❌ Error deleting reel:', error.message);
+    return res.status(500).json({ success: false, message: 'Internal Server Error' });
+  }
+};
 
 
 exports.uploadReel = async (req, res) => {

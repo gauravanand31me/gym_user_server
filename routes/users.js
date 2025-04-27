@@ -2,7 +2,7 @@ const express = require('express');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const { getNearbyUsers } = require('../controllers/getNearbyUsers');
 const upload = require('../middleware/upload');
-const { getIndividualUser, searchUsersByUsernameOrLocation, uploadProfileImage,uploadPostImage,  getUserImage, updateFullName, deleteProfileImage, deleteProfile, getTopUsersByWorkoutTime, getUserFeed, uploadFeed, getMyFeed, deletePost, getFeedById, uploadReel, getUserReels} = require('../controllers/getIndividualUser');
+const { getIndividualUser, searchUsersByUsernameOrLocation, uploadProfileImage,uploadPostImage,  getUserImage, updateFullName, deleteProfileImage, deleteProfile, getTopUsersByWorkoutTime, getUserFeed, uploadFeed, getMyFeed, deletePost, getFeedById, uploadReel, getUserReels, deleteReel} = require('../controllers/getIndividualUser');
 const { reactToPost } = require('../controllers/PostReaction');
 const { createComment, deleteComment, getCommentsByPost } = require('../controllers/createComment');
 const uploadVideo = require('../middleware/uploadVideo');
@@ -29,5 +29,5 @@ router.delete('/feed/comment/:commentId', authMiddleware,  deleteComment);
 router.get('/feed/comment/:postId', authMiddleware,  getCommentsByPost);
 router.post('/reel/upload',  authMiddleware, uploadVideo.single('video'),  uploadReel);
 router.get('/reel',  authMiddleware,  getUserReels);
-
+router.get('/reel/:reelId',  authMiddleware,  deleteReel);
 module.exports = router;
