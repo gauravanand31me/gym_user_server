@@ -155,7 +155,7 @@ exports.uploadReel = async (req, res) => {
 
     // Step 2: Upload compressed video to S3
     const compressedStream = fs.createReadStream(compressedFilePath);
-    const s3Key = aiPromos/`${Date.now()}-compressed.mp4`;
+    const s3Key = `reels/${Date.now()}-compressed.mp4`;
 
     const command = new PutObjectCommand({
       Bucket: process.env.AWS_S3_BUCKET_NAME,
