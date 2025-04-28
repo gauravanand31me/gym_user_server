@@ -227,7 +227,7 @@ exports.uploadReel = async (req, res) => {
       if (fromUser?.expoPushToken) {
         const notificationTitle = {
           title: "Reel Uploaded Successfully 🎥",
-          body: `${fromUser.full_name} just uploaded a new reel! Check it out!`,
+          body: `your reel has been uploaded successfully.`,
         };
 
         await sendPushNotification(fromUser.expoPushToken, notificationTitle);
