@@ -31,7 +31,7 @@ exports.reactToPost = async (req, res) => {
     const existingReaction = await PostReaction.findOne({ where: { postId, userId } });
 
     let actionMessage = '';
-
+    console.log("existingReaction", existingReaction);
     if (!existingReaction) {
       // New like
       await PostReaction.create({ postId, userId, reactionType });
