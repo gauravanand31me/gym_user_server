@@ -148,10 +148,37 @@ exports.uploadReel = async (req, res) => {
 
   const uploadedFilePath = req.file.path;
   const compressedFilePath = path.join(__dirname, '../temp', `compressed-${Date.now()}.mp4`);
+  const thumbnailPath = path.join(__dirname, '../temp', `thumbnail-${Date.now()}.jpg`);
 
   try {
     // Step 1: Compress the video
     await compressVideo(uploadedFilePath, compressedFilePath);
+
+    await new Promise((resolve, reject) => {
+      ffmpeg(compressedFilePath)
+        .screenshots({
+          timestamps: ['00:00:01'], // Take frame at 1 second
+          filename: path.basename(thumbnailPath),
+          folder: path.dirname(thumbnailPath),
+          size: '320x?'
+        })
+        .on('end', resolve)
+        .on('error', reject);
+    });
+
+
+  const thumbnailStream = fs.createReadStream(thumbnailPath);
+  const thumbnailKey = `reels/thumbnails/${Date.now()}-thumbnail.jpg`;
+
+  await s3Client.send(new PutObjectCommand({
+    Bucket: process.env.AWS_S3_BUCKET_NAME,
+    Key: thumbnailKey,
+    Body: thumbnailStream,
+    ContentType: 'image/jpeg',
+    CacheControl: 'public, max-age=31536000',
+  }));
+
+const thumbnailUrl = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.amazonaws.com/${thumbnailKey}`;
 
     // Step 2: Upload compressed video to S3
     const compressedStream = fs.createReadStream(compressedFilePath);
@@ -173,6 +200,7 @@ exports.uploadReel = async (req, res) => {
     const reel = await Reel.create({
       userId,
       videoUrl,
+      thumbnailUrl,
       title: title || null,
       description: description || null,
       postType: postType || 'public',
