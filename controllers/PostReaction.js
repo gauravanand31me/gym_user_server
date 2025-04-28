@@ -37,6 +37,7 @@ exports.reactToPost = async (req, res) => {
       await PostReaction.create({ postId, userId, reactionType });
 
       if (reel) {
+        console.log("(reel.like_count || 0) + 1", (reel.like_count || 0) + 1);
         reel.like_count = (reel.like_count || 0) + 1;
         await reel.save();
       }
