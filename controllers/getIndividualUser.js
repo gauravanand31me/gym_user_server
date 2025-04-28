@@ -20,6 +20,7 @@ const ffmpegPath = require('ffmpeg-static');
 const fs = require('fs');
 const path = require('path');
 const s3 = require('../config/aws'); // your s3 config
+const { sendPushNotification } = require('../config/pushNotification');
 
 const s3Client = new S3Client({ 
   region: process.env.AWS_REGION, 
@@ -154,49 +155,48 @@ exports.uploadReel = async (req, res) => {
     // Step 1: Compress the video
     await compressVideo(uploadedFilePath, compressedFilePath);
 
+    // Step 2: Generate thumbnail
     await new Promise((resolve, reject) => {
       ffmpeg(compressedFilePath)
         .screenshots({
-          timestamps: ['00:00:01'], // Take frame at 1 second
+          timestamps: ['00:00:01'], 
           filename: path.basename(thumbnailPath),
           folder: path.dirname(thumbnailPath),
-          size: '320x?'
+          size: '320x?',
         })
         .on('end', resolve)
         .on('error', reject);
     });
 
+    // Step 3: Upload thumbnail to S3
+    const thumbnailStream = fs.createReadStream(thumbnailPath);
+    const thumbnailKey = `reels/thumbnails/${Date.now()}-thumbnail.jpg`;
 
-  const thumbnailStream = fs.createReadStream(thumbnailPath);
-  const thumbnailKey = `reels/thumbnails/${Date.now()}-thumbnail.jpg`;
+    await s3Client.send(new PutObjectCommand({
+      Bucket: process.env.AWS_S3_BUCKET_NAME,
+      Key: thumbnailKey,
+      Body: thumbnailStream,
+      ContentType: 'image/jpeg',
+      CacheControl: 'public, max-age=31536000',
+    }));
 
-  await s3Client.send(new PutObjectCommand({
-    Bucket: process.env.AWS_S3_BUCKET_NAME,
-    Key: thumbnailKey,
-    Body: thumbnailStream,
-    ContentType: 'image/jpeg',
-    CacheControl: 'public, max-age=31536000',
-  }));
+    const thumbnailUrl = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.amazonaws.com/${thumbnailKey}`;
 
-const thumbnailUrl = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.amazonaws.com/${thumbnailKey}`;
-
-    // Step 2: Upload compressed video to S3
+    // Step 4: Upload compressed video to S3
     const compressedStream = fs.createReadStream(compressedFilePath);
     const s3Key = `reels/${Date.now()}-compressed.mp4`;
 
-    const command = new PutObjectCommand({
+    await s3Client.send(new PutObjectCommand({
       Bucket: process.env.AWS_S3_BUCKET_NAME,
       Key: s3Key,
       Body: compressedStream,
       ContentType: 'video/mp4',
       CacheControl: 'public, max-age=31536000',
-    });
-
-    await s3Client.send(command);
+    }));
 
     const videoUrl = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.amazonaws.com/${s3Key}`;
 
-    // Step 3: Save in Reel table first
+    // Step 5: Save in Reel table
     const reel = await Reel.create({
       userId,
       videoUrl,
@@ -208,17 +208,36 @@ const thumbnailUrl = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.amazonaws.com
       timestamp: new Date(),
     });
 
-    // Step 4: Save in Feed table using same ID
+    // Step 6: Save in Feed table (same ID as reel)
     const feed = await Feed.create({
-      id: reel.id, // 👈 setting feed id same as reel id
+      id: reel.id,
       userId,
       activityType: 'aiPromo',
       title: title || 'AI Promotional Video 🤖',
       description: description || null,
-      imageUrl: videoUrl, // Storing video link in imageUrl
+      imageUrl: videoUrl,
       timestamp: new Date(),
       postType: postType || 'public',
     });
+
+    // Step 7: Send push notification (background after success)
+    try {
+      const fromUser = await PushNotification.findOne({ where: { id: userId } });
+
+      if (fromUser?.expoPushToken) {
+        const notificationTitle = {
+          title: "Reel Uploaded Successfully 🎥",
+          body: `${fromUser.full_name} just uploaded a new reel! Check it out!`,
+        };
+
+        await sendPushNotification(fromUser.expoPushToken, notificationTitle);
+        console.log('✅ Push Notification sent.');
+      } else {
+        console.log('⚠️ No expoPushToken available for user.');
+      }
+    } catch (notificationError) {
+      console.error('❌ Failed to send push notification:', notificationError.message);
+    }
 
     res.status(201).json({ success: true, feed, reel });
 
@@ -229,8 +248,10 @@ const thumbnailUrl = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.amazonaws.com
     // Always cleanup temp files even if upload failed
     try { if (fs.existsSync(uploadedFilePath)) fs.unlinkSync(uploadedFilePath); } catch {}
     try { if (fs.existsSync(compressedFilePath)) fs.unlinkSync(compressedFilePath); } catch {}
+    try { if (fs.existsSync(thumbnailPath)) fs.unlinkSync(thumbnailPath); } catch {}
   }
 };
+
 
 
 
