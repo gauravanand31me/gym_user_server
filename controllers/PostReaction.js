@@ -15,8 +15,16 @@ exports.reactToPost = async (req, res) => {
   }
 
   try {
-    const post = await Feed.findOne({ where: { id: postId } });
-    if (!post) return res.status(404).json({ message: 'Post not found' });
+    let post = await Feed.findOne({ where: { id: postId } });
+    let isFeed = true;
+
+    if (!post) {
+      // If not found in Feed, try to find in Reels
+      post = await Reel.findOne({ where: { id: postId } });
+      isFeed = false;
+    }
+
+    if (!post) return res.status(404).json({ message: 'Post/Reel not found' });
 
     const toUserId = post.userId;
     const fromUser = await User.findOne({ where: { id: userId } });
@@ -30,7 +38,7 @@ exports.reactToPost = async (req, res) => {
       await PostReaction.create({ postId, userId, reactionType });
 
       // Increment like_count
-      post.like_count += 1;
+      post.like_count = (post.like_count || 0) + 1;
       await post.save();
 
       actionMessage = 'added';
@@ -38,21 +46,22 @@ exports.reactToPost = async (req, res) => {
       // Remove reaction
       await existingReaction.destroy();
 
-      // Decrement like_count (ensure not negative)
-      post.like_count = Math.max(0, post.like_count - 1);
+      // Decrement like_count
+      post.like_count = Math.max(0, (post.like_count || 0) - 1);
       await post.save();
 
       actionMessage = 'removed';
     } else {
-      // If needed to support switching reaction types in the future
+      // (Future safe if you add other reaction types)
       existingReaction.reactionType = reactionType;
       await existingReaction.save();
       actionMessage = 'updated';
     }
 
     return res.status(200).json({ message: `Reaction ${actionMessage}` });
+
   } catch (error) {
-    console.error('Error reacting to post:', error);
+    console.error('Error reacting to post/reel:', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
