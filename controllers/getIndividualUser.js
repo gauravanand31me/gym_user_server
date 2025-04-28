@@ -222,7 +222,7 @@ exports.uploadReel = async (req, res) => {
 
     // Step 7: Send push notification (background after success)
     try {
-      const fromUser = await PushNotification.findOne({ where: { id: userId } });
+      const fromUser = await PushNotification.findOne({ where: {  userId } });
 
       if (fromUser?.expoPushToken) {
         const notificationTitle = {
