@@ -15,44 +15,55 @@ exports.reactToPost = async (req, res) => {
   }
 
   try {
-    let post = await Feed.findOne({ where: { id: postId } });
-    let isFeed = true;
+    // Find Reel (may or may not exist)
+    const reel = await Reel.findOne({ where: { id: postId } });
 
-    if (!post) {
-      // If not found in Feed, try to find in Reels
-      post = await Reel.findOne({ where: { id: postId } });
-      isFeed = false;
+    // Find Feed (may or may not exist)
+    const feed = await Feed.findOne({ where: { id: postId } });
+
+    if (!reel && !feed) {
+      return res.status(404).json({ message: 'Post/Reel not found' });
     }
 
-    if (!post) return res.status(404).json({ message: 'Post/Reel not found' });
-
-    const toUserId = post.userId;
     const fromUser = await User.findOne({ where: { id: userId } });
 
+    // Check if the user already reacted
     const existingReaction = await PostReaction.findOne({ where: { postId, userId } });
 
     let actionMessage = '';
 
     if (!existingReaction) {
-      // Create new reaction
+      // New like
       await PostReaction.create({ postId, userId, reactionType });
 
-      // Increment like_count
-      post.like_count = (post.like_count || 0) + 1;
-      await post.save();
+      if (reel) {
+        reel.like_count = (reel.like_count || 0) + 1;
+        await reel.save();
+      }
+
+      if (feed) {
+        feed.like_count = (feed.like_count || 0) + 1;
+        await feed.save();
+      }
 
       actionMessage = 'added';
     } else if (existingReaction.reactionType === reactionType) {
-      // Remove reaction
+      // Remove like
       await existingReaction.destroy();
 
-      // Decrement like_count
-      post.like_count = Math.max(0, (post.like_count || 0) - 1);
-      await post.save();
+      if (reel) {
+        reel.like_count = Math.max(0, (reel.like_count || 0) - 1);
+        await reel.save();
+      }
+
+      if (feed) {
+        feed.like_count = Math.max(0, (feed.like_count || 0) - 1);
+        await feed.save();
+      }
 
       actionMessage = 'removed';
     } else {
-      // (Future safe if you add other reaction types)
+      // If other reactions are added in future
       existingReaction.reactionType = reactionType;
       await existingReaction.save();
       actionMessage = 'updated';
