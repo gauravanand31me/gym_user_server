@@ -235,8 +235,8 @@ exports.uploadReel = async (req, res) => {
       CacheControl: 'public, max-age=31536000',
     }));
 
-    const videoUrl = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.amazonaws.com/${s3Key}`;
-
+    //const videoUrl = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.amazonaws.com/${s3Key}`;
+    const videoUrl = `https://yupluck.com/user/api/stream-reel/${s3Key}`;
     // Step 5: Save in Reel table
     const reel = await Reel.create({
       userId,
