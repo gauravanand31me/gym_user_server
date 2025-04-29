@@ -110,7 +110,7 @@ exports.deleteReel = async (req, res) => {
     // Step 3: Extract S3 Key from video URL
     const videoUrl = reel.videoUrl;
     const streamPrefix = `/api/stream-reel/`;
-
+    console.log("videoUrl", videoUrl);
     if (!videoUrl.startsWith(streamPrefix)) {
       return res.status(400).json({ success: false, message: 'Invalid video URL format.' });
     }
