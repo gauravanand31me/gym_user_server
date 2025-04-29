@@ -137,6 +137,47 @@ exports.deleteReel = async (req, res) => {
 };
 
 
+
+exports.streamReelVideo = async (req, res) => {
+  const videoKey = req.params.key; // URL will pass video key, e.g., "reels/123-compressed.mp4"
+
+  if (!videoKey) {
+    return res.status(400).json({ success: false, message: 'Video key is required' });
+  }
+
+  const range = req.headers.range;
+  if (!range) {
+    return res.status(400).json({ success: false, message: 'Range header is required' });
+  }
+
+  try {
+    const s3Params = {
+      Bucket: process.env.AWS_S3_BUCKET_NAME,
+      Key: videoKey,
+      Range: range, // 👈 Very important
+    };
+
+    const s3Object = await s3Client.send(new GetObjectCommand(s3Params));
+
+    const contentRange = s3Object.ContentRange;
+    const contentLength = s3Object.ContentLength;
+
+    res.status(206).set({
+      'Content-Range': contentRange,
+      'Accept-Ranges': 'bytes',
+      'Content-Length': contentLength,
+      'Content-Type': 'video/mp4',
+    });
+
+    s3Object.Body.pipe(res); // Pipe the chunk directly to the client!
+
+  } catch (err) {
+    console.error('❌ Error streaming video:', err);
+    res.status(500).json({ success: false, message: 'Error streaming video' });
+  }
+};
+
+
 exports.uploadReel = async (req, res) => {
   console.log('🤖 AI Promo upload started');
 
