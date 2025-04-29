@@ -139,8 +139,8 @@ exports.deleteReel = async (req, res) => {
 
 
 exports.streamReelVideo = async (req, res) => {
-  const videoKey = req.params.key; // URL will pass video key, e.g., "reels/123-compressed.mp4"
-
+  const videoKey = req.params['0']; // <== Capture the entire wildcard path
+  
   if (!videoKey) {
     return res.status(400).json({ success: false, message: 'Video key is required' });
   }
