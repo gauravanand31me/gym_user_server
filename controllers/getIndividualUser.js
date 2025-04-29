@@ -87,8 +87,8 @@ exports.getIndividualUser = async (req, res) => {
 
 
 exports.deleteReel = async (req, res) => {
-  const { reelId } = req.params; // Get reelId from route params
-  const userId = req.user.id; // Logged-in user
+  const { reelId } = req.params;
+  const userId = req.user.id;
 
   if (!reelId) {
     return res.status(400).json({ success: false, message: 'reelId is required.' });
@@ -109,13 +109,14 @@ exports.deleteReel = async (req, res) => {
 
     // Step 3: Extract S3 Key from video URL
     const videoUrl = reel.videoUrl;
-    const s3UrlPrefix = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.amazonaws.com/`;
+    const streamPrefix = `/api/stream-reel/`;
 
-    if (!videoUrl.startsWith(s3UrlPrefix)) {
-      return res.status(400).json({ success: false, message: 'Invalid video URL.' });
+    if (!videoUrl.startsWith(streamPrefix)) {
+      return res.status(400).json({ success: false, message: 'Invalid video URL format.' });
     }
 
-    const s3Key = videoUrl.replace(s3UrlPrefix, '');
+    const s3Key = videoUrl.replace(streamPrefix, ''); 
+    // ✅ Now s3Key is something like "reels/123-compressed.mp4"
 
     // Step 4: Delete file from S3
     const deleteCommand = new DeleteObjectCommand({
@@ -135,6 +136,7 @@ exports.deleteReel = async (req, res) => {
     return res.status(500).json({ success: false, message: 'Internal Server Error' });
   }
 };
+
 
 
 
@@ -236,7 +238,7 @@ exports.uploadReel = async (req, res) => {
     }));
 
     //const videoUrl = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.amazonaws.com/${s3Key}`;
-    const videoUrl = `https://yupluck.com/user/api/stream-reel/${s3Key}`;
+    const videoUrl = `https://yupluck.com/user/api/users/stream-reel/${s3Key}`;
     // Step 5: Save in Reel table
     const reel = await Reel.create({
       userId,
