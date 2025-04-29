@@ -109,13 +109,11 @@ exports.deleteReel = async (req, res) => {
 
     // Step 3: Extract S3 Key from video URL
     const videoUrl = reel.videoUrl;
-    const streamPrefix = `https://yupluck.com/user/api/stream-reel/`;
-    console.log("videoUrl", videoUrl);
-    if (!videoUrl.startsWith(streamPrefix)) {
-      return res.status(400).json({ success: false, message: 'Invalid video URL format.' });
-    }
 
-    const s3Key = videoUrl.replace(streamPrefix, ''); 
+    const videoUrlParts = videoUrl.split('/');
+    const lastTwoParts = videoUrlParts.slice(-2).join('/'); // "reels/123-compressed.mp4"
+    const s3Key = lastTwoParts; // this will be your correct S3 Key
+    
     // ✅ Now s3Key is something like "reels/123-compressed.mp4"
 
     // Step 4: Delete file from S3
