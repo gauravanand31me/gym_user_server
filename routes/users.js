@@ -30,5 +30,5 @@ router.get('/feed/comment/:postId', authMiddleware,  getCommentsByPost);
 router.post('/reel/upload',  authMiddleware, uploadVideo.single('video'),  uploadReel);
 router.get('/reel',  authMiddleware,  getUserReels);
 router.delete('/reel/:reelId',  authMiddleware,  deleteReel);
-router.get('/stream-reel/:key',  authMiddleware,  streamReelVideo);
+router.get('/stream-reel/*',  authMiddleware,  streamReelVideo);
 module.exports = router;
