@@ -139,7 +139,7 @@ exports.deleteReel = async (req, res) => {
 
 
 exports.streamReelVideo = async (req, res) => {
-  const videoKey = req.params['0'];
+  const videoKey = req.params['0']; // capture everything after /stream/
   if (!videoKey) {
     return res.status(400).json({ success: false, message: 'Video key is required.' });
   }
@@ -147,6 +147,7 @@ exports.streamReelVideo = async (req, res) => {
   const rangeHeader = req.headers.range;
 
   try {
+    // Get metadata about the object
     const s3Head = await s3Client.send(new HeadObjectCommand({
       Bucket: process.env.AWS_S3_BUCKET_NAME,
       Key: videoKey,
@@ -154,36 +155,42 @@ exports.streamReelVideo = async (req, res) => {
 
     const videoSize = s3Head.ContentLength;
 
-    let start = 0;
-    let end = videoSize - 1;
+    // If no Range header is sent — serve the whole video (useful for debugging/thumbnail load)
+    if (!rangeHeader) {
+      const s3Object = await s3Client.send(new GetObjectCommand({
+        Bucket: process.env.AWS_S3_BUCKET_NAME,
+        Key: videoKey,
+      }));
 
-    if (rangeHeader) {
-      const parts = rangeHeader.replace(/bytes=/, "").split("-");
-      start = parseInt(parts[0], 10);
-      end = parts[1] ? parseInt(parts[1], 10) : Math.min(start + 999999, videoSize - 1); // 1MB chunks
-    } else {
-      // 👇 if Range is not provided, serve only first 1MB
-      end = Math.min(start + 999999, videoSize - 1); // 1MB
+      res.writeHead(200, {
+        'Content-Length': videoSize,
+        'Content-Type': 'video/mp4',
+      });
+
+      return s3Object.Body.pipe(res);
     }
+
+    // Handle partial range request
+    const parts = rangeHeader.replace(/bytes=/, "").split("-");
+    const start = parseInt(parts[0], 10);
+    const end = parts[1] ? parseInt(parts[1], 10) : Math.min(start + 1024 * 1024, videoSize - 1); // ~1MB chunk
 
     const contentLength = end - start + 1;
 
-    const s3Object = await s3Client.send(new GetObjectCommand({
+    const s3Stream = await s3Client.send(new GetObjectCommand({
       Bucket: process.env.AWS_S3_BUCKET_NAME,
       Key: videoKey,
       Range: `bytes=${start}-${end}`,
     }));
 
-    const headers = {
+    res.writeHead(206, {
       'Content-Range': `bytes ${start}-${end}/${videoSize}`,
       'Accept-Ranges': 'bytes',
       'Content-Length': contentLength,
       'Content-Type': 'video/mp4',
-    };
+    });
 
-    res.writeHead(206, headers);
-
-    s3Object.Body.pipe(res);
+    return s3Stream.Body.pipe(res);
 
   } catch (err) {
     console.error('❌ Error streaming video:', err.message);
