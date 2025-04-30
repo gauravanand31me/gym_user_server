@@ -157,17 +157,24 @@ exports.streamReelVideo = async (req, res) => {
 
     // If no Range header is sent — serve the whole video (useful for debugging/thumbnail load)
     if (!rangeHeader) {
-      const s3Object = await s3Client.send(new GetObjectCommand({
+      const start = 0;
+      const end = Math.min(1024 * 1024 - 1, videoSize - 1); // Serve first ~1MB
+      const contentLength = end - start + 1;
+    
+      const s3Stream = await s3Client.send(new GetObjectCommand({
         Bucket: process.env.AWS_S3_BUCKET_NAME,
         Key: videoKey,
+        Range: `bytes=${start}-${end}`,
       }));
-
-      res.writeHead(200, {
-        'Content-Length': videoSize,
+    
+      res.writeHead(206, {
+        'Content-Range': `bytes ${start}-${end}/${videoSize}`,
+        'Accept-Ranges': 'bytes',
+        'Content-Length': contentLength,
         'Content-Type': 'video/mp4',
       });
-
-      return s3Object.Body.pipe(res);
+    
+      return s3Stream.Body.pipe(res);
     }
 
     // Handle partial range request
