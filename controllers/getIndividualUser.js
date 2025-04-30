@@ -157,7 +157,7 @@ exports.streamReelVideo = async (req, res) => {
 
     // If no Range header is sent — serve the whole video (useful for debugging/thumbnail load)
     if (!rangeHeader) {
-      const start = 2;
+      const start = 0;
       const end = Math.min(1024 * 1024 - 1, videoSize - 1); // Serve first ~1MB
       const contentLength = end - start + 1;
     
