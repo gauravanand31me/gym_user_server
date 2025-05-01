@@ -425,21 +425,29 @@ exports.uploadProfileImage = async (req, res) => {
       return res.status(400).json({ message: 'No file uploaded' });
     }
 
-    const profilePicUrl = req.file.location;
+    const extension = path.extname(req.file.originalname);
+    const fileName = `${userId}/${Date.now()}_profileImage${extension}`;
 
-    // Update user's profile picture
+    const uploadCommand = new PutObjectCommand({
+      Bucket: process.env.AWS_S3_BUCKET_NAME,
+      Key: fileName,
+      Body: req.file.buffer,
+      ContentType: req.file.mimetype,
+    });
+
+    await s3.send(uploadCommand);
+
+    const fileUrl = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.amazonaws.com/${fileName}`;
+
     await User.update(
-      { profile_pic: profilePicUrl },
+      { profile_pic: fileUrl },
       { where: { id: userId } }
     );
 
-    // ✅ Respond immediately
     res.status(200).json({
       message: 'Profile image uploaded successfully',
-      profile_pic: profilePicUrl
+      profile_pic: fileUrl
     });
-
-   
 
   } catch (error) {
     console.error('Error uploading profile image:', error);
