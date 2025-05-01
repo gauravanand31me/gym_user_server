@@ -12,7 +12,7 @@ router.get('/nearby-users', authMiddleware, searchUsersByUsernameOrLocation);
 router.get('/get', authMiddleware, getIndividualUser);
 router.get('/search/:username', authMiddleware, searchUsersByUsernameOrLocation);
 router.post('/uploadProfileImage', authMiddleware, upload.single('profileImage'), uploadProfileImage);
-router.post('/uploadImage', authMiddleware, upload.single('postImage'), uploadPostImage);
+router.post('/uploadImage', authMiddleware, upload.single('image'), uploadPostImage);
 router.get('/getImage/:userId', authMiddleware, getUserImage);
 router.put('/update-fullname', authMiddleware, updateFullName);
 router.put('/delete-profileimage', authMiddleware, deleteProfileImage);
