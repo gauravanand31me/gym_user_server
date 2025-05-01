@@ -467,7 +467,7 @@ exports.uploadPostImage = async (req, res) => {
     const extension = path.extname(req.file.originalname);
     const fileName = `${userId}/${Date.now()}_postImage${extension}`;
 
-    
+    console.log("fileName received", fileName)
 
     const command = new PutObjectCommand({
       Bucket: process.env.AWS_S3_BUCKET_NAME,
@@ -964,9 +964,23 @@ exports.uploadFeed = async (req, res) => {
     const { answer, postType } = req.body;
     const userId = req.user.id;
 
-    const imageUrl = req.file ? req.file.location : null;
+    let imageUrl = null;
 
-    console.log("image url received", imageUrl);
+    if (req.file) {
+      const extension = path.extname(req.file.originalname);
+      const fileName = `${userId}/${Date.now()}_feedImage${extension}`;
+
+      const command = new PutObjectCommand({
+        Bucket: process.env.AWS_S3_BUCKET_NAME,
+        Key: fileName,
+        Body: req.file.buffer,
+        ContentType: req.file.mimetype,
+      });
+
+      await s3.send(command);
+
+      imageUrl = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.amazonaws.com/${fileName}`;
+    }
 
     const feed = await Feed.create({
       userId,
@@ -975,7 +989,7 @@ exports.uploadFeed = async (req, res) => {
       description: answer,
       imageUrl,
       timestamp: new Date(),
-      postType: postType || 'public' // 👈 default to 'public' if not provided
+      postType: postType || 'public',
     });
 
     res.status(201).json({ success: true, feed });
