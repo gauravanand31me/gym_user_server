@@ -467,6 +467,8 @@ exports.uploadPostImage = async (req, res) => {
     const extension = path.extname(req.file.originalname);
     const fileName = `${userId}/${Date.now()}_postImage${extension}`;
 
+    console.log("fileName received", fileName);
+
     const command = new PutObjectCommand({
       Bucket: process.env.AWS_S3_BUCKET_NAME,
       Key: fileName,
