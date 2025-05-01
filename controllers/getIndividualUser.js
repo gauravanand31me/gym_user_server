@@ -464,27 +464,35 @@ exports.uploadPostImage = async (req, res) => {
       return res.status(400).json({ message: 'No file uploaded' });
     }
 
-    const postPicUrl = req.file.location;
+    const extension = path.extname(req.file.originalname);
+    const fileName = `${userId}/${Date.now()}_postImage${extension}`;
 
-
-
-
-    const userImage = new UserImage({
-      user_id: userId, // Ensure user_id is sent in the request
-      user_image: req.file.location, // S3 URL
-      likes_count: 0 // Initial likes count
+    const command = new PutObjectCommand({
+      Bucket: process.env.AWS_S3_BUCKET_NAME,
+      Key: fileName,
+      Body: req.file.buffer,
+      ContentType: req.file.mimetype,
     });
 
-    await userImage.save(); // Save to the database
+    await s3.send(command);
+
+    const fileUrl = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.amazonaws.com/${fileName}`;
+
+    const userImage = await UserImage.create({
+      user_id: userId,
+      user_image: fileUrl,
+      likes_count: 0,
+    });
 
     await User.increment('upload_count', { by: 1, where: { id: userId } });
-    return res.status(201).json({ message: 'Image uploaded successfully', userImage });
 
-
-
+    return res.status(201).json({
+      message: 'Image uploaded successfully',
+      userImage,
+    });
 
   } catch (error) {
-    console.error('Error uploading profile image:', error);
+    console.error('Error uploading post image:', error);
     res.status(500).send('Server error');
   }
 };
