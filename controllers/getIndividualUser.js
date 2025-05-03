@@ -326,6 +326,55 @@ exports.uploadReel = async (req, res) => {
 
 
 
+exports.updateFeedVisibility = async (req, res) => {
+  const { feedId } = req.params;
+  const { newVisibility } = req.body;
+  const userId = req.user.id;
+
+  // Validate visibility value
+  if (!['public', 'private', 'friends'].includes(newVisibility)) {
+    return res.status(400).json({ success: false, message: 'Invalid visibility type.' });
+  }
+
+  try {
+    const feed = await Feed.findByPk(feedId);
+
+    if (!feed) {
+      return res.status(404).json({ success: false, message: 'Feed not found' });
+    }
+
+    // Check ownership
+    if (feed.userId !== userId) {
+      return res.status(403).json({ success: false, message: 'Unauthorized' });
+    }
+
+    // Update feed visibility
+    feed.postType = newVisibility;
+    await feed.save();
+
+    // If it's an AI promo, also update the associated Reel
+    if (feed.activityType === 'aiPromo') {
+      const reel = await Reel.findByPk(feed.id); // Assuming feed.id = reel.id
+      if (reel) {
+        reel.postType = newVisibility;
+        await reel.save();
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Visibility updated successfully',
+      updatedFeed: feed,
+    });
+  } catch (error) {
+    console.error('Error updating visibility:', error);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
+
+
+
 
 
 
