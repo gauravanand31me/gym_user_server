@@ -1,6 +1,7 @@
 const PostComment = require('../models/PostComment');
 const User = require('../models/User');
 const Feed = require('../models/Feed');
+const Reel = require("../model/Reel");
 
 exports.createComment = async (req, res) => {
   const userId = req.user.id;
@@ -21,9 +22,16 @@ exports.createComment = async (req, res) => {
       timestamp: new Date(),
     });
 
-    // Increment comment_count
+    // Increment comment_count in Feed
     post.comment_count += 1;
     await post.save();
+
+    // Check and increment in Reel (if this post is linked to a reel)
+    const reel = await Reel.findOne({ where: { id: postId } });
+    if (reel) {
+      reel.comment_count += 1;
+      await reel.save();
+    }
 
     return res.status(201).json({ message: 'Comment added successfully.', comment });
   } catch (error) {
@@ -31,6 +39,7 @@ exports.createComment = async (req, res) => {
     return res.status(500).json({ message: 'Failed to add comment.' });
   }
 };
+
 
 
 
