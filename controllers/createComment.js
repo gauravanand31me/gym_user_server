@@ -1,7 +1,7 @@
 const PostComment = require('../models/PostComment');
 const User = require('../models/User');
 const Feed = require('../models/Feed');
-const Reel = require("../model/Reel");
+const Reel = require("../models/Reel");
 
 exports.createComment = async (req, res) => {
   const userId = req.user.id;
