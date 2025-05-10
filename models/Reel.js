@@ -47,6 +47,11 @@ const Reel = sequelize.define('Reel', {
     allowNull: true,
     defaultValue: 0,
   },
+  view_count: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    defaultValue: 0,
+  },
   postType: {
     type: DataTypes.ENUM('public', 'private', 'onlyme'),
     allowNull: false,
