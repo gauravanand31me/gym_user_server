@@ -2,7 +2,7 @@ const express = require('express');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const { getNearbyUsers } = require('../controllers/getNearbyUsers');
 const upload = require('../middleware/upload');
-const { getIndividualUser, searchUsersByUsernameOrLocation, uploadProfileImage,uploadPostImage,  getUserImage, updateFullName, deleteProfileImage, deleteProfile, getTopUsersByWorkoutTime, getUserFeed, uploadFeed, getMyFeed, deletePost, getFeedById, uploadReel, getUserReels, deleteReel, streamReelVideo, updateFeedVisibility} = require('../controllers/getIndividualUser');
+const { getIndividualUser, searchUsersByUsernameOrLocation, uploadProfileImage,uploadPostImage,  getUserImage, updateFullName, deleteProfileImage, deleteProfile, getTopUsersByWorkoutTime, getUserFeed, uploadFeed, getMyFeed, deletePost, getFeedById, uploadReel, getUserReels, deleteReel, streamReelVideo, updateFeedVisibility, incrementViewCount} = require('../controllers/getIndividualUser');
 const { reactToPost } = require('../controllers/PostReaction');
 const { createComment, deleteComment, getCommentsByPost } = require('../controllers/createComment');
 const uploadVideo = require('../middleware/uploadVideo');
@@ -31,5 +31,6 @@ router.post('/reel/upload',  authMiddleware, uploadVideo.single('video'),  uploa
 router.get('/reel',  authMiddleware,  getUserReels);
 router.put('/feed/:feedId',  authMiddleware,  updateFeedVisibility);
 router.delete('/reel/:reelId',  authMiddleware,  deleteReel);
+router.put('/reel/view/:id',  authMiddleware,  incrementViewCount);
 router.get('/stream-reel/*',  authMiddleware,  streamReelVideo);
 module.exports = router;

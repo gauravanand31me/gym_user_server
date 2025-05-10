@@ -388,6 +388,33 @@ exports.uploadReel = async (req, res) => {
 
 
 
+exports.incrementViewCount = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const reel = await Reel.findByPk(id);
+
+    if (!reel) {
+      return res.status(404).json({ message: 'Reel not found' });
+    }
+
+    // Increment view_count
+    reel.view_count += 1;
+    await reel.save();
+
+    return res.status(200).json({
+      message: 'View count updated successfully',
+      view_count: reel.view_count,
+    });
+  } catch (error) {
+    console.error('Error updating view count:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+
+
+
 
 exports.updateFeedVisibility = async (req, res) => {
   const { feedId } = req.params;
