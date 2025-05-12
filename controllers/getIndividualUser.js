@@ -97,6 +97,39 @@ exports.getFollowedUser = async (req, res) => {
 
 
 
+exports.unfollowUser = async (req, res) => {
+  try {
+    const fromUserId = req.user.id;         // Logged-in user
+    const toUserId = req.body.toUserId;     // Target user to unfollow
+
+    if (!toUserId) {
+      return res.status(400).json({ message: 'Target user ID is required' });
+    }
+
+    if (fromUserId === toUserId) {
+      return res.status(400).json({ message: 'You cannot unfollow yourself' });
+    }
+
+    const deleted = await Follow.destroy({
+      where: {
+        followerId: fromUserId,
+        followingId: toUserId,
+      },
+    });
+
+    if (deleted) {
+      return res.status(200).json({ message: 'Successfully unfollowed the user' });
+    } else {
+      return res.status(400).json({ message: 'You are not following this user' });
+    }
+  } catch (error) {
+    console.error('Unfollow error:', error);
+    return res.status(500).json({ message: 'Something went wrong', error: error.message });
+  }
+};
+
+
+
 exports.followUser = async (req, res) => {
   try {
     const { toUserId } = req.body;
