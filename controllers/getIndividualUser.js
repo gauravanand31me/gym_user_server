@@ -66,6 +66,35 @@ const getDistance = (lat1, lon1, lat2, lon2) => {
 };
 
 
+exports.getFollowedUser = async (req, res) => {
+  try {
+    const fromUserId = req.user.id;        // Logged-in user
+    const toUserId = req.params.id;        // Target user
+
+    if (!toUserId) {
+      return res.status(400).json({ message: 'Target user ID is required in params' });
+    }
+
+    if (fromUserId === toUserId) {
+      return res.status(200).json({ isFollowing: false }); // Can't follow self
+    }
+
+    const follow = await Follow.findOne({
+      where: {
+        followerId: fromUserId,
+        followingId: toUserId,
+      },
+    });
+
+    return res.status(200).json({
+      isFollowing: !!follow,
+    });
+  } catch (error) {
+    console.error('Error checking follow status:', error);
+    return res.status(500).json({ message: 'Server error', error: error.message });
+  }
+}
+
 
 
 exports.followUser = async (req, res) => {
