@@ -15,6 +15,8 @@ const Feed = require('../models/Feed');
 const PostReaction = require('../models/PostReaction');
 const PostComment = require('../models/PostComment');
 const Reel = require('../models/Reel'); 
+const  Follow  = require('../models/Follow'); // Assuming you have a Follow model defined
+const { v4: uuidv4 } = require('uuid');
 const ffmpeg = require('fluent-ffmpeg');
 const ffmpegPath = require('ffmpeg-static');
 const fs = require('fs');
@@ -62,6 +64,54 @@ const getDistance = (lat1, lon1, lat2, lon2) => {
   const distance = R * c; // Distance in kilometers
   return distance;
 };
+
+
+
+
+exports.followUser = async (req, res) => {
+  try {
+    const { toUserId } = req.body;
+    const fromUserId = req.user.id; // assuming middleware adds `req.user`
+
+    if (!toUserId) {
+      return res.status(400).json({ message: 'Target user ID is required' });
+    }
+
+    if (toUserId === fromUserId) {
+      return res.status(400).json({ message: 'You cannot follow yourself' });
+    }
+
+    // Check if already following
+    const alreadyFollowing = await Follow.findOne({
+      where: {
+        followerId: fromUserId,
+        followingId: toUserId
+      }
+    });
+
+    if (alreadyFollowing) {
+      return res.status(400).json({ message: 'You are already following this user' });
+    }
+
+    // Create follow record
+    const newFollow = await Follow.create({
+      id: uuidv4(),
+      followerId: fromUserId,
+      followingId: toUserId
+    });
+
+    return res.status(201).json({
+      message: 'Successfully followed user',
+      follow: newFollow
+    });
+  } catch (error) {
+    console.error('Follow error:', error);
+    return res.status(500).json({ message: 'Something went wrong', error: error.message });
+  }
+};
+
+
+
 
 exports.getIndividualUser = async (req, res) => {
   const userId = req.query.id || req.user.id;
