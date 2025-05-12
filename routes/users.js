@@ -30,7 +30,7 @@ router.get('/feed/comment/:postId', authMiddleware,  getCommentsByPost);
 router.post('/reel/upload',  authMiddleware, uploadVideo.single('video'),  uploadReel);
 router.get('/reel',  authMiddleware,  getUserReels);
 router.post('/follow',  authMiddleware,  followUser);
-router.delete('/follow',  authMiddleware,  unfollowUser);
+router.post('/unfollow',  authMiddleware,  unfollowUser);
 router.get('/follow/:id',  authMiddleware,  getFollowedUser);
 router.put('/feed/:feedId',  authMiddleware,  updateFeedVisibility);
 router.delete('/reel/:reelId',  authMiddleware,  deleteReel);
