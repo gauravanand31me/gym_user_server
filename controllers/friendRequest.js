@@ -9,6 +9,7 @@ const sequelize = require("../config/db");
 const { v4: uuidv4 } = require('uuid');
 const PushNotification = require('../models/PushNotification');
 const { sendPushNotification } = require('../config/pushNotification');
+const Follow = require('../models/Follow');
 
 exports.sendFriendRequest = async (req, res) => {
     const { userId } = req.body; // ID of the user to send a friend request to
@@ -133,6 +134,43 @@ exports.acceptRequest = async (req, res) => {
           status: 'accepted',
           sentOn: new Date(),
         });
+
+
+        // Check if fromUser already follows toUser
+    const alreadyFollowing = await Follow.findOne({
+      where: {
+        followerId: fromUserId,
+        followingId: toUserId,
+      },
+    });
+
+    // Check if toUser already follows fromUser
+    const reverseFollowing = await Follow.findOne({
+      where: {
+        followerId: toUserId,
+        followingId: fromUserId,
+      },
+    });
+
+    // Create fromUser → toUser if not exists
+    if (!alreadyFollowing) {
+      await Follow.create({
+        id: uuidv4(),
+        followerId: fromUserId,
+        followingId: toUserId,
+        followedOn: new Date(),
+      });
+    }
+
+    // Create toUser → fromUser if not exists
+    if (!reverseFollowing) {
+      await Follow.create({
+        id: uuidv4(),
+        followerId: toUserId,
+        followingId: fromUserId,
+        followedOn: new Date(),
+      });
+    }
 
         // Update the friend counts for both users
         await User.increment('followers_count', { by: 1, where: { id: request.fromUserId } });
