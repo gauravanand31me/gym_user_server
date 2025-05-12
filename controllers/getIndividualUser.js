@@ -1066,19 +1066,29 @@ exports.getUserFeed = async (req, res) => {
   const userId = req.user.id;
 
   try {
-    // Step 1: Get user IDs the logged-in user is following
-    const follows = await Follow.findAll({
-      where: { followerId: userId },
-      attributes: ['followingId'],
+    // Step 1: Get accepted buddies
+    const friendRequest = await FriendRequest.findAll({
+      where: {
+        status: 'accepted',
+        [Op.or]: [
+          { fromUserId: userId },
+          { toUserId: userId }
+        ]
+      }
     });
 
-    const followingIds = follows.map(f => f.followingId);
-    followingIds.push(userId); // Include own posts too
+    // Step 2: Extract unique friend IDs
+    const friendIds = new Set([userId]);
+    for (const friend of friendRequest) {
+      if (friend.fromUserId !== userId) friendIds.add(friend.fromUserId);
+      if (friend.toUserId !== userId) friendIds.add(friend.toUserId);
+    }
 
+    const idsArray = Array.from(friendIds);
     const limit = parseInt(req.query.limit || 10);
     const offset = parseInt(req.query.offset || 0);
 
-    // Step 2: Run raw query for feed with postType access logic
+    // Step 3: Raw query with postType logic
     const query = `
       SELECT
         f.*,
@@ -1093,20 +1103,18 @@ exports.getUserFeed = async (req, res) => {
       LEFT JOIN "Users" u ON f."userId" = u.id
       LEFT JOIN "Gyms" g ON f."gymId" = g.id
       LEFT JOIN "PostReactions" ur ON f.id = ur."postId" AND ur."userId" = :userId
+
       WHERE (
-        f."userId" IN (:followingIds)
-        AND (
           f."postType" = 'public'
-          OR (f."postType" = 'private' AND f."userId" != :userId)
+          OR (f."postType" = 'private' AND f."userId" IN (:ids))
           OR (f."postType" = 'onlyme' AND f."userId" = :userId)
-        )
       )
       ORDER BY f."timestamp" DESC
       LIMIT :limit OFFSET :offset
     `;
 
     const feedItems = await sequelize.query(query, {
-      replacements: { userId, followingIds, limit, offset },
+      replacements: { ids: idsArray, limit, offset, userId },
       type: sequelize.QueryTypes.SELECT,
       nest: true,
     });
@@ -1118,8 +1126,9 @@ exports.getUserFeed = async (req, res) => {
     }));
 
     return res.status(200).json({ feed: feedItemsWithPermissions });
+
   } catch (error) {
-    console.error('Error fetching followed user feed:', error);
+    console.error('Error fetching user feed:', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
