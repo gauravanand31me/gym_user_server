@@ -414,7 +414,7 @@ exports.uploadReel = async (req, res) => {
 
   const { title, description, postType, hashTags } = req.body;
   const userId = req.user.id;
-  console.log("hashTags Received", hashTags);
+  
   const uploadedFilePath = req.file.path;
   const compressedFilePath = path.join(__dirname, '../temp', `compressed-${Date.now()}.mp4`);
   const thumbnailPath = path.join(__dirname, '../temp', `thumbnail-${Date.now()}.jpg`);
@@ -473,6 +473,7 @@ exports.uploadReel = async (req, res) => {
       description: description || null,
       postType: postType || 'public',
       isPublic: postType === 'public',
+      hashtags: hashTags.split(","),
       timestamp: new Date(),
     });
 
