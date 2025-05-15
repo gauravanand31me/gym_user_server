@@ -965,7 +965,7 @@ LIMIT 1;
 
 exports.getUserReels = async (req, res) => {
   const loggedInUserId = req.user.id;
-  const { user_id, reel_id } = req.query; // user_id = whose reels to fetch (optional)
+  const { user_id, reel_id, category } = req.query;
 
   try {
     const limit = parseInt(req.query.limit || 10);
@@ -982,44 +982,33 @@ exports.getUserReels = async (req, res) => {
     let whereConditions = '';
     let replacements = { limit, offset };
 
-    // 👉 Case 1: If reel_id is passed ➔ fetch specific Reel
+    // Case 1: Specific reel by ID
     if (reel_id) {
       whereConditions = `WHERE r."id" = :reelId`;
       replacements.reelId = reel_id;
     }
-    // 👉 Case 2: If user_id is passed ➔ fetch reels of that user
+
+    // Case 2: Reels for a specific user
     else if (user_id) {
-      // Check if the requested userId is same as logged-in userId
       const isSelf = (user_id === loggedInUserId);
 
       if (isSelf) {
-        // Fetch all reels uploaded by the user (public, private, onlyme)
-        whereConditions = `
-          WHERE r."userId" = :userId
-        `;
+        // User sees all their reels
+        whereConditions = `WHERE r."userId" = :userId`;
       } else {
-        // Fetch only allowed reels (public + private if buddies + onlyme hidden)
-        // Step 1: Check if loggedInUserId and user_id are buddies
-        const friendRequest = await FriendRequest.findOne({
+        const isFollowing = await Follower.findOne({
           where: {
-            status: 'accepted',
-            [Op.or]: [
-              { fromUserId: loggedInUserId, toUserId: user_id },
-              { fromUserId: user_id, toUserId: loggedInUserId },
-            ]
+            user_id: user_id, // the creator
+            follower_id: loggedInUserId // viewer
           }
         });
 
-        const areFriends = !!friendRequest;
-
-        if (areFriends) {
-          // if friends ➔ allow 'public' and 'private' reels
+        if (isFollowing) {
           whereConditions = `
             WHERE r."userId" = :userId
             AND (r."postType" = 'public' OR r."postType" = 'private')
           `;
         } else {
-          // if not friends ➔ allow only 'public' reels
           whereConditions = `
             WHERE r."userId" = :userId
             AND r."postType" = 'public'
@@ -1028,40 +1017,35 @@ exports.getUserReels = async (req, res) => {
       }
       replacements.userId = user_id;
     }
-    // 👉 Case 3: Default case ➔ fetch feed (friends + public reels)
+
+    // Case 3: Feed view — reels from public, followers, and own onlyme
     else {
-      // Step 1: Get accepted buddies
-      const friendRequest = await FriendRequest.findAll({
-        where: {
-          status: 'accepted',
-          [Op.or]: [
-            { fromUserId: loggedInUserId },
-            { toUserId: loggedInUserId }
-          ]
-        }
+      const followerRows = await Follower.findAll({
+        where: { follower_id: loggedInUserId },
+        attributes: ['user_id'],
       });
 
-      // Step 2: Extract unique friend IDs
-      const friendIds = new Set([loggedInUserId]);
-      for (const friend of friendRequest) {
-        if (friend.fromUserId !== loggedInUserId) friendIds.add(friend.fromUserId);
-        if (friend.toUserId !== loggedInUserId) friendIds.add(friend.toUserId);
-      }
-
-      const idsArray = Array.from(friendIds);
+      const followedUserIds = followerRows.map(row => row.user_id);
+      const visibleUserIds = [...new Set([...followedUserIds, loggedInUserId])];
 
       whereConditions = `
         WHERE (
           r."postType" = 'public'
-          OR (r."postType" = 'private' AND r."userId" IN (:ids))
+          OR (r."postType" = 'private' AND r."userId" IN (:visibleUserIds))
           OR (r."postType" = 'onlyme' AND r."userId" = :loggedInUserId)
         )
       `;
-      replacements.ids = idsArray;
+      replacements.visibleUserIds = visibleUserIds;
       replacements.loggedInUserId = loggedInUserId;
     }
 
-    // 👉 Final Query
+    // Optional category filter (PostgreSQL ARRAY contains)
+    if (category) {
+      whereConditions += ` AND r."hashtags" @> ARRAY[:category]::VARCHAR[]`;
+      replacements.category = category;
+    }
+
+    // Final query
     query += `
       ${whereConditions}
       ORDER BY r."timestamp" DESC
@@ -1087,6 +1071,7 @@ exports.getUserReels = async (req, res) => {
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
+
 
 
 
