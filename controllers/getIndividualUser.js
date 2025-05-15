@@ -996,10 +996,10 @@ exports.getUserReels = async (req, res) => {
         // User sees all their reels
         whereConditions = `WHERE r."userId" = :userId`;
       } else {
-        const isFollowing = await Follower.findOne({
+        const isFollowing = await Follow.findOne({
           where: {
             user_id: user_id, // the creator
-            follower_id: loggedInUserId // viewer
+            followerId: loggedInUserId // viewer
           }
         });
 
@@ -1020,8 +1020,8 @@ exports.getUserReels = async (req, res) => {
 
     // Case 3: Feed view — reels from public, followers, and own onlyme
     else {
-      const followerRows = await Follower.findAll({
-        where: { follower_id: loggedInUserId },
+      const followerRows = await Follow.findAll({
+        where: { followerId: loggedInUserId },
         attributes: ['user_id'],
       });
 
