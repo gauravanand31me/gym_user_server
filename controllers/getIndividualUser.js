@@ -105,7 +105,7 @@ exports.getFollowedUser = async (req, res) => {
       },
     });
 
-    await User.increment('following_count', { by: 1, where: { id: toUserId } });
+    
 
     return res.status(200).json({
       isFollowing: !!follow,
@@ -183,7 +183,8 @@ exports.followUser = async (req, res) => {
       followerId: fromUserId,
       followingId: toUserId
     });
-
+    await User.increment('following_count', { by: 1, where: { id: toUserId } });
+    
     return res.status(201).json({
       message: 'Successfully followed user',
       follow: newFollow
