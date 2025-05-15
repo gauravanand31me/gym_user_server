@@ -62,11 +62,16 @@ const Reel = sequelize.define('Reel', {
     allowNull: false,
     defaultValue: true,
   },
+  hashtags: {
+    type: DataTypes.ARRAY(DataTypes.STRING),
+    allowNull: true,
+  },
   timestamp: {
     type: DataTypes.DATE,
     allowNull: false,
     defaultValue: DataTypes.NOW,
   },
+  
 }, {
   tableName: 'Reels',
   timestamps: true,

@@ -412,9 +412,9 @@ exports.uploadReel = async (req, res) => {
     return res.status(400).json({ success: false, message: 'Video file is required.' });
   }
 
-  const { title, description, postType } = req.body;
+  const { title, description, postType, hashTags } = req.body;
   const userId = req.user.id;
-
+  console.log("hashTags Received", hashTags);
   const uploadedFilePath = req.file.path;
   const compressedFilePath = path.join(__dirname, '../temp', `compressed-${Date.now()}.mp4`);
   const thumbnailPath = path.join(__dirname, '../temp', `thumbnail-${Date.now()}.jpg`);
