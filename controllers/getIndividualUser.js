@@ -66,6 +66,25 @@ const getDistance = (lat1, lon1, lat2, lon2) => {
 };
 
 
+exports.resetFollowsAndFollowingCount = async (req, res) => {
+  try {
+    // Step 1: Delete all follow records
+    await Follow.destroy({ where: {} });
+
+    // Step 2: Reset only following_count to 0
+    await User.update(
+      { following_count: 0 },
+      { where: {} }
+    );
+
+    return res.status(200).json({ message: 'All follows deleted and following_count reset to 0.' });
+  } catch (error) {
+    console.error('Error resetting follows and following_count:', error);
+    return res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+
 exports.getFollowedUser = async (req, res) => {
   try {
     const fromUserId = req.user.id;        // Logged-in user
@@ -119,7 +138,7 @@ exports.unfollowUser = async (req, res) => {
       },
     });
     await User.increment('following_count', { by: -1, where: { id: toUserId } });
-    
+
     if (deleted) {
       return res.status(200).json({ message: 'Successfully unfollowed the user' });
     } else {
