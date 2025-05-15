@@ -184,7 +184,7 @@ exports.followUser = async (req, res) => {
       followingId: toUserId
     });
     await User.increment('following_count', { by: 1, where: { id: toUserId } });
-    
+
     return res.status(201).json({
       message: 'Successfully followed user',
       follow: newFollow
@@ -1089,29 +1089,21 @@ exports.getUserFeed = async (req, res) => {
   const userId = req.user.id;
 
   try {
-    // Step 1: Get accepted buddies
-    const friendRequest = await FriendRequest.findAll({
-      where: {
-        status: 'accepted',
-        [Op.or]: [
-          { fromUserId: userId },
-          { toUserId: userId }
-        ]
-      }
+    // Step 1: Get list of users the current user is following
+    const followings = await Follow.findAll({
+      where: { followerId: userId },
+      attributes: ['followingId'],
     });
 
-    // Step 2: Extract unique friend IDs
-    const friendIds = new Set([userId]);
-    for (const friend of friendRequest) {
-      if (friend.fromUserId !== userId) friendIds.add(friend.fromUserId);
-      if (friend.toUserId !== userId) friendIds.add(friend.toUserId);
-    }
+    const followingIds = followings.map(f => f.followingId);
 
-    const idsArray = Array.from(friendIds);
+    // Include the user's own ID
+    const idsArray = [userId, ...followingIds];
+
     const limit = parseInt(req.query.limit || 10);
     const offset = parseInt(req.query.offset || 0);
 
-    // Step 3: Raw query with postType logic
+    // Step 2: Raw query with postType logic (based on following instead of friends)
     const query = `
       SELECT
         f.*,
@@ -1155,6 +1147,7 @@ exports.getUserFeed = async (req, res) => {
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
+
 
 
 
