@@ -86,6 +86,8 @@ exports.getFollowedUser = async (req, res) => {
       },
     });
 
+    await User.increment('following_count', { by: 1, where: { id: toUserId } });
+
     return res.status(200).json({
       isFollowing: !!follow,
     });
@@ -116,7 +118,8 @@ exports.unfollowUser = async (req, res) => {
         followingId: toUserId,
       },
     });
-
+    await User.increment('following_count', { by: -1, where: { id: toUserId } });
+    
     if (deleted) {
       return res.status(200).json({ message: 'Successfully unfollowed the user' });
     } else {
