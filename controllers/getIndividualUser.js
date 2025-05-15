@@ -922,20 +922,25 @@ exports.getFeedById = async (req, res) => {
     const feedResult = await sequelize.query(
       `
       SELECT
-        f.*,
-        u.full_name AS "user.full_name",
-        u."profile_pic" AS "user.profilePic",
-        u.id AS "user.id",
-        ru.full_name AS "relatedUser.full_name",
-        ru.id AS "relatedUser.id",
-        g.name AS "gym.name",
-        g.id AS "gym.id"
-      FROM "Feeds" f
-      LEFT JOIN "Users" u ON u.id = f."userId"
-      LEFT JOIN "Users" ru ON ru.id = f."relatedUserId"
-      LEFT JOIN "Gyms" g ON g.id = f."gymId"
-      WHERE f.id = :id
-      LIMIT 1
+  f.*,
+  u.full_name AS "user.full_name",
+  u."profile_pic" AS "user.profilePic",
+  u.id AS "user.id",
+  ru.full_name AS "relatedUser.full_name",
+  ru.id AS "relatedUser.id",
+  g.name AS "gym.name",
+  g.id AS "gym.id",
+  CASE 
+    WHEN pr."reactionType" = 'like' THEN true 
+    ELSE false 
+  END AS "userLiked"
+FROM "Feeds" f
+LEFT JOIN "Users" u ON u.id = f."userId"
+LEFT JOIN "Users" ru ON ru.id = f."relatedUserId"
+LEFT JOIN "Gyms" g ON g.id = f."gymId"
+LEFT JOIN "PostReactions" pr ON pr."postId" = f.id AND pr."userId" = :userId
+WHERE f.id = :id
+LIMIT 1;
       `,
       {
         type: sequelize.QueryTypes.SELECT,
