@@ -979,6 +979,7 @@ exports.getUserReels = async (req, res) => {
       FROM "Reels" r
       LEFT JOIN "Users" u ON r."userId" = u.id
     `;
+
     let whereConditions = '';
     let replacements = { limit, offset };
 
@@ -988,22 +989,22 @@ exports.getUserReels = async (req, res) => {
       replacements.reelId = reel_id;
     }
 
-    // Case 2: Reels for a specific user
+    // Case 2: Specific user's reels
     else if (user_id) {
-      const isSelf = (user_id === loggedInUserId);
+      const isSelf = user_id === loggedInUserId;
 
       if (isSelf) {
-        // User sees all their reels
         whereConditions = `WHERE r."userId" = :userId`;
       } else {
-        const isFollowing = await Follow.findOne({
+        // check if logged-in user is following user_id
+        const follow = await Follow.findOne({
           where: {
-            user_id: user_id, // the creator
-            followerId: loggedInUserId // viewer
-          }
+            followerId: loggedInUserId,
+            followingId: user_id,
+          },
         });
 
-        if (isFollowing) {
+        if (follow) {
           whereConditions = `
             WHERE r."userId" = :userId
             AND (r."postType" = 'public' OR r."postType" = 'private')
@@ -1015,37 +1016,39 @@ exports.getUserReels = async (req, res) => {
           `;
         }
       }
+
       replacements.userId = user_id;
     }
 
-    // Case 3: Feed view — reels from public, followers, and own onlyme
+    // Case 3: Feed for logged-in user
     else {
-      const followerRows = await Follow.findAll({
+      // Get who the user is following
+      const followings = await Follow.findAll({
         where: { followerId: loggedInUserId },
-        attributes: ['user_id'],
+        attributes: ['followingId'],
       });
 
-      const followedUserIds = followerRows.map(row => row.user_id);
-      const visibleUserIds = [...new Set([...followedUserIds, loggedInUserId])];
+      const followingIds = followings.map(f => f.followingId);
+      const idsArray = [loggedInUserId, ...followingIds];
 
       whereConditions = `
         WHERE (
           r."postType" = 'public'
-          OR (r."postType" = 'private' AND r."userId" IN (:visibleUserIds))
+          OR (r."postType" = 'private' AND r."userId" IN (:ids))
           OR (r."postType" = 'onlyme' AND r."userId" = :loggedInUserId)
         )
       `;
-      replacements.visibleUserIds = visibleUserIds;
+
+      replacements.ids = idsArray;
       replacements.loggedInUserId = loggedInUserId;
     }
 
-    // Optional category filter (PostgreSQL ARRAY contains)
+    // Optional: Category filter
     if (category) {
       whereConditions += ` AND r."hashtags" @> ARRAY[:category]::VARCHAR[]`;
       replacements.category = category;
     }
 
-    // Final query
     query += `
       ${whereConditions}
       ORDER BY r."timestamp" DESC
@@ -1058,16 +1061,16 @@ exports.getUserReels = async (req, res) => {
       nest: true,
     });
 
-    const reelsWithPermissions = reels.map(reel => ({
+    const result = reels.map(reel => ({
       ...reel,
       canDelete: reel.userId === loggedInUserId,
       canReport: reel.userId !== loggedInUserId,
     }));
 
-    return res.status(200).json({ reels: reelsWithPermissions });
+    return res.status(200).json({ reels: result });
 
   } catch (error) {
-    console.error('Error fetching user reels:', error);
+    console.error('Error fetching reels:', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
