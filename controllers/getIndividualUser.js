@@ -938,7 +938,7 @@ FROM "Feeds" f
 LEFT JOIN "Users" u ON u.id = f."userId"
 LEFT JOIN "Users" ru ON ru.id = f."relatedUserId"
 LEFT JOIN "Gyms" g ON g.id = f."gymId"
-LEFT JOIN "PostReactions" pr ON pr."postId" = f.id AND pr."userId" = :userId
+LEFT JOIN "PostReactions" pr ON pr."postId" = f.id AND pr."userId" = :id
 WHERE f.id = :id
 LIMIT 1;
       `,
