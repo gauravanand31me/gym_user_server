@@ -38,14 +38,13 @@ ffmpeg.setFfmpegPath(ffmpegPath);
 const compressVideo = (inputPath, outputPath) => {
   return new Promise((resolve, reject) => {
     const command = ffmpeg(inputPath)
-      .inputOption('-hwaccel auto')
+      .inputOption('-hwaccel auto') // attempt GPU or hardware decoding
       .outputOptions([
-        '-c:v libx264',
-        '-c:a aac',
+        '-vcodec libx264',
         '-crf 28',
         '-preset veryfast',
         '-movflags +faststart',
-        '-max_muxing_queue_size 9999',
+        '-max_muxing_queue_size 9999', // prevent muxing error
       ])
       .on('start', cmd => {
         console.log('🎬 ffmpeg started:', cmd);
@@ -72,7 +71,6 @@ const compressVideo = (inputPath, outputPath) => {
     }
   });
 };
-
 
 
 
