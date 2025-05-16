@@ -40,15 +40,15 @@ const compressVideo = (inputPath, outputPath) => {
     const command = ffmpeg(inputPath)
       .inputOption('-hwaccel auto') // attempt GPU or hardware decoding
       .outputOptions([
-        '-vf format=yuv420p,scale=1280:-2,fps=30',
-        '-c:v libx264',
-        '-profile:v baseline',
-        '-level 3.1',
-        '-c:a aac',
-        '-crf 28',
-        '-preset veryfast',
-        '-movflags +faststart',
-        '-f mp4',
+        '-vf', 'scale=1280:-2,fps=30,format=yuv420p',
+        '-c:v', 'libx264',
+        '-profile:v', 'baseline',
+        '-level', '3.1',
+        '-c:a', 'aac',
+        '-crf', '28',
+        '-preset', 'veryfast',
+        '-movflags', '+faststart',
+        '-f', 'mp4',
       ])
       .on('start', cmd => {
         console.log('🎬 ffmpeg started:', cmd);
