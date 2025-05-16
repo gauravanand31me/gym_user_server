@@ -918,6 +918,7 @@ exports.getTopUsersByWorkoutTime = async (req, res) => {
 
 exports.getFeedById = async (req, res) => {
   const { id } = req.params;
+  const userId = req.user.id;
 
   try {
     const feedResult = await sequelize.query(
@@ -939,13 +940,13 @@ FROM "Feeds" f
 LEFT JOIN "Users" u ON u.id = f."userId"
 LEFT JOIN "Users" ru ON ru.id = f."relatedUserId"
 LEFT JOIN "Gyms" g ON g.id = f."gymId"
-LEFT JOIN "PostReactions" pr ON pr."postId" = f.id AND pr."userId" = :id
+LEFT JOIN "PostReactions" pr ON pr."postId" = f.id AND pr."userId" = :userId
 WHERE f.id = :id
 LIMIT 1;
       `,
       {
         type: sequelize.QueryTypes.SELECT,
-        replacements: { id },
+        replacements: { id, userId },
         raw: true,
         nest: true, // to allow nested objects like user, gym, etc.
       }
