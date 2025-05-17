@@ -1339,7 +1339,7 @@ exports.getAllCategory = (req, res) => {
     'No Excuses', 'Consistency Wins', 'Discipline > Motivation', 'New PR!', 'Progress Over Perfection'
   ];
 
-  return res.json(allCategories);
+  res.status(201).json(allCategories);
 }
 
 
