@@ -1294,7 +1294,7 @@ exports.uploadFeed = async (req, res) => {
 };
 
 
-exports.getAllCategory = () => {
+exports.getAllCategory = (req, res) => {
   const allCategories = [
     // Popular workout types
     'Chest Day', 'Leg Day', 'Back Day', 'Push Day', 'Pull Day', 'Arm Day', 'Shoulder Day',
