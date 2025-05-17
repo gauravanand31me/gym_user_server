@@ -1294,6 +1294,55 @@ exports.uploadFeed = async (req, res) => {
 };
 
 
+exports.getAllCategory = () => {
+  const allCategories = [
+    // Popular workout types
+    'Chest Day', 'Leg Day', 'Back Day', 'Push Day', 'Pull Day', 'Arm Day', 'Shoulder Day',
+    'Abs Blast', 'HIIT Session', 'Strength Training', 'Powerlifting', 'CrossFit', 'Bodybuilding',
+    'Cardio Blast', 'Cycling Pump', 'Treadmill Run', 'Rowing Session', 'Zumba', 'Dance Workout',
+  
+    // Body focus
+    'Full Body', 'Upper Body', 'Lower Body', 'Core Strength', 'Glutes Focus', 'Hamstring Stretch',
+    'Quads Burn', 'Calf Training', 'Obliques Builder', 'Neck Mobility', 'Forearm Pump',
+  
+    // Equipment-based
+    'Bodyweight Only', 'Resistance Bands', 'Dumbbells Only', 'Barbell Only', 'Kettlebell Burn',
+    'TRX Workout', 'No Equipment', 'Foam Roller Recovery', 'Weighted Vest Challenge',
+  
+    // Skill level
+    'Beginner Friendly', 'Intermediate Training', 'Advanced Beast Mode', 'Pro Athlete',
+    'First Timer', 'Getting Back', 'Post Injury Workout',
+  
+    // Goals
+    'Fat Loss', 'Muscle Gain', 'Weight Maintenance', 'Calorie Burn', 'Shredding', 'Bulking',
+    'Endurance Boost', 'Strength Gains', 'Flexibility Boost', 'Mobility Routine', 'Speed Training',
+  
+    // Routines & programs
+    '5x5 Program', 'Push Pull Legs', 'Full Body Split', 'Arnold Split', 'Home Workout Plan',
+    'Gym Beast', 'Morning Routine', 'Evening Burn', 'Night Owl Training', 'Quick 20 Minutes',
+    'Stretch & Chill', 'Cool Down', 'Warm Up', 'Active Recovery',
+  
+    // Styles
+    'Tabata', 'Pilates', 'Yoga Flow', 'Vinyasa Yoga', 'Hatha Yoga', 'Power Yoga',
+    'Mobility Drills', 'Functional Fitness', 'Isometric Holds', 'Explosive Training',
+  
+    // Sports specific
+    'Boxing Drills', 'Kickboxing Combo', 'MMA Conditioning', 'Athlete Mode', 'Football Drills',
+    'Basketball Training', 'Tennis Warm-Up', 'Cricket Agility',
+  
+    // Fun or niche
+    'Outdoor Workout', 'Beach Pump', 'Rainy Day Grind', 'Garage Gym', 'Office Workout',
+    'Partner Workout', 'Group Class', 'Virtual Trainer', 'Mind-Muscle Connection',
+  
+    // Lifestyle/others
+    'Post Workout Stretch', 'Pre Workout Routine', 'Cheat Day Burn', 'Challenge Accepted',
+    'No Excuses', 'Consistency Wins', 'Discipline > Motivation', 'New PR!', 'Progress Over Perfection'
+  ];
+
+  return res.json(allCategories);
+}
+
+
 
 
 
