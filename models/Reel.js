@@ -66,6 +66,10 @@ const Reel = sequelize.define('Reel', {
     type: DataTypes.ARRAY(DataTypes.STRING),
     allowNull: true,
   },
+  link: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
   timestamp: {
     type: DataTypes.DATE,
     allowNull: false,
