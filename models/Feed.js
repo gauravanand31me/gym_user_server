@@ -70,6 +70,11 @@ const Feed = sequelize.define('Feed', {
     allowNull: true,
     defaultValue: 0
   },
+  report_count: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    defaultValue: 0,
+  },
   postType: {
     type: DataTypes.ENUM('public', 'private', 'onlyme'),
     allowNull: false,
