@@ -295,6 +295,7 @@ exports.deleteReel = async (req, res) => {
   try {
     // Step 1: Find the Reel from DB
     const reel = await Reel.findOne({ where: { id: reelId } });
+    const feed = await Feed.findOne({ where: { id: reelId } });
 
     if (!reel) {
       return res.status(404).json({ success: false, message: 'Reel not found.' });
@@ -324,6 +325,7 @@ exports.deleteReel = async (req, res) => {
 
     // Step 5: Delete Reel record from database
     await reel.destroy();
+    await feed.destroy();
 
     return res.status(200).json({ success: true, message: 'Reel deleted successfully.' });
 
