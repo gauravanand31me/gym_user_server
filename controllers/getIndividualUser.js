@@ -327,6 +327,9 @@ exports.deleteReel = async (req, res) => {
     await reel.destroy();
     await feed.destroy();
 
+    await PostReaction.destroy({ where: { postId: reelId} });
+    await PostComment.destroy({ where: { postId: reelId } });
+
     return res.status(200).json({ success: true, message: 'Reel deleted successfully.' });
 
   } catch (error) {
@@ -1222,6 +1225,7 @@ exports.deletePost = async (req, res) => {
     // Step 1: Find the post
     const post = await Feed.findOne({ where: { id: postId } });
 
+
     if (!post) {
       return res.status(404).json({ message: 'Post not found' });
     }
@@ -1229,6 +1233,11 @@ exports.deletePost = async (req, res) => {
     // Step 2: Verify that the logged-in user owns the post
     if (post.userId !== userId) {
       return res.status(403).json({ message: 'You are not authorized to delete this post' });
+    }
+
+    if (post.activityType == "aiPromo") {
+      const reel = await Reel.findOne({ where: { id: postId } });
+      await reel.destroy();
     }
 
     // Step 3: Delete associated reactions
