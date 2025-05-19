@@ -23,6 +23,7 @@ const fs = require('fs');
 const path = require('path');
 const s3 = require('../config/aws'); // your s3 config
 const { sendPushNotification } = require('../config/pushNotification');
+const FeedReports = require('../models/FeedReports');
 
 const s3Client = new S3Client({ 
   region: process.env.AWS_REGION, 
@@ -115,6 +116,36 @@ exports.resetFollowsAndFollowingCount = async (req, res) => {
     return res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
+
+
+
+
+
+exports.reportFeed = async (req, res) => {
+  const { feedId } = req.params;
+  const userId = req.user.id; // Assuming you have user authentication
+
+  try {
+    // Check if the report already exists
+    const existingReport = await FeedReports.findOne({ where: { userId, feedId } });
+
+    if (existingReport) {
+      return res.status(400).json({ message: 'You have already reported this feed.' });
+    }
+
+    // Create a new report
+    await FeedReports.create({ userId, feedId });
+
+    // Increment the report count
+    await Feed.increment('report_count', { where: { id: feedId } });
+
+    return res.status(200).json({ message: 'Feed reported successfully.' });
+  } catch (error) {
+    console.error('Error reporting feed:', error);
+    return res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
 
 
 exports.getFollowedUser = async (req, res) => {
