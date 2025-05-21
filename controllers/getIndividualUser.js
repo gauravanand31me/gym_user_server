@@ -473,14 +473,6 @@ exports.streamReelVideo = async (req, res) => {
 
 
 
-const fs = require('fs');
-const path = require('path');
-const ffmpeg = require('fluent-ffmpeg');
-const { PutObjectCommand } = require('@aws-sdk/client-s3');
-const { s3Client } = require('../utils/s3Client');
-const { sequelize, Reel, Feed, PushNotification } = require('../models');
-const { compressVideo } = require('../utils/compressVideo');
-const { sendPushNotification } = require('../utils/pushHelper');
 
 exports.uploadReel = async (req, res) => {
   console.log('🤖 AI Promo upload started');
