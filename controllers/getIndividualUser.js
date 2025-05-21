@@ -473,6 +473,15 @@ exports.streamReelVideo = async (req, res) => {
 
 
 
+const fs = require('fs');
+const path = require('path');
+const ffmpeg = require('fluent-ffmpeg');
+const { PutObjectCommand } = require('@aws-sdk/client-s3');
+const { s3Client } = require('../utils/s3Client');
+const { sequelize, Reel, Feed, PushNotification } = require('../models');
+const { compressVideo } = require('../utils/compressVideo');
+const { sendPushNotification } = require('../utils/pushHelper');
+
 exports.uploadReel = async (req, res) => {
   console.log('🤖 AI Promo upload started');
 
@@ -482,7 +491,7 @@ exports.uploadReel = async (req, res) => {
 
   const { title, description, postType, hashTags, link } = req.body;
   const userId = req.user.id;
-  
+
   const uploadedFilePath = req.file.path;
   const compressedFilePath = path.join(__dirname, '../temp', `compressed-${Date.now()}.mp4`);
   const thumbnailPath = path.join(__dirname, '../temp', `thumbnail-${Date.now()}.jpg`);
@@ -495,7 +504,7 @@ exports.uploadReel = async (req, res) => {
     await new Promise((resolve, reject) => {
       ffmpeg(compressedFilePath)
         .screenshots({
-          timestamps: ['00:00:01'], 
+          timestamps: ['00:00:01'],
           filename: path.basename(thumbnailPath),
           folder: path.dirname(thumbnailPath),
           size: '320x?',
@@ -530,10 +539,10 @@ exports.uploadReel = async (req, res) => {
       CacheControl: 'public, max-age=31536000',
     }));
 
-    //const videoUrl = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.amazonaws.com/${s3Key}`;
     const videoUrl = `https://yupluck.com/user/api/users/stream-reel/${s3Key}`;
+
     // Step 5: Save in Reel table
-    const reel = await Reel.create({
+    const createdReel = await Reel.create({
       userId,
       videoUrl,
       thumbnailUrl,
@@ -541,12 +550,31 @@ exports.uploadReel = async (req, res) => {
       description: description || null,
       postType: postType || 'public',
       isPublic: postType === 'public',
-      hashtags: hashTags.split(","),
+      hashtags: hashTags ? hashTags.split(",") : [],
       link,
       timestamp: new Date(),
     });
 
-    // Step 6: Save in Feed table (same ID as reel)
+    // Step 6: Raw SQL to fetch reel with user info
+    const [reels] = await sequelize.query(`
+      SELECT 
+        r.*, 
+        u.id AS "user.id", 
+        u.username AS "user.username", 
+        u.full_name AS "user.full_name", 
+        u.profile_pic AS "user.profile_pic"
+      FROM "Reels" r
+      LEFT JOIN "Users" u ON r."userId" = u.id
+      WHERE r.id = :reelId
+    `, {
+      replacements: { reelId: createdReel.id },
+      type: sequelize.QueryTypes.SELECT,
+      nest: true,
+    });
+
+    const reel = reels;
+
+    // Step 7: Save in Feed table
     const feed = await Feed.create({
       id: reel.id,
       userId,
@@ -558,16 +586,15 @@ exports.uploadReel = async (req, res) => {
       postType: postType || 'public',
     });
 
-    // Step 7: Send push notification (background after success)
+    // Step 8: Push notification
     try {
-      const fromUser = await PushNotification.findOne({ where: {  userId } });
+      const fromUser = await PushNotification.findOne({ where: { userId } });
 
       if (fromUser?.expoPushToken) {
         const notificationTitle = {
           title: "Reel Uploaded Successfully 🎥",
-          body: `your reel has been uploaded successfully.`,
+          body: "Your reel has been uploaded successfully.",
         };
-
         await sendPushNotification(fromUser.expoPushToken, notificationTitle);
         console.log('✅ Push Notification sent.');
       } else {
@@ -577,18 +604,19 @@ exports.uploadReel = async (req, res) => {
       console.error('❌ Failed to send push notification:', notificationError.message);
     }
 
+    // Final response
     res.status(201).json({ success: true, feed, reel });
 
   } catch (err) {
     console.error('❌ AI Promo upload failed:', err.message);
     res.status(500).json({ success: false, message: 'Internal Server Error' });
   } finally {
-    // Always cleanup temp files even if upload failed
     try { if (fs.existsSync(uploadedFilePath)) fs.unlinkSync(uploadedFilePath); } catch {}
     try { if (fs.existsSync(compressedFilePath)) fs.unlinkSync(compressedFilePath); } catch {}
     try { if (fs.existsSync(thumbnailPath)) fs.unlinkSync(thumbnailPath); } catch {}
   }
 };
+
 
 
 
