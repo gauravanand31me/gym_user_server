@@ -172,28 +172,33 @@ exports.acceptRequest = async (req, res) => {
 
 
 exports.getFriendRequests = async (req, res) => {
-    const userId = req.user.id;
+  const userId = req.user.id;
 
-    try {
-        // Fetch pending requests
-       
+  // Get pagination params from query, fallback to defaults
+  const page = parseInt(req.query.page) || 0;
+  const limit = parseInt(req.query.limit) || 10;
+  const offset = page * limit;
 
-        // Fetch accepted requests
-        const acceptedRequests = await sequelize.query(
-            `SELECT fr.*, u.id as "fromUserId", u.full_name, u.profile_pic 
-             FROM "FriendRequests" fr
-             JOIN "Users" u ON fr."fromUserId" = u.id
-             WHERE fr."toUserId" = :userId AND fr.status = 'accepted'`,
-            {
-                replacements: { userId },
-                type: sequelize.QueryTypes.SELECT,
-            }
-        );
-        res.status(200).json({ pending: [], accepted: acceptedRequests });
-    } catch (error) {
-        console.error('Error fetching friend requests:', error);
-        res.status(500).send('Server error');
-    }
+  try {
+    // Fetch accepted requests with pagination
+    const acceptedRequests = await sequelize.query(
+      `SELECT fr.*, u.id as "fromUserId", u.full_name, u.profile_pic 
+       FROM "FriendRequests" fr
+       JOIN "Users" u ON fr."fromUserId" = u.id
+       WHERE fr."toUserId" = :userId AND fr.status = 'accepted'
+       ORDER BY fr."createdAt" DESC
+       LIMIT :limit OFFSET :offset`,
+      {
+        replacements: { userId, limit, offset },
+        type: sequelize.QueryTypes.SELECT,
+      }
+    );
+
+    res.status(200).json({ pending: [], accepted: acceptedRequests });
+  } catch (error) {
+    console.error('Error fetching friend requests:', error);
+    res.status(500).send('Server error');
+  }
 };
 
 
