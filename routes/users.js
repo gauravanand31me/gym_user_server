@@ -6,6 +6,7 @@ const { getIndividualUser, searchUsersByUsernameOrLocation, uploadProfileImage,u
 const { reactToPost } = require('../controllers/PostReaction');
 const { createComment, deleteComment, getCommentsByPost } = require('../controllers/createComment');
 const uploadVideo = require('../middleware/uploadVideo');
+const { getFollowers } = require('../controllers/friendRequest');
 const router = express.Router();
 
 router.get('/nearby-users', authMiddleware, searchUsersByUsernameOrLocation);
@@ -34,6 +35,7 @@ router.post('/follow',  authMiddleware,  followUser);
 router.get('/reset',  resetFollowsAndFollowingCount);
 router.post('/unfollow',  authMiddleware,  unfollowUser);
 router.get('/follow/:id',  authMiddleware,  getFollowedUser);
+router.get('/followers/:userId',  authMiddleware,  getFollowers);
 router.post('/report/:feedId',  authMiddleware,  reportFeed);
 router.put('/feed/:feedId',  authMiddleware,  updateFeedVisibility);
 router.delete('/reel/:reelId',  authMiddleware,  deleteReel);

@@ -203,6 +203,34 @@ exports.getFriendRequests = async (req, res) => {
 
 
 
+exports.getFollowers = async (req, res) => {
+  const userId = req.params.userId; // ID of the user whose followers you want to fetch
+  const page = parseInt(req.query.page) || 0;
+  const limit = parseInt(req.query.limit) || 10;
+  const offset = page * limit;
+
+  try {
+    const followers = await sequelize.query(
+      `SELECT f."followerId", u.full_name, u.profile_pic
+       FROM "Follows" f
+       JOIN "Users" u ON f."followerId" = u.id
+       WHERE f."followingId" = :userId
+       ORDER BY f."followedOn" DESC
+       LIMIT :limit OFFSET :offset`,
+      {
+        replacements: { userId, limit, offset },
+        type: sequelize.QueryTypes.SELECT,
+      }
+    );
+
+    res.status(200).json({ followers });
+  } catch (error) {
+    console.error('Error fetching followers:', error);
+    res.status(500).send('Server error');
+  }
+};
+
+
 
 exports.rejectRequest = async (req, res) => {
   const { requestId } = req.body;
