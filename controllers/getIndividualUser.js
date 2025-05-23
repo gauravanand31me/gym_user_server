@@ -14,8 +14,8 @@ const Notification = require('../models/Notification');
 const Feed = require('../models/Feed');
 const PostReaction = require('../models/PostReaction');
 const PostComment = require('../models/PostComment');
-const Reel = require('../models/Reel'); 
-const  Follow  = require('../models/Follow'); // Assuming you have a Follow model defined
+const Reel = require('../models/Reel');
+const Follow = require('../models/Follow'); // Assuming you have a Follow model defined
 const { v4: uuidv4 } = require('uuid');
 const ffmpeg = require('fluent-ffmpeg');
 const ffmpegPath = require('ffmpeg-static');
@@ -25,8 +25,8 @@ const s3 = require('../config/aws'); // your s3 config
 const { sendPushNotification } = require('../config/pushNotification');
 const FeedReports = require('../models/FeedReports');
 
-const s3Client = new S3Client({ 
-  region: process.env.AWS_REGION, 
+const s3Client = new S3Client({
+  region: process.env.AWS_REGION,
   credentials: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
@@ -168,7 +168,7 @@ exports.getFollowedUser = async (req, res) => {
       },
     });
 
-    
+
 
     return res.status(200).json({
       isFollowing: !!follow,
@@ -327,7 +327,7 @@ exports.deleteReel = async (req, res) => {
     const videoUrlParts = videoUrl.split('/');
     const lastTwoParts = videoUrlParts.slice(-2).join('/'); // "reels/123-compressed.mp4"
     const s3Key = lastTwoParts; // this will be your correct S3 Key
-    
+
     // ✅ Now s3Key is something like "reels/123-compressed.mp4"
 
     // Step 4: Delete file from S3
@@ -342,7 +342,7 @@ exports.deleteReel = async (req, res) => {
     await reel.destroy();
     await feed.destroy();
 
-    await PostReaction.destroy({ where: { postId: reelId} });
+    await PostReaction.destroy({ where: { postId: reelId } });
     await PostComment.destroy({ where: { postId: reelId } });
 
     return res.status(200).json({ success: true, message: 'Reel deleted successfully.' });
@@ -564,9 +564,9 @@ exports.uploadReel = async (req, res) => {
     console.error('❌ AI Promo upload failed:', err.message);
     res.status(500).json({ success: false, message: 'Internal Server Error' });
   } finally {
-    try { if (fs.existsSync(uploadedFilePath)) fs.unlinkSync(uploadedFilePath); } catch {}
-    try { if (fs.existsSync(compressedFilePath)) fs.unlinkSync(compressedFilePath); } catch {}
-    try { if (fs.existsSync(thumbnailPath)) fs.unlinkSync(thumbnailPath); } catch {}
+    try { if (fs.existsSync(uploadedFilePath)) fs.unlinkSync(uploadedFilePath); } catch { }
+    try { if (fs.existsSync(compressedFilePath)) fs.unlinkSync(compressedFilePath); } catch { }
+    try { if (fs.existsSync(thumbnailPath)) fs.unlinkSync(thumbnailPath); } catch { }
   }
 };
 
@@ -1150,28 +1150,32 @@ exports.getUserFeed = async (req, res) => {
 
     // Step 2: Raw query with postType logic (based on following instead of friends)
     const query = `
-      SELECT
-        f.*,
-        u.full_name AS "user.full_name",
-        u.profile_pic AS "user.profile_pic",
-        g.id AS "gym.id",
-        g.name AS "gym.name",
-        f.like_count AS "likeCount",
-        f.comment_count AS "commentCount",
-        CASE WHEN ur."reactionType" = 'like' THEN true ELSE false END AS "userLiked"
-      FROM "Feeds" f
-      LEFT JOIN "Users" u ON f."userId" = u.id
-      LEFT JOIN "Gyms" g ON f."gymId" = g.id
-      LEFT JOIN "PostReactions" ur ON f.id = ur."postId" AND ur."userId" = :userId
+  SELECT
+    f.*,
+    u.full_name AS "user.full_name",
+    u.profile_pic AS "user.profile_pic",
+    g.id AS "gym.id",
+    g.name AS "gym.name",
+    f.like_count AS "likeCount",
+    f.comment_count AS "commentCount",
+    r."videoUrl" AS "videoUrl",
+    r."thumbnailUrl" AS "thumbnailUrl",
+    CASE WHEN ur."reactionType" = 'like' THEN true ELSE false END AS "userLiked"
+  FROM "Feeds" f
+  LEFT JOIN "Users" u ON f."userId" = u.id
+  LEFT JOIN "Gyms" g ON f."gymId" = g.id
+  LEFT JOIN "PostReactions" ur ON f.id = ur."postId" AND ur."userId" = :userId
+  LEFT JOIN "Reels" r ON r.id = f.id
 
-      WHERE (
-          f."postType" = 'public'
-          OR (f."postType" = 'private' AND f."userId" IN (:ids))
-          OR (f."postType" = 'onlyme' AND f."userId" = :userId)
-      )
-      ORDER BY f."timestamp" DESC
-      LIMIT :limit OFFSET :offset
-    `;
+  WHERE (
+      f."postType" = 'public'
+      OR (f."postType" = 'private' AND f."userId" IN (:ids))
+      OR (f."postType" = 'onlyme' AND f."userId" = :userId)
+  )
+  ORDER BY f."timestamp" DESC
+  LIMIT :limit OFFSET :offset
+`;
+
 
     const feedItems = await sequelize.query(query, {
       replacements: { ids: idsArray, limit, offset, userId },
@@ -1324,40 +1328,40 @@ exports.getAllCategory = (req, res) => {
     'Chest Day', 'Leg Day', 'Back Day', 'Push Day', 'Pull Day', 'Arm Day', 'Shoulder Day',
     'Abs Blast', 'HIIT Session', 'Strength Training', 'Powerlifting', 'CrossFit', 'Bodybuilding',
     'Cardio Blast', 'Cycling Pump', 'Treadmill Run', 'Rowing Session', 'Zumba', 'Dance Workout',
-  
+
     // Body focus
     'Full Body', 'Upper Body', 'Lower Body', 'Core Strength', 'Glutes Focus', 'Hamstring Stretch',
     'Quads Burn', 'Calf Training', 'Obliques Builder', 'Neck Mobility', 'Forearm Pump',
-  
+
     // Equipment-based
     'Bodyweight Only', 'Resistance Bands', 'Dumbbells Only', 'Barbell Only', 'Kettlebell Burn',
     'TRX Workout', 'No Equipment', 'Foam Roller Recovery', 'Weighted Vest Challenge',
-  
+
     // Skill level
     'Beginner Friendly', 'Intermediate Training', 'Advanced Beast Mode', 'Pro Athlete',
     'First Timer', 'Getting Back', 'Post Injury Workout',
-  
+
     // Goals
     'Fat Loss', 'Muscle Gain', 'Weight Maintenance', 'Calorie Burn', 'Shredding', 'Bulking',
     'Endurance Boost', 'Strength Gains', 'Flexibility Boost', 'Mobility Routine', 'Speed Training',
-  
+
     // Routines & programs
     '5x5 Program', 'Push Pull Legs', 'Full Body Split', 'Arnold Split', 'Home Workout Plan',
     'Gym Beast', 'Morning Routine', 'Evening Burn', 'Night Owl Training', 'Quick 20 Minutes',
     'Stretch & Chill', 'Cool Down', 'Warm Up', 'Active Recovery',
-  
+
     // Styles
     'Tabata', 'Pilates', 'Yoga Flow', 'Vinyasa Yoga', 'Hatha Yoga', 'Power Yoga',
     'Mobility Drills', 'Functional Fitness', 'Isometric Holds', 'Explosive Training',
-  
+
     // Sports specific
     'Boxing Drills', 'Kickboxing Combo', 'MMA Conditioning', 'Athlete Mode', 'Football Drills',
     'Basketball Training', 'Tennis Warm-Up', 'Cricket Agility',
-  
+
     // Fun or niche
     'Outdoor Workout', 'Beach Pump', 'Rainy Day Grind', 'Garage Gym', 'Office Workout',
     'Partner Workout', 'Group Class', 'Virtual Trainer', 'Mind-Muscle Connection',
-  
+
     // Lifestyle/others
     'Post Workout Stretch', 'Pre Workout Routine', 'Cheat Day Burn', 'Challenge Accepted',
     'No Excuses', 'Consistency Wins', 'Discipline > Motivation', 'New PR!', 'Progress Over Perfection'
