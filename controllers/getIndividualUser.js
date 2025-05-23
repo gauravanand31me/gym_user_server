@@ -211,7 +211,7 @@ exports.unfollowUser = async (req, res) => {
           by: -1,
           where: { id: fromUserId },
         }),
-        User.increment('follower_count', {
+        User.increment('followers_count', {
           by: -1,
           where: { id: toUserId },
         }),
