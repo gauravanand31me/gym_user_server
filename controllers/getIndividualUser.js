@@ -524,15 +524,15 @@ exports.uploadReel = async (req, res) => {
         };
         await sendPushNotification(fromUser.expoPushToken, notificationTitle);
 
-        await Notification.create({
-                    userId: userId, // The user who made the original booking (to be notified)
-                    message: `Your reel is ready. check now.`, // Notification message
-                    type: 'notificationPost', // Notification type
-                    status: 'unread', // Unread by default
-                    relatedId: reel.id, // Related to the bookingId (buddy request)
-                    profileImage: fromUser.profile_pic || "https://png.pngtree.com/png-vector/20190223/ourmid/pngtree-profile-glyph-black-icon-png-image_691589.jpg", // Use default profile pic if not available
-                    forUserId: userId
-        });
+        // await Notification.create({
+        //             userId: userId, // The user who made the original booking (to be notified)
+        //             message: `Your reel is ready. check now.`, // Notification message
+        //             type: 'notificationPost', // Notification type
+        //             status: 'unread', // Unread by default
+        //             relatedId: reel.id, // Related to the bookingId (buddy request)
+        //             profileImage: fromUser.profile_pic || "https://png.pngtree.com/png-vector/20190223/ourmid/pngtree-profile-glyph-black-icon-png-image_691589.jpg", // Use default profile pic if not available
+        //             forUserId: userId
+        // });
 
         console.log('✅ Push Notification sent.');
       } else {
