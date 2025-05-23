@@ -184,7 +184,7 @@ exports.getFollowedUser = async (req, res) => {
 exports.unfollowUser = async (req, res) => {
   try {
     const fromUserId = req.user.id;         // Logged-in user
-    const toUserId = req.body.toUserId;     // Target user to unfollow
+    const toUserId = req.body.toUserId;     // Other user involved in relationship
 
     if (!toUserId) {
       return res.status(400).json({ message: 'Target user ID is required' });
@@ -194,24 +194,39 @@ exports.unfollowUser = async (req, res) => {
       return res.status(400).json({ message: 'You cannot unfollow yourself' });
     }
 
+    // Try to delete both cases:
     const deleted = await Follow.destroy({
       where: {
-        followerId: fromUserId,
-        followingId: toUserId,
+        [Op.or]: [
+          { followerId: fromUserId, followingId: toUserId }, // You unfollow them
+          { followerId: toUserId, followingId: fromUserId }, // You remove their follow
+        ],
       },
     });
-    await User.increment('following_count', { by: -1, where: { id: toUserId } });
 
     if (deleted) {
-      return res.status(200).json({ message: 'Successfully unfollowed the user' });
+      // Adjust counters conditionally
+      await Promise.all([
+        User.increment('following_count', {
+          by: -1,
+          where: { id: fromUserId },
+        }),
+        User.increment('follower_count', {
+          by: -1,
+          where: { id: toUserId },
+        }),
+      ]);
+
+      return res.status(200).json({ message: 'Follow relationship removed successfully' });
     } else {
-      return res.status(400).json({ message: 'You are not following this user' });
+      return res.status(400).json({ message: 'No follow relationship found' });
     }
   } catch (error) {
     console.error('Unfollow error:', error);
     return res.status(500).json({ message: 'Something went wrong', error: error.message });
   }
 };
+
 
 
 
