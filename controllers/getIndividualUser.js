@@ -1222,7 +1222,12 @@ exports.deletePost = async (req, res) => {
 
     if (post.activityType == "aiPromo") {
       const reel = await Reel.findOne({ where: { id: postId } });
-      await reel.destroy();
+      if (reel) {
+        await reel.destroy();
+        console.log("Reel deleted successfully.");
+      } else {
+        console.log("Reel not found.");
+      }
     }
 
     // Step 3: Delete associated reactions
