@@ -1242,7 +1242,7 @@ exports.deletePost = async (req, res) => {
 
 
 exports.getMyFeed = async (req, res) => {
-  const userId = req.user.id || req.query.user_id;
+  const userId = req.query.user_id || req.user.id;
 
   try {
     const limit = parseInt(req.query.limit || 10);
