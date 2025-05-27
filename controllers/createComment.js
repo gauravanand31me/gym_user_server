@@ -72,12 +72,26 @@ exports.deleteComment = async (req, res) => {
     }
 
     const post = await Feed.findByPk(comment.postId);
+
+    // Save parentId before deletion
+    const parentId = comment.parentId;
+
+    // Delete the comment
     await comment.destroy();
 
-    // Decrement comment_count (ensuring it doesn't go below zero)
-    if (post) {
-      post.comment_count = Math.max(0, post.comment_count - 1);
-      await post.save();
+    if (!parentId) {
+      // Top-level comment: decrement post comment count
+      if (post) {
+        post.comment_count = Math.max(0, post.comment_count - 1);
+        await post.save();
+      }
+    } else {
+      // Reply: decrement replies_count of the parent comment
+      const parentComment = await PostComment.findByPk(parentId);
+      if (parentComment) {
+        parentComment.replies_count = Math.max(0, parentComment.replies_count - 1);
+        await parentComment.save();
+      }
     }
 
     return res.status(200).json({ message: 'Comment deleted successfully.' });
@@ -86,6 +100,7 @@ exports.deleteComment = async (req, res) => {
     return res.status(500).json({ message: 'Failed to delete comment.' });
   }
 };
+
 
 
 
