@@ -24,8 +24,10 @@ exports.createComment = async (req, res) => {
     });
 
     // Increment Feed's comment count
-    post.comment_count += 1;
-    await post.save();
+    if (!parentId) {
+      post.comment_count += 1;
+      await post.save();
+    }
 
     // If parentId exists, increment reply count on parent comment
     if (parentId) {
