@@ -114,9 +114,16 @@ exports.getCommentsByPost = async (req, res) => {
       ],
     });
 
-    return res.status(200).json({ comments });
+    const enhancedComments = comments.map((comment) => {
+      const commentJson = comment.toJSON();
+      commentJson.canDelete = comment.userId === req.user.id;
+      return commentJson;
+    });
+
+    return res.status(200).json({ comments: enhancedComments });
   } catch (error) {
     console.error('Error fetching comments:', error);
     return res.status(500).json({ message: 'Failed to fetch comments.' });
   }
 };
+
