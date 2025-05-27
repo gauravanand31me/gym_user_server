@@ -858,6 +858,28 @@ exports.getUserImage = async (req, res) => {
   }
 }
 
+exports.updateBio = async (req, res) => {
+  const userId = req.user.id; // Assumes user is authenticated and user ID is available in req.user
+  const { bio } = req.body;
+
+  try {
+    // Check if full_name is provided
+    if (!bio || bio.trim() === "") {
+      return res.status(400).json({ message: 'Full name is required' });
+    }
+
+    // Update the user's full name in the database
+    await User.update(
+      { bio },
+      { where: { id: userId } }
+    );
+
+    res.status(200).json({ message: 'Bio updated successfully', bio });
+  } catch (error) {
+    console.error('Error updating full name:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
 
 exports.updateFullName = async (req, res) => {
   const userId = req.user.id; // Assumes user is authenticated and user ID is available in req.user

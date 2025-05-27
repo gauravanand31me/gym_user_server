@@ -2,7 +2,7 @@ const express = require('express');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const { getNearbyUsers } = require('../controllers/getNearbyUsers');
 const upload = require('../middleware/upload');
-const { getIndividualUser, searchUsersByUsernameOrLocation, uploadProfileImage,uploadPostImage,  getUserImage, updateFullName, deleteProfileImage, deleteProfile, getTopUsersByWorkoutTime, getUserFeed, uploadFeed, getMyFeed, deletePost, getFeedById, uploadReel, getUserReels, deleteReel, streamReelVideo, updateFeedVisibility, incrementViewCount, followUser, getFollowedUser, unfollowUser, resetFollowsAndFollowingCount, getAllCategory, reportFeed} = require('../controllers/getIndividualUser');
+const { getIndividualUser, searchUsersByUsernameOrLocation, uploadProfileImage,uploadPostImage,updateBio,  getUserImage, updateFullName, deleteProfileImage, deleteProfile, getTopUsersByWorkoutTime, getUserFeed, uploadFeed, getMyFeed, deletePost, getFeedById, uploadReel, getUserReels, deleteReel, streamReelVideo, updateFeedVisibility, incrementViewCount, followUser, getFollowedUser, unfollowUser, resetFollowsAndFollowingCount, getAllCategory, reportFeed} = require('../controllers/getIndividualUser');
 const { reactToPost } = require('../controllers/PostReaction');
 const { createComment, deleteComment, getCommentsByPost } = require('../controllers/createComment');
 const uploadVideo = require('../middleware/uploadVideo');
@@ -16,6 +16,7 @@ router.post('/uploadProfileImage', authMiddleware, upload.single('profileImage')
 router.post('/uploadImage', authMiddleware, upload.single('image'), uploadPostImage);
 router.get('/getImage/:userId', authMiddleware, getUserImage);
 router.put('/update-fullname', authMiddleware, updateFullName);
+router.put('/update-bio', authMiddleware, updateBio);
 router.put('/delete-profileimage', authMiddleware, deleteProfileImage);
 router.delete('/deleteaccount', authMiddleware, deleteProfile);
 router.get('/leaderboard',  getTopUsersByWorkoutTime);
