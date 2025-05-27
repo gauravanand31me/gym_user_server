@@ -5,7 +5,7 @@ const Reel = require("../models/Reel");
 
 exports.createComment = async (req, res) => {
   const userId = req.user.id;
-  const { postId, commentText } = req.body;
+  const { postId, commentText, parentId } = req.body;
 
   if (!commentText || !postId) {
     return res.status(400).json({ message: 'postId and commentText are required.' });
@@ -19,14 +19,24 @@ exports.createComment = async (req, res) => {
       postId,
       userId,
       commentText,
+      parentId: parentId || null,
       timestamp: new Date(),
     });
 
-    // Increment comment_count in Feed
+    // Increment Feed's comment count
     post.comment_count += 1;
     await post.save();
 
-    // Check and increment in Reel (if this post is linked to a reel)
+    // If parentId exists, increment reply count on parent comment
+    if (parentId) {
+      const parentComment = await PostComment.findOne({ where: { id: parentId } });
+      if (parentComment) {
+        parentComment.comment_reply_count += 1;
+        await parentComment.save();
+      }
+    }
+
+    // Also check and update comment count in Reel if exists
     const reel = await Reel.findOne({ where: { id: postId } });
     if (reel) {
       reel.comment_count += 1;
@@ -39,6 +49,7 @@ exports.createComment = async (req, res) => {
     return res.status(500).json({ message: 'Failed to add comment.' });
   }
 };
+
 
 
 
@@ -76,41 +87,34 @@ exports.deleteComment = async (req, res) => {
 
 
 
-  exports.getCommentsByPost = async (req, res) => {
-    const { postId } = req.params;
-    const limit = parseInt(req.query.limit) || 10;
-    const offset = parseInt(req.query.offset) || 0;
-    const loggedInUserId = req.user.id;
-    
-    try {
-      const comments = await PostComment.findAll({
-        where: { postId },
-        include: [
-          {
-            model: User,
-            attributes: ['id', 'full_name', 'profile_pic'],
-          },
-        ],
-        order: [['createdAt', 'ASC']],
-        limit,
-        offset,
-      });
-  
-      const formatted = comments.map(comment => ({
-        id: comment.id,
-        user: {
-          id: comment.User.id,
-          name: comment.User.full_name,
-          profilePic: comment.User.profile_pic,
+exports.getCommentsByPost = async (req, res) => {
+  const { postId } = req.params;
+  const { parentId } = req.query; // optional query param
+
+  if (!postId) {
+    return res.status(400).json({ message: 'postId is required.' });
+  }
+
+  try {
+    const whereClause = {
+      postId,
+      parentId: parentId || null, // null for top-level comments
+    };
+
+    const comments = await PostComment.findAll({
+      where: whereClause,
+      order: [['createdAt', 'DESC']],
+      include: [
+        {
+          model: User,
+          attributes: ['id', 'full_name', 'profile_pic'],
         },
-        commentText: comment.commentText,
-        timestamp: comment.createdAt,
-        canDelete: comment.User.id === loggedInUserId
-      }));
-  
-      return res.status(200).json({ comments: formatted });
-    } catch (error) {
-      console.error('Error fetching comments:', error);
-      return res.status(500).json({ message: 'Failed to fetch comments.' });
-    }
-  };
+      ],
+    });
+
+    return res.status(200).json({ comments });
+  } catch (error) {
+    console.error('Error fetching comments:', error);
+    return res.status(500).json({ message: 'Failed to fetch comments.' });
+  }
+};
