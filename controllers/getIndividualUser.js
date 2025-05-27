@@ -207,7 +207,7 @@ exports.unfollowUser = async (req, res) => {
     if (deleted) {
       // Adjust counters conditionally
       await Promise.all([
-        User.increment('followers_count', {
+        User.increment('following_count', {
           by: -1,
           where: { id: toUserId },
         }),
