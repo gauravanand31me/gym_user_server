@@ -919,41 +919,48 @@ exports.deleteProfileImage = async (req, res) => {
 
 
 exports.deleteProfile = async (req, res) => {
-  const { id } = req.user; // Assuming `id` is the user's ID
+  const { id } = req.user;
 
   try {
-    // Wrap everything in a transaction for consistency
     await sequelize.transaction(async (transaction) => {
-      // Delete bookings
-
-
       // Delete booking ratings
       await BookingRating.destroy({ where: { userId: id }, transaction });
 
-      // Delete buddy requests (from and to)
+      // Delete buddy and friend requests
       await BuddyRequest.destroy({ where: { fromUserId: id }, transaction });
       await BuddyRequest.destroy({ where: { toUserId: id }, transaction });
 
-      // Delete friend requests (from and to)
       await FriendRequest.destroy({ where: { fromUserId: id }, transaction });
       await FriendRequest.destroy({ where: { toUserId: id }, transaction });
 
-      // Delete notifications
-      await Notification.destroy({ where: { userId: id }, transaction });
+      // Delete reactions (if you have a reaction model)
+      await PostReaction.destroy({ where: { userId: id }, transaction });
 
-      // Delete push notifications
+      // Delete comments and nested comments
+      await PostComment.destroy({ where: { userId: id }, transaction });
+
+      // Delete posts and reels made by the user
+      await Feed.destroy({ where: { userId: id }, transaction });
+      await Reel.destroy({ where: { userId: id }, transaction });
+
+      // Delete notifications and push notifications
+      await Notification.destroy({ where: { userId: id }, transaction });
       await PushNotification.destroy({ where: { userId: id }, transaction });
+
+      // Delete bookings
       await Booking.destroy({ where: { userId: id }, transaction });
-      // Finally, delete the user
+
+      // Finally delete the user
       await User.destroy({ where: { id }, transaction });
     });
 
-    return res.status(200).json({ message: "User profile and related data deleted successfully." });
+    return res.status(200).json({ message: "User profile and all related data deleted successfully." });
   } catch (error) {
     console.error("Error deleting user profile:", error);
     return res.status(500).json({ error: "An error occurred while deleting the profile." });
   }
 };
+
 
 
 
