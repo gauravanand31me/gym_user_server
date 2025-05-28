@@ -950,6 +950,9 @@ exports.deleteProfile = async (req, res) => {
       // Delete bookings
       await Booking.destroy({ where: { userId: id }, transaction });
 
+      await Follow.destroy({ where: { followerId: id }, transaction });
+      await Follow.destroy({ where: { followingId: id }, transaction });
+
       // Finally delete the user
       await User.destroy({ where: { id }, transaction });
     });
