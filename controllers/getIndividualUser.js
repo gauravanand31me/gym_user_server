@@ -1172,7 +1172,7 @@ exports.getUserFeed = async (req, res) => {
   const feedId = req.query.feedId;
 
   try {
-    // 1. Get followings
+    // 1. Get following users
     const followings = await Follow.findAll({
       where: { followerId: userId },
       attributes: ['followingId'],
@@ -1197,9 +1197,20 @@ exports.getUserFeed = async (req, res) => {
       if (req.toUserId !== userId) friendIds.add(req.toUserId);
     });
 
-    // === If specific feed post is requested ===
+    const friendIdArray = Array.from(friendIds);
+
+    // 3. Prepare visibility filters
+    const visibilityConditions = [`f."postType" = 'public'`];
+    if (followingIds.length > 0) {
+      visibilityConditions.push(`(f."postType" = 'private' AND f."userId" IN (:ids))`);
+    }
+    if (friendIdArray.length > 0) {
+      visibilityConditions.push(`(f."postType" = 'onlyme' AND f."userId" IN (:friendIds))`);
+    }
+
+    // === Specific feed fetch ===
     if (feedId && feedId !== 'null') {
-      const query = `
+      const singleQuery = `
         SELECT
           f.*,
           u.full_name AS "user.full_name",
@@ -1217,19 +1228,15 @@ exports.getUserFeed = async (req, res) => {
         LEFT JOIN "PostReactions" ur ON f.id = ur."postId" AND ur."userId" = :userId
         LEFT JOIN "Reels" r ON r.id = f.id
         WHERE f.id = :feedId
-          AND (
-            f."postType" = 'public'
-            OR (f."postType" = 'private' AND f."userId" IN (:ids))
-            OR (f."postType" = 'onlyme' AND f."userId" IN (:friendIds))
-          )
+          AND (${visibilityConditions.join(' OR ')})
         LIMIT :limit OFFSET :offset
       `;
 
-      const feedItems = await sequelize.query(query, {
+      const feedItems = await sequelize.query(singleQuery, {
         replacements: {
-          ids: idsArray,
-          friendIds: Array.from(friendIds),
           userId,
+          ids: idsArray,
+          friendIds: friendIdArray,
           feedId,
           limit,
           offset,
@@ -1267,20 +1274,16 @@ exports.getUserFeed = async (req, res) => {
       LEFT JOIN "Gyms" g ON f."gymId" = g.id
       LEFT JOIN "PostReactions" ur ON f.id = ur."postId" AND ur."userId" = :userId
       LEFT JOIN "Reels" r ON r.id = f.id
-      WHERE (
-        f."postType" = 'public'
-        OR (f."postType" = 'private' AND f."userId" IN (:ids))
-        OR (f."postType" = 'onlyme' AND f."userId" IN (:friendIds))
-      )
+      WHERE (${visibilityConditions.join(' OR ')})
       ORDER BY f."timestamp" DESC
       LIMIT :limit OFFSET :offset
     `;
 
     const feedItems = await sequelize.query(query, {
       replacements: {
-        ids: idsArray,
-        friendIds: Array.from(friendIds),
         userId,
+        ids: idsArray,
+        friendIds: friendIdArray,
         limit,
         offset,
       },
@@ -1295,7 +1298,6 @@ exports.getUserFeed = async (req, res) => {
     }));
 
     return res.status(200).json({ feed: feedItemsWithPermissions });
-
   } catch (error) {
     console.error('Error fetching user feed:', error);
     return res.status(500).json({ message: 'Internal server error' });
