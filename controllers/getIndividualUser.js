@@ -1162,9 +1162,9 @@ exports.getUserFeed = async (req, res) => {
   const userId = req.user.id;
 
   try {
-    const feedId = req.query.feedId;
+    const feedId = req.query.feedId ? String(req.query.feedId) : null;
 
-    // If feedId is provided, fetch a specific post
+    // Fetch specific post by feedId
     if (feedId) {
       const query = `
         SELECT
@@ -1184,6 +1184,11 @@ exports.getUserFeed = async (req, res) => {
         LEFT JOIN "PostReactions" ur ON f.id = ur."postId" AND ur."userId" = :userId
         LEFT JOIN "Reels" r ON r.id = f.id
         WHERE f.id = :feedId
+          AND (
+            f."postType" = 'public'
+            OR (f."postType" = 'private' AND f."userId" = :userId)
+            OR (f."postType" = 'onlyme' AND f."userId" = :userId)
+          )
         LIMIT 1
       `;
 
@@ -1204,7 +1209,7 @@ exports.getUserFeed = async (req, res) => {
       return res.status(200).json({ feed: [feedItem] });
     }
 
-    // Default logic: paginated feed from followings
+    // Default feed logic: fetch feed of followings + self
     const followings = await Follow.findAll({
       where: { followerId: userId },
       attributes: ['followingId'],
@@ -1261,6 +1266,7 @@ exports.getUserFeed = async (req, res) => {
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
+
 
 
 
