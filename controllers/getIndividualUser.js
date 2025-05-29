@@ -1162,90 +1162,48 @@ exports.getUserFeed = async (req, res) => {
   const userId = req.user.id;
 
   try {
-    const feedId = req.query.feedId ? String(req.query.feedId) : null;
-
-    // Fetch specific post by feedId
-    if (feedId) {
-      const query = `
-        SELECT
-          f.*,
-          u.full_name AS "user.full_name",
-          u.profile_pic AS "user.profile_pic",
-          g.id AS "gym.id",
-          g.name AS "gym.name",
-          f.like_count AS "likeCount",
-          f.comment_count AS "commentCount",
-          r."videoUrl" AS "videoUrl",
-          r."thumbnailUrl" AS "thumbnailUrl",
-          CASE WHEN ur."reactionType" = 'like' THEN true ELSE false END AS "userLiked"
-        FROM "Feeds" f
-        LEFT JOIN "Users" u ON f."userId" = u.id
-        LEFT JOIN "Gyms" g ON f."gymId" = g.id
-        LEFT JOIN "PostReactions" ur ON f.id = ur."postId" AND ur."userId" = :userId
-        LEFT JOIN "Reels" r ON r.id = f.id
-        WHERE f.id = :feedId
-          AND (
-            f."postType" = 'public'
-            OR (f."postType" = 'private' AND f."userId" = :userId)
-            OR (f."postType" = 'onlyme' AND f."userId" = :userId)
-          )
-        LIMIT 1
-      `;
-
-      const feedItems = await sequelize.query(query, {
-        replacements: { userId, feedId },
-        type: sequelize.QueryTypes.SELECT,
-        nest: true,
-      });
-
-      if (!feedItems.length) {
-        return res.status(404).json({ message: 'Feed not found' });
-      }
-
-      const feedItem = feedItems[0];
-      feedItem.canDelete = feedItem.userId === userId;
-      feedItem.canReport = feedItem.userId !== userId;
-
-      return res.status(200).json({ feed: [feedItem] });
-    }
-
-    // Default feed logic: fetch feed of followings + self
+    // Step 1: Get list of users the current user is following
     const followings = await Follow.findAll({
       where: { followerId: userId },
       attributes: ['followingId'],
     });
 
     const followingIds = followings.map(f => f.followingId);
+
+    // Include the user's own ID
     const idsArray = [userId, ...followingIds];
 
     const limit = parseInt(req.query.limit || 10);
     const offset = parseInt(req.query.offset || 0);
 
+    // Step 2: Raw query with postType logic (based on following instead of friends)
     const query = `
-      SELECT
-        f.*,
-        u.full_name AS "user.full_name",
-        u.profile_pic AS "user.profile_pic",
-        g.id AS "gym.id",
-        g.name AS "gym.name",
-        f.like_count AS "likeCount",
-        f.comment_count AS "commentCount",
-        r."videoUrl" AS "videoUrl",
-        r."thumbnailUrl" AS "thumbnailUrl",
-        CASE WHEN ur."reactionType" = 'like' THEN true ELSE false END AS "userLiked"
-      FROM "Feeds" f
-      LEFT JOIN "Users" u ON f."userId" = u.id
-      LEFT JOIN "Gyms" g ON f."gymId" = g.id
-      LEFT JOIN "PostReactions" ur ON f.id = ur."postId" AND ur."userId" = :userId
-      LEFT JOIN "Reels" r ON r.id = f.id
-      WHERE (
-        f."postType" = 'public'
-        OR (f."postType" = 'private' AND f."userId" IN (:ids))
-        OR (f."postType" = 'onlyme' AND f."userId" = :userId)
-      )
-      ORDER BY f."timestamp" DESC
-      LIMIT :limit OFFSET :offset
-    `;
+  SELECT
+    f.*,
+    u.full_name AS "user.full_name",
+    u.profile_pic AS "user.profile_pic",
+    g.id AS "gym.id",
+    g.name AS "gym.name",
+    f.like_count AS "likeCount",
+    f.comment_count AS "commentCount",
+    r."videoUrl" AS "videoUrl",
+    r."thumbnailUrl" AS "thumbnailUrl",
+    CASE WHEN ur."reactionType" = 'like' THEN true ELSE false END AS "userLiked"
+  FROM "Feeds" f
+  LEFT JOIN "Users" u ON f."userId" = u.id
+  LEFT JOIN "Gyms" g ON f."gymId" = g.id
+  LEFT JOIN "PostReactions" ur ON f.id = ur."postId" AND ur."userId" = :userId
+  LEFT JOIN "Reels" r ON r.id = f.id
+
+  WHERE (
+      f."postType" = 'public'
+      OR (f."postType" = 'private' AND f."userId" IN (:ids))
+      OR (f."postType" = 'onlyme' AND f."userId" = :userId)
+  )
+  ORDER BY f."timestamp" DESC
+  LIMIT :limit OFFSET :offset
+`;
+
 
     const feedItems = await sequelize.query(query, {
       replacements: { ids: idsArray, limit, offset, userId },
@@ -1266,8 +1224,6 @@ exports.getUserFeed = async (req, res) => {
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
-
-
 
 
 
