@@ -1160,6 +1160,8 @@ exports.getUserReels = async (req, res) => {
 
 exports.getUserFeed = async (req, res) => {
   const userId = req.user.id;
+  const limit = parseInt(req.query.limit || 10);
+  const offset = parseInt(req.query.offset || 0);
 
   try {
     const feedId = req.query.feedId;
@@ -1218,8 +1220,7 @@ exports.getUserFeed = async (req, res) => {
     const followingIds = followings.map(f => f.followingId);
     const idsArray = [userId, ...followingIds];
 
-    const limit = parseInt(req.query.limit || 10);
-    const offset = parseInt(req.query.offset || 0);
+    
 
     const query = `
       SELECT
