@@ -108,11 +108,19 @@ exports.acceptRequest = async (req, res) => {
         });
 
         // Delete the existing notification for the friend request
-        await Notification.destroy({
+        await FriendRequest.destroy({
             where: {
-              relatedId: requestId // The friend request ID
+              id: requestId
             }
         });
+
+
+
+        await Notification.destroy({
+          where: {
+            relatedId: requestId // The friend request ID
+          }
+      });
 
        
 
