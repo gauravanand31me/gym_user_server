@@ -1173,6 +1173,14 @@ exports.getUserFeed = async (req, res) => {
   try {
     const feedId = req.query.feedId;
 
+    const followings = await Follow.findAll({
+      where: { followerId: userId },
+      attributes: ['followingId'],
+    });
+
+    const followingIds = followings.map(f => f.followingId);
+    const idsArray = [userId, ...followingIds];
+
     // If feedId is present, fetch that specific post with visibility rules
     if (feedId && feedId !== 'null') {
       const query = `
@@ -1195,14 +1203,14 @@ exports.getUserFeed = async (req, res) => {
         WHERE f.id = :feedId
           AND (
             f."postType" = 'public'
-            OR (f."postType" = 'private' AND f."userId" = :userId)
+            OR (f."postType" = 'private' AND f."userId" IN (:ids))
             OR (f."postType" = 'onlyme' AND f."userId" = :userId)
           )
         LIMIT :limit OFFSET :offset
       `;
 
       const feedItems = await sequelize.query(query, {
-        replacements: { userId, feedId, limit, offset },
+        replacements: { ids: idsArray, userId, feedId, limit, offset },
         type: sequelize.QueryTypes.SELECT,
         nest: true,
       });
@@ -1219,13 +1227,7 @@ exports.getUserFeed = async (req, res) => {
     }
 
     // Default feed: get list of users the current user is following
-    const followings = await Follow.findAll({
-      where: { followerId: userId },
-      attributes: ['followingId'],
-    });
-
-    const followingIds = followings.map(f => f.followingId);
-    const idsArray = [userId, ...followingIds];
+    
 
     
 
