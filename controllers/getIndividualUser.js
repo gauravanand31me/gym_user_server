@@ -1165,7 +1165,7 @@ exports.getUserFeed = async (req, res) => {
     const feedId = req.query.feedId;
 
     // If feedId is present, fetch that specific post with visibility rules
-    if (feedId) {
+    if (feedId && feedId !== 'null') {
       const query = `
         SELECT
           f.*,
