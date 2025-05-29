@@ -718,6 +718,8 @@ exports.searchUsersByUsernameOrLocation = async (req, res) => {
       requestStatuses[request.fromUserId].received = true;
     });
 
+    console.log("Request Status is", requestStatuses)
+
     // Prepare user data with friend request status
     const responseData = users.map(user => ({
       id: user.id,
