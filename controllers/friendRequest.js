@@ -97,9 +97,9 @@ exports.acceptRequest = async (req, res) => {
         }
 
         // Update the status to 'accepted'
-        // request.status = 'accepted';
-        // request.acceptedOn = new Date(); // Adding accepted timestamp
-        // await request.save();
+        request.status = 'accepted';
+        request.acceptedOn = new Date(); // Adding accepted timestamp
+        await request.save();
 
         // Fetch the user who sent the friend request
         const fromUser = await User.findOne({
@@ -117,13 +117,13 @@ exports.acceptRequest = async (req, res) => {
        
 
         // Optionally, you can create a new entry for the reverse relationship
-        await FriendRequest.create({
-            id: uuidv4(),
-            fromUserId: request.toUserId,
-            toUserId: request.fromUserId,
-            status: 'accepted',
-            sentOn: new Date(),
-        });
+        // await FriendRequest.create({
+        //     id: uuidv4(),
+        //     fromUserId: request.toUserId,
+        //     toUserId: request.fromUserId,
+        //     status: 'accepted',
+        //     sentOn: new Date(),
+        // });
 
 
         await FriendRequest.create({
