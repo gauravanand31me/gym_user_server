@@ -1189,11 +1189,11 @@ exports.getUserFeed = async (req, res) => {
             OR (f."postType" = 'private' AND f."userId" = :userId)
             OR (f."postType" = 'onlyme' AND f."userId" = :userId)
           )
-        LIMIT 1
+        LIMIT :limit OFFSET :offset
       `;
 
       const feedItems = await sequelize.query(query, {
-        replacements: { userId, feedId },
+        replacements: { userId, feedId, limit, offset },
         type: sequelize.QueryTypes.SELECT,
         nest: true,
       });
