@@ -1388,13 +1388,13 @@ exports.getMyFeed = async (req, res) => {
         },
       });
 
-      if (isFollowing && friends) {
-        visibilityCondition = `("f"."postType" = 'public' OR "f"."postType" = 'private' OR "f"."postType" = 'onlyme')`;
-      } else if (isFollowing) {
-        visibilityCondition = `("f"."postType" = 'public' OR "f"."postType" = 'private')`;
-      } else if (friends) {
-        visibilityCondition = `("f"."postType" = 'public' OR "f"."postType" = 'onlyme')`;
-      }
+      // if (isFollowing && friends) {
+      //   visibilityCondition = `("f"."postType" = 'public' OR "f"."postType" = 'private' OR "f"."postType" = 'onlyme')`;
+      // } else if (isFollowing) {
+      //   visibilityCondition = `("f"."postType" = 'public' OR "f"."postType" = 'private')`;
+      // } else if (friends) {
+      //   visibilityCondition = `("f"."postType" = 'public' OR "f"."postType" = 'onlyme')`;
+      // }
       // else keep as public only
     }
 
