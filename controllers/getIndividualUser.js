@@ -103,10 +103,15 @@ exports.resetFollowsAndFollowingCount = async (req, res) => {
   try {
     // Step 1: Delete all follow records
     await Follow.destroy({ where: {} });
-
+    await FriendRequest.destroy({ where: {} });
     // Step 2: Reset only following_count to 0
     await User.update(
       { following_count: 0 },
+      { where: {} }
+    );
+
+    await User.update(
+      { followers_count: 0 },
       { where: {} }
     );
 
