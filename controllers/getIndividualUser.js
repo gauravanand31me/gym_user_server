@@ -1328,11 +1328,33 @@ exports.deletePost = async (req, res) => {
 
 
 exports.getMyFeed = async (req, res) => {
-  const userId = req.query.user_id || req.user.id;
+  const loggedInUserId = req.user.id;
+  const requestedUserId = req.query.user_id || loggedInUserId;
 
   try {
     const limit = parseInt(req.query.limit || 10);
     const offset = parseInt(req.query.offset || 0);
+
+    let visibilityCondition = `"f"."postType" = 'public'`;
+
+    if (requestedUserId === loggedInUserId) {
+      // If fetching own feed: allow all post types
+      visibilityCondition = `1=1`; // No filter needed
+    } else {
+      // Check if logged-in user follows the requested user
+      const isFollowing = await Follow.findOne({
+        where: {
+          followerId: loggedInUserId,
+          followingId: requestedUserId,
+        },
+      });
+
+      if (isFollowing) {
+        // Allow both public and private
+        visibilityCondition = `("f"."postType" = 'public' OR "f"."postType" = 'private')`;
+      }
+      // else: keep default (only public)
+    }
 
     const query = `
       SELECT
@@ -1348,14 +1370,15 @@ exports.getMyFeed = async (req, res) => {
       LEFT JOIN "Gyms" g ON f."gymId" = g.id
       LEFT JOIN "PostReactions" r ON f."id" = r."postId"
       LEFT JOIN "Reels" r2 ON r2."id" = f."id"
-      WHERE f."userId" = :userId
+      WHERE f."userId" = :requestedUserId
+        AND ${visibilityCondition}
       GROUP BY f.id, u.id, g.id, r2."id"
       ORDER BY f."timestamp" DESC
       LIMIT :limit OFFSET :offset
     `;
 
     const feedItems = await sequelize.query(query, {
-      replacements: { userId, limit, offset },
+      replacements: { requestedUserId, limit, offset },
       type: sequelize.QueryTypes.SELECT,
       nest: true,
     });
@@ -1367,6 +1390,7 @@ exports.getMyFeed = async (req, res) => {
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
+
 
 
 
