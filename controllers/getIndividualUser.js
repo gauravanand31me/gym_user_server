@@ -1309,7 +1309,6 @@ exports.getUserFeed = async (req, res) => {
 
 
 
-
 // DELETE /posts/:postId
 exports.deletePost = async (req, res) => {
   const userId = req.user.id;
@@ -1356,47 +1355,11 @@ exports.deletePost = async (req, res) => {
 
 
 exports.getMyFeed = async (req, res) => {
-  const loggedInUserId = req.user.id;
-  const requestedUserId = req.query.user_id || loggedInUserId;
+  const userId = req.query.user_id || req.user.id;
 
   try {
     const limit = parseInt(req.query.limit || 10);
     const offset = parseInt(req.query.offset || 0);
-
-    let visibilityCondition = `"f"."postType" = 'public'`;
-
-    if (requestedUserId === loggedInUserId) {
-      // Self-view: no restrictions
-      visibilityCondition = `1=1`;
-    } else {
-      // Check if the logged-in user follows the requested user
-      const isFollowing = await Follow.findOne({
-        where: {
-          followerId: loggedInUserId,
-          followingId: requestedUserId,
-        },
-      });
-
-      // Check if the logged-in user is a friend of the requested user
-      const friends = await FriendRequest.findOne({
-        where: {
-          status: 'accepted',
-          [Sequelize.Op.or]: [
-            { fromUserId: loggedInUserId, toUserId: requestedUserId },
-            { fromUserId: requestedUserId, toUserId: loggedInUserId },
-          ],
-        },
-      });
-
-      // if (isFollowing && friends) {
-      //   visibilityCondition = `("f"."postType" = 'public' OR "f"."postType" = 'private' OR "f"."postType" = 'onlyme')`;
-      // } else if (isFollowing) {
-      //   visibilityCondition = `("f"."postType" = 'public' OR "f"."postType" = 'private')`;
-      // } else if (friends) {
-      //   visibilityCondition = `("f"."postType" = 'public' OR "f"."postType" = 'onlyme')`;
-      // }
-      // else keep as public only
-    }
 
     const query = `
       SELECT
@@ -1412,15 +1375,14 @@ exports.getMyFeed = async (req, res) => {
       LEFT JOIN "Gyms" g ON f."gymId" = g.id
       LEFT JOIN "PostReactions" r ON f."id" = r."postId"
       LEFT JOIN "Reels" r2 ON r2."id" = f."id"
-      WHERE f."userId" = :requestedUserId
-        AND ${visibilityCondition}
+      WHERE f."userId" = :userId
       GROUP BY f.id, u.id, g.id, r2."id"
       ORDER BY f."timestamp" DESC
       LIMIT :limit OFFSET :offset
     `;
 
     const feedItems = await sequelize.query(query, {
-      replacements: { requestedUserId, limit, offset },
+      replacements: { userId, limit, offset },
       type: sequelize.QueryTypes.SELECT,
       nest: true,
     });
@@ -1432,8 +1394,6 @@ exports.getMyFeed = async (req, res) => {
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
-
-
 
 
 
