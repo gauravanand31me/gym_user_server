@@ -1169,19 +1169,35 @@ exports.getUserFeed = async (req, res) => {
   const userId = req.user.id;
   const limit = parseInt(req.query.limit || 10);
   const offset = parseInt(req.query.offset || 0);
+  const feedId = req.query.feedId;
 
   try {
-    const feedId = req.query.feedId;
-
+    // 1. Get followings
     const followings = await Follow.findAll({
       where: { followerId: userId },
       attributes: ['followingId'],
     });
-
     const followingIds = followings.map(f => f.followingId);
     const idsArray = [userId, ...followingIds];
 
-    // If feedId is present, fetch that specific post with visibility rules
+    // 2. Get friends (bidirectional)
+    const friends = await FriendRequest.findAll({
+      where: {
+        status: 'accepted',
+        [Sequelize.Op.or]: [
+          { fromUserId: userId },
+          { toUserId: userId },
+        ],
+      },
+    });
+
+    const friendIds = new Set();
+    friends.forEach(req => {
+      if (req.fromUserId !== userId) friendIds.add(req.fromUserId);
+      if (req.toUserId !== userId) friendIds.add(req.toUserId);
+    });
+
+    // === If specific feed post is requested ===
     if (feedId && feedId !== 'null') {
       const query = `
         SELECT
@@ -1204,13 +1220,20 @@ exports.getUserFeed = async (req, res) => {
           AND (
             f."postType" = 'public'
             OR (f."postType" = 'private' AND f."userId" IN (:ids))
-            OR (f."postType" = 'onlyme' AND f."userId" = :userId)
+            OR (f."postType" = 'onlyme' AND f."userId" IN (:friendIds))
           )
         LIMIT :limit OFFSET :offset
       `;
 
       const feedItems = await sequelize.query(query, {
-        replacements: { ids: idsArray, userId, feedId, limit, offset },
+        replacements: {
+          ids: idsArray,
+          friendIds: Array.from(friendIds),
+          userId,
+          feedId,
+          limit,
+          offset,
+        },
         type: sequelize.QueryTypes.SELECT,
         nest: true,
       });
@@ -1226,11 +1249,7 @@ exports.getUserFeed = async (req, res) => {
       return res.status(200).json({ feed: [feedItem] });
     }
 
-    // Default feed: get list of users the current user is following
-    
-
-    
-
+    // === Default feed ===
     const query = `
       SELECT
         f.*,
@@ -1251,14 +1270,20 @@ exports.getUserFeed = async (req, res) => {
       WHERE (
         f."postType" = 'public'
         OR (f."postType" = 'private' AND f."userId" IN (:ids))
-        OR (f."postType" = 'onlyme' AND f."userId" = :userId)
+        OR (f."postType" = 'onlyme' AND f."userId" IN (:friendIds))
       )
       ORDER BY f."timestamp" DESC
       LIMIT :limit OFFSET :offset
     `;
 
     const feedItems = await sequelize.query(query, {
-      replacements: { ids: idsArray, limit, offset, userId },
+      replacements: {
+        ids: idsArray,
+        friendIds: Array.from(friendIds),
+        userId,
+        limit,
+        offset,
+      },
       type: sequelize.QueryTypes.SELECT,
       nest: true,
     });
@@ -1276,6 +1301,7 @@ exports.getUserFeed = async (req, res) => {
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
+
 
 
 
@@ -1338,10 +1364,10 @@ exports.getMyFeed = async (req, res) => {
     let visibilityCondition = `"f"."postType" = 'public'`;
 
     if (requestedUserId === loggedInUserId) {
-      // If fetching own feed: allow all post types
-      visibilityCondition = `1=1`; // No filter needed
+      // Self-view: no restrictions
+      visibilityCondition = `1=1`;
     } else {
-      // Check if logged-in user follows the requested user
+      // Check if the logged-in user follows the requested user
       const isFollowing = await Follow.findOne({
         where: {
           followerId: loggedInUserId,
@@ -1349,11 +1375,25 @@ exports.getMyFeed = async (req, res) => {
         },
       });
 
-      if (isFollowing) {
-        // Allow both public and private
+      // Check if the logged-in user is a friend of the requested user
+      const friends = await FriendRequest.findOne({
+        where: {
+          status: 'accepted',
+          [Sequelize.Op.or]: [
+            { fromUserId: loggedInUserId, toUserId: requestedUserId },
+            { fromUserId: requestedUserId, toUserId: loggedInUserId },
+          ],
+        },
+      });
+
+      if (isFollowing && friends) {
+        visibilityCondition = `("f"."postType" = 'public' OR "f"."postType" = 'private' OR "f"."postType" = 'onlyme')`;
+      } else if (isFollowing) {
         visibilityCondition = `("f"."postType" = 'public' OR "f"."postType" = 'private')`;
+      } else if (friends) {
+        visibilityCondition = `("f"."postType" = 'public' OR "f"."postType" = 'onlyme')`;
       }
-      // else: keep default (only public)
+      // else keep as public only
     }
 
     const query = `
@@ -1390,6 +1430,7 @@ exports.getMyFeed = async (req, res) => {
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
+
 
 
 
