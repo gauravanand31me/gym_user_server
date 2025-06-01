@@ -1400,8 +1400,19 @@ exports.getMyFeed = async (req, res) => {
 
 exports.uploadFeed = async (req, res) => {
   try {
-    const { answer, postType } = req.body;
+    const { answer, postType, mode } = req.body;
     const userId = req.user.id;
+    let activityType = "questionPrompt";
+
+    if (mode === "then_and_now") {
+      activityType = "then_now";
+    }
+
+    if (mode === "meal_timeline") {
+      activityType = "meal";
+    }
+
+
 
     let imageUrl = null;
 
@@ -1421,9 +1432,10 @@ exports.uploadFeed = async (req, res) => {
       imageUrl = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.amazonaws.com/${fileName}`;
     }
 
+
     const feed = await Feed.create({
       userId,
-      activityType: 'questionPrompt',
+      activityType,
       title: 'User Shared a Thought 💬',
       description: answer,
       imageUrl,
