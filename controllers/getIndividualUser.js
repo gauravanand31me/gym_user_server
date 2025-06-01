@@ -1356,12 +1356,14 @@ exports.deletePost = async (req, res) => {
 
 exports.getMyFeed = async (req, res) => {
   const userId = req.query.user_id || req.user.id;
+  const type = req.query.type;
 
   try {
     const limit = parseInt(req.query.limit || 10);
     const offset = parseInt(req.query.offset || 0);
 
-    const query = `
+    // Base query
+    let query = `
       SELECT
         f.*,
         u.full_name AS "user.full_name",
@@ -1376,13 +1378,24 @@ exports.getMyFeed = async (req, res) => {
       LEFT JOIN "PostReactions" r ON f."id" = r."postId"
       LEFT JOIN "Reels" r2 ON r2."id" = f."id"
       WHERE f."userId" = :userId
+    `;
+
+    // Conditionally add activityType filter
+    if (type) {
+      query += ` AND f."activityType" = :type`;
+    }
+
+    query += `
       GROUP BY f.id, u.id, g.id, r2."id"
       ORDER BY f."timestamp" DESC
       LIMIT :limit OFFSET :offset
     `;
 
+    const replacements = { userId, limit, offset };
+    if (type) replacements.type = type;
+
     const feedItems = await sequelize.query(query, {
-      replacements: { userId, limit, offset },
+      replacements,
       type: sequelize.QueryTypes.SELECT,
       nest: true,
     });
@@ -1394,6 +1407,7 @@ exports.getMyFeed = async (req, res) => {
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
+
 
 
 
