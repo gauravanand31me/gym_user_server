@@ -1446,6 +1446,8 @@ exports.uploadFeed = async (req, res) => {
       await s3.send(command);
 
       imageUrl = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.amazonaws.com/${fileName}`;
+    } else {
+      imageUrl = "https://yupluck.com/Apple%20App%20Store.jpg";
     }
 
 
