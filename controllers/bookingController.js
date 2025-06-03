@@ -538,21 +538,21 @@ exports.razorPayWebhookPost = async (req, res) => {
     `);
 
 
-      Feed.create({
-        userId,
-        gymId: bookingData.gymId,
-        activityType: 'general',
-        title: 'Booked Gym',
-        description: `Booked a session at a gym 💪`,
-        imageUrl: null,
-        timestamp: new Date()
-      })
-        .then(() => {
-          console.log('✅ Feed entry created for gym booking');
-        })
-        .catch(err => {
-          console.error('❌ Failed to create gym booking feed:', err.message);
-        });
+      // Feed.create({
+      //   userId,
+      //   gymId: bookingData.gymId,
+      //   activityType: 'general',
+      //   title: 'Booked Gym',
+      //   description: `Booked a session at a gym 💪`,
+      //   imageUrl: null,
+      //   timestamp: new Date()
+      // })
+      //   .then(() => {
+      //     console.log('✅ Feed entry created for gym booking');
+      //   })
+      //   .catch(err => {
+      //     console.error('❌ Failed to create gym booking feed:', err.message);
+      //   });
 
     } else {
       res.send("Payment Failed");
