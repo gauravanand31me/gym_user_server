@@ -1131,8 +1131,10 @@ exports.getUserReels = async (req, res) => {
 
     // Optional: Category filter
     if (category) {
-      whereConditions += ` AND r."hashtags" @> ARRAY[:category]::VARCHAR[]`;
-      replacements.category = category;
+      whereConditions += ` AND EXISTS (
+        SELECT 1 FROM unnest(r."hashtags") AS tag WHERE tag ILIKE :likeCategory
+      )`;
+      replacements.likeCategory = `%${category}%`;
     }
 
     query += `
