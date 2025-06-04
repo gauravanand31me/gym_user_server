@@ -1318,38 +1318,75 @@ exports.deletePost = async (req, res) => {
   const postId = req.params.postId;
 
   try {
-    // Step 1: Find the post
     const post = await Feed.findOne({ where: { id: postId } });
-
 
     if (!post) {
       return res.status(404).json({ message: 'Post not found' });
     }
 
-    // Step 2: Verify that the logged-in user owns the post
     if (post.userId !== userId) {
       return res.status(403).json({ message: 'You are not authorized to delete this post' });
     }
 
-    if (post.activityType == "aiPromo") {
+    // Step 1: If it's a reel or aiPromo, check Reel table
+    if (post.activityType === "aiPromo" || post.activityType === "reel") {
       const reel = await Reel.findOne({ where: { id: postId } });
+
       if (reel) {
+        const s3Keys = [];
+
+        if (reel.videoUrl) {
+          const key = reel.videoUrl.split('/').slice(-2).join('/');
+          s3Keys.push(key);
+        }
+
+        if (reel.thumbnailUrl) {
+          const key = reel.thumbnailUrl.split('/').slice(-2).join('/');
+          s3Keys.push(key);
+        }
+
+        for (const key of s3Keys) {
+          try {
+            await s3Client.send(new DeleteObjectCommand({
+              Bucket: process.env.AWS_S3_BUCKET_NAME,
+              Key: key,
+            }));
+            console.log(`✅ Deleted from S3: ${key}`);
+          } catch (err) {
+            console.warn(`⚠️ Failed to delete ${key} from S3:`, err.message);
+          }
+        }
+
         await reel.destroy();
-        console.log("Reel deleted successfully.");
-      } else {
-        console.log("Reel not found.");
+        console.log("🎬 Reel record deleted.");
       }
     }
 
-    // Step 3: Delete associated reactions
+    // Step 2: Delete imageUrl from post (if exists)
+    if (post.imageUrl) {
+      try {
+        const imageKey = post.imageUrl.split('/').slice(-2).join('/');
+        await s3Client.send(new DeleteObjectCommand({
+          Bucket: process.env.AWS_S3_BUCKET_NAME,
+          Key: imageKey,
+        }));
+        console.log(`🖼️ Deleted post image from S3: ${imageKey}`);
+      } catch (err) {
+        console.warn(`⚠️ Failed to delete post image: ${err.message}`);
+      }
+    }
+
+    // Step 3: Delete reactions and comments
     await PostReaction.destroy({ where: { postId } });
     await PostComment.destroy({ where: { postId } });
+
     // Step 4: Delete the post
     await post.destroy();
 
-    return res.status(200).json({ message: 'Post and associated reactions deleted successfully' });
+    return res.status(200).json({ message: 'Post and associated content deleted successfully' });
+
   } catch (error) {
-    console.error('Error deleting post:', error);
+    console.error('❌ Error deleting post:', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
