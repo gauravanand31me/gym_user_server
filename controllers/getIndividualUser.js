@@ -469,7 +469,7 @@ exports.uploadReel = async (req, res) => {
       CacheControl: 'public, max-age=31536000',
     }));
 
-    const thumbnailUrl = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.amazonaws.com/${thumbnailKey}`;
+    const thumbnailUrl = `https://${process.env.CLOUDFRONT_URL}/${thumbnailKey}`;
 
     // Step 4: Upload compressed video to S3
     const compressedStream = fs.createReadStream(compressedFilePath);
@@ -766,7 +766,7 @@ exports.uploadProfileImage = async (req, res) => {
 
     await s3.send(uploadCommand);
 
-    const fileUrl = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.amazonaws.com/${fileName}`;
+    const fileUrl = `https://${process.env.CLOUDFRONT_URL}/${fileName}`;
 
     await User.update(
       { profile_pic: fileUrl },
@@ -807,7 +807,7 @@ exports.uploadPostImage = async (req, res) => {
 
     await s3.send(command);
 
-    const fileUrl = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.amazonaws.com/${fileName}`;
+    const fileUrl = `https://${process.env.CLOUDFRONT_URL}/${fileName}`;
 
     const userImage = await UserImage.create({
       user_id: userId,
@@ -1444,8 +1444,8 @@ exports.uploadFeed = async (req, res) => {
       });
 
       await s3.send(command);
-
-      imageUrl = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.amazonaws.com/${fileName}`;
+      
+      imageUrl = `https://${process.env.CLOUDFRONT_URL}/${fileName}`;
     } else {
       imageUrl = "https://yupluck.com/Apple%20App%20Store.jpg";
     }
