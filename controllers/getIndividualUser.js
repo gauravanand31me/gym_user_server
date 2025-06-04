@@ -19,6 +19,7 @@ const Follow = require('../models/Follow'); // Assuming you have a Follow model 
 const { v4: uuidv4 } = require('uuid');
 const ffmpeg = require('fluent-ffmpeg');
 const ffmpegPath = require('ffmpeg-static');
+const sharp = require("sharp"); // Import Sharp at the top
 const fs = require('fs');
 const path = require('path');
 const s3 = require('../config/aws'); // your s3 config
@@ -1420,27 +1421,25 @@ exports.uploadFeed = async (req, res) => {
     const userId = req.user.id;
     let activityType = "questionPrompt";
 
-    if (mode === "then_and_now") {
-      activityType = "then_now";
-    }
-
-    if (mode === "meal_timeline") {
-      activityType = "meal";
-    }
-
-
+    if (mode === "then_and_now") activityType = "then_now";
+    if (mode === "meal_timeline") activityType = "meal";
 
     let imageUrl = null;
 
     if (req.file) {
-      const extension = path.extname(req.file.originalname);
-      const fileName = `${userId}/${Date.now()}_feedImage${extension}`;
+      // Convert and resize image using sharp
+      const processedImageBuffer = await sharp(req.file.buffer)
+        .resize({ width: 1080 }) // Resize if needed
+        .webp({ quality: 80 })   // Convert to WebP
+        .toBuffer();
+
+      const fileName = `${userId}/${Date.now()}_feedImage.webp`;
 
       const command = new PutObjectCommand({
         Bucket: process.env.AWS_S3_BUCKET_NAME,
         Key: fileName,
-        Body: req.file.buffer,
-        ContentType: req.file.mimetype,
+        Body: processedImageBuffer,
+        ContentType: "image/webp",
       });
 
       await s3.send(command);
@@ -1450,21 +1449,20 @@ exports.uploadFeed = async (req, res) => {
       imageUrl = "https://yupluck.com/Apple%20App%20Store.jpg";
     }
 
-
     const feed = await Feed.create({
       userId,
       activityType,
-      title: 'User Shared a Thought 💬',
+      title: "User Shared a Thought 💬",
       description: answer,
       imageUrl,
       timestamp: new Date(),
-      postType: postType || 'public',
+      postType: postType || "public",
     });
 
     res.status(201).json({ success: true, feed });
   } catch (err) {
-    console.error('❌ Feed upload failed:', err.message);
-    res.status(500).json({ success: false, message: 'Internal Server Error' });
+    console.error("❌ Feed upload failed:", err.message);
+    res.status(500).json({ success: false, message: "Internal Server Error" });
   }
 };
 
