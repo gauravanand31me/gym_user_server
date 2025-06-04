@@ -1429,6 +1429,7 @@ exports.uploadFeed = async (req, res) => {
     if (req.file) {
       // Convert and resize image using sharp
       const processedImageBuffer = await sharp(req.file.buffer)
+        .rotate() 
         .resize({ width: 1080 }) // Resize if needed
         .webp({ quality: 80 })   // Convert to WebP
         .toBuffer();
