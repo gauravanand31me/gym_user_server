@@ -1327,7 +1327,7 @@ exports.deletePost = async (req, res) => {
       return res.status(404).json({ message: 'Post not found' });
     }
 
-    if (post.userId !== userId || userId === process.env.ADMIN_UUID) {
+    if (post.userId !== userId || userId !== process.env.ADMIN_UUID) {
       return res.status(403).json({ message: 'You are not authorized to delete this post' });
     }
 
