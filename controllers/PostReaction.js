@@ -1,10 +1,8 @@
 const PostReaction = require('../models/PostReaction');
 const Reel = require('../models/Reel');
-const { sendPushNotification } = require('../config/pushNotification');
 const Feed = require('../models/Feed');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
-const PushNotification = require('../models/PushNotification'); // Make sure this model exists
 
 exports.reactToPost = async (req, res) => {
   const { postId, reactionType } = req.body;
@@ -15,10 +13,7 @@ exports.reactToPost = async (req, res) => {
   }
 
   try {
-    // Find Reel (may or may not exist)
     const reel = await Reel.findOne({ where: { id: postId } });
-
-    // Find Feed (may or may not exist)
     const feed = await Feed.findOne({ where: { id: postId } });
 
     if (!reel && !feed) {
@@ -26,18 +21,17 @@ exports.reactToPost = async (req, res) => {
     }
 
     const fromUser = await User.findOne({ where: { id: userId } });
+    const toUserId = reel?.userId || feed?.userId;
 
-    // Check if the user already reacted
     const existingReaction = await PostReaction.findOne({ where: { postId, userId } });
 
     let actionMessage = '';
-    console.log("existingReaction", existingReaction);
+
     if (!existingReaction) {
       // New like
       await PostReaction.create({ postId, userId, reactionType });
 
       if (reel) {
-        console.log("(reel.like_count || 0) + 1", (reel.like_count || 0) + 1);
         reel.like_count = (reel.like_count || 0) + 1;
         await reel.save();
       }
@@ -48,8 +42,37 @@ exports.reactToPost = async (req, res) => {
       }
 
       actionMessage = 'added';
+
+      // 🔔 Create or update notification
+      if (toUserId && toUserId !== userId) {
+        const existingNotification = await Notification.findOne({
+          where: {
+            userId: userId,
+            forUserId: toUserId,
+            relatedId: postId,
+            type: 'reaction',
+          },
+        });
+
+        if (existingNotification) {
+          // Just update the timestamp
+          existingNotification.updatedAt = new Date();
+          await existingNotification.save();
+        } else {
+          // Create new notification
+          await Notification.create({
+            userId: userId,
+            forUserId: toUserId,
+            message: `${fromUser.full_name} liked your ${reel ? 'reel' : 'post'}`,
+            type: 'reaction',
+            profileImage: fromUser.profile_pic || '',
+            relatedId: postId,
+          });
+        }
+      }
+
     } else if (existingReaction.reactionType === reactionType) {
-      // Remove like
+      // Unlike (remove reaction)
       await existingReaction.destroy();
 
       if (reel) {
@@ -64,7 +87,7 @@ exports.reactToPost = async (req, res) => {
 
       actionMessage = 'removed';
     } else {
-      // If other reactions are added in future
+      // (Future: if more reaction types are supported)
       existingReaction.reactionType = reactionType;
       await existingReaction.save();
       actionMessage = 'updated';
