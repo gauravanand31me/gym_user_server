@@ -89,16 +89,18 @@ exports.reactToPost = async (req, res) => {
         await notification.save();
       }
 
+
+      const pushToken = PushNotification.findOne({userId: targetUserId});
+
       // Optional: Push Notification
-      await sendPushNotification({
-        userId: targetUserId,
-        title: 'New Like',
-        body: notification.description,
-        data: { postId },
-      });
+      await sendPushNotification(
+        pushToken.expoPushToken,
+        'New Like',
+        notification.description
+      );
 
       // Store push notification log
-      await PushNotification.create({
+      await Notification.create({
         userId: targetUserId,
         title: 'New Like',
         message: notification.description,
