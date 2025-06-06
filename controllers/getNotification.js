@@ -21,7 +21,7 @@ exports.getNotifications = async (req, res) => {
             FROM "Notification" 
             JOIN "Users" ON "Notification"."userId" = "Users".id 
             WHERE "Notification"."userId" = :userId 
-            ORDER BY "Notification"."createdAt" DESC
+            ORDER BY "Notification"."updatedAt" DESC
         `;
 
         // Corrected query for unread count with proper string comparison
