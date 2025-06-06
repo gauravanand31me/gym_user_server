@@ -362,7 +362,6 @@ exports.createOrder = async (req, res) => {
 };
 
 exports.razorPayWebhook = async (req, res) => {
-  console.log("I am called after payment", req.body);
 
   return res.status(200).send("Payment successful");
 

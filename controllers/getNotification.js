@@ -54,7 +54,7 @@ exports.getNotifications = async (req, res) => {
         const unreadCount = unreadCountResult[0].unreadcount || 0;
 
         // Return the fetched results and unread count
-        console.log({notifications, unreadCount});
+       
         res.status(200).json({ notifications, unreadCount });
 
     } catch (error) {
