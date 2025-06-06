@@ -47,7 +47,7 @@ exports.reactToPost = async (req, res) => {
       if (toUserId && toUserId !== userId) {
         const existingNotification = await Notification.findOne({
           where: {
-            userId: userId,
+            userId: toUserId,
             forUserId: toUserId,
             relatedId: postId,
             type: 'reaction',
