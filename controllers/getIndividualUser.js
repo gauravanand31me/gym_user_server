@@ -1170,6 +1170,8 @@ exports.getUserReels = async (req, res) => {
 
 exports.getUserFeed = async (req, res) => {
   const userId = req.user.id;
+  console.log("userId is", userId);
+  console.log("process.env.ADMIN_UUID", process.env.ADMIN_UUID);
   const limit = parseInt(req.query.limit || 10);
   const offset = parseInt(req.query.offset || 0);
   const feedId = req.query.feedId;
@@ -1252,8 +1254,7 @@ exports.getUserFeed = async (req, res) => {
         return res.status(404).json({ message: 'Feed not found or access denied.' });
       }
 
-      console.log("userId is", userId);
-      console.log("process.env.ADMIN_UUID", process.env.ADMIN_UUID);
+      
       const feedItem = feedItems[0];
       feedItem.canDelete = feedItem.userId === userId || userId === process.env.ADMIN_UUID;
       feedItem.canReport = feedItem.userId !== userId || userId !== process.env.ADMIN_UUID;
