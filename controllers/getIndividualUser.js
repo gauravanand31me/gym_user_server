@@ -1253,8 +1253,8 @@ exports.getUserFeed = async (req, res) => {
       }
 
       const feedItem = feedItems[0];
-      feedItem.canDelete = feedItem.userId === userId;
-      feedItem.canReport = feedItem.userId !== userId;
+      feedItem.canDelete = feedItem.userId === userId || userId === process.env.ADMIN_UUID;
+      feedItem.canReport = feedItem.userId !== userId || userId !== process.env.ADMIN_UUID;
 
       return res.status(200).json({ feed: [feedItem] });
     }
@@ -1324,7 +1324,7 @@ exports.deletePost = async (req, res) => {
       return res.status(404).json({ message: 'Post not found' });
     }
 
-    if (post.userId !== userId) {
+    if (post.userId !== userId || userId === process.env.ADMIN_UUID) {
       return res.status(403).json({ message: 'You are not authorized to delete this post' });
     }
 
