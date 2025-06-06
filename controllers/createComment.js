@@ -2,9 +2,10 @@ const PostComment = require('../models/PostComment');
 const User = require('../models/User');
 const Feed = require('../models/Feed');
 const Reel = require("../models/Reel");
+const Notification = require("../models/Notification");
 
 exports.createComment = async (req, res) => {
-  const userId = req.user.id;
+  const fromUserId = req.user.id;
   const { postId, commentText, parentId } = req.body;
 
   if (!commentText || !postId) {
@@ -13,23 +14,33 @@ exports.createComment = async (req, res) => {
 
   try {
     const post = await Feed.findOne({ where: { id: postId } });
-    if (!post) return res.status(404).json({ message: 'Post not found.' });
+    const reel = await Reel.findOne({ where: { id: postId } });
+
+    if (!post && !reel) {
+      return res.status(404).json({ message: 'Post/Reel not found.' });
+    }
 
     const comment = await PostComment.create({
       postId,
-      userId,
+      userId: fromUserId,
       commentText,
       parentId: parentId || null,
       timestamp: new Date(),
     });
 
-    // Increment Feed's comment count
+    // If top-level comment, increment comment_count in Feed or Reel
     if (!parentId) {
-      post.comment_count += 1;
-      await post.save();
+      if (post) {
+        post.comment_count += 1;
+        await post.save();
+      }
+      if (reel) {
+        reel.comment_count += 1;
+        await reel.save();
+      }
     }
 
-    // If parentId exists, increment reply count on parent comment
+    // If replying to another comment, increment comment_reply_count
     if (parentId) {
       const parentComment = await PostComment.findOne({ where: { id: parentId } });
       if (parentComment) {
@@ -38,23 +49,52 @@ exports.createComment = async (req, res) => {
       }
     }
 
-    // Also check and update comment count in Reel if exists
-    const reel = await Reel.findOne({ where: { id: postId } });
-    if (reel) {
-      reel.comment_count += 1;
-      await reel.save();
+    // 🔔 Notification Logic
+    const actorUser = await User.findOne({ where: { id: fromUserId } });
+    const receiverUserId = post?.userId || reel?.userId;
+
+    if (receiverUserId && receiverUserId !== fromUserId) {
+      const existingNotification = await Notification.findOne({
+        where: {
+          userId: receiverUserId, // 👈 RECEIVER of the notification
+          relatedId: postId,
+          type: 'comment',
+        },
+        order: [['updatedAt', 'DESC']],
+      });
+
+      if (existingNotification) {
+        // Count-based message
+        const othersCount = existingNotification.othersCount || 1;
+        const newCount = othersCount + 1;
+
+        existingNotification.message = `${actorUser.full_name} and ${newCount - 1} others commented on your ${reel ? 'reel' : 'post'}`;
+        existingNotification.profileImage = actorUser.profile_pic || '';
+        existingNotification.forUserId = fromUserId; // 👈 ACTOR
+        existingNotification.othersCount = newCount;
+        existingNotification.updatedAt = new Date();
+
+        await existingNotification.save();
+      } else {
+        await Notification.create({
+          userId: receiverUserId, // 👈 RECEIVER
+          forUserId: fromUserId,  // 👈 ACTOR
+          relatedId: postId,
+          type: 'comment',
+          profileImage: actorUser.profile_pic || '',
+          message: `${actorUser.full_name} commented on your ${reel ? 'reel' : 'post'}`,
+          othersCount: 1, // optional column you can add
+        });
+      }
     }
 
     return res.status(201).json({ message: 'Comment added successfully.', comment });
+
   } catch (error) {
     console.error('Error adding comment:', error);
     return res.status(500).json({ message: 'Failed to add comment.' });
   }
 };
-
-
-
-
 
 
 exports.deleteComment = async (req, res) => {
