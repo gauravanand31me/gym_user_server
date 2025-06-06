@@ -187,6 +187,7 @@ exports.getFriendRequests = async (req, res) => {
   const page = parseInt(req.query.page) || 0;
   const limit = parseInt(req.query.limit) || 10;
   const offset = page * limit;
+  const type = req.query.type || "accepted";
 
   try {
     // Fetch accepted requests with pagination
@@ -194,11 +195,11 @@ exports.getFriendRequests = async (req, res) => {
       `SELECT fr.*, u.id as "fromUserId", u.full_name, u.profile_pic 
        FROM "FriendRequests" fr
        JOIN "Users" u ON fr."fromUserId" = u.id
-       WHERE fr."toUserId" = :userId AND fr.status = 'accepted'
+       WHERE fr."toUserId" = :userId AND fr.status = :type
        ORDER BY fr."createdAt" DESC
        LIMIT :limit OFFSET :offset`,
       {
-        replacements: { userId, limit, offset },
+        replacements: { userId, limit, offset, type },
         type: sequelize.QueryTypes.SELECT,
       }
     );
