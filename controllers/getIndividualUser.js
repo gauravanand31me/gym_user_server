@@ -1299,8 +1299,8 @@ exports.getUserFeed = async (req, res) => {
 
     const feedItemsWithPermissions = feedItems.map(feed => ({
       ...feed,
-      canDelete: feed.userId === userId,
-      canReport: feed.userId !== userId,
+      canDelete: feed.userId === userId || userId === process.env.ADMIN_UUID,
+      canReport: feed.userId !== userId || userId !== process.env.ADMIN_UUID,
     }));
 
     return res.status(200).json({ feed: feedItemsWithPermissions });
