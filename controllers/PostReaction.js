@@ -15,7 +15,10 @@ exports.reactToPost = async (req, res) => {
   }
 
   try {
+    // Find Reel (may or may not exist)
     const reel = await Reel.findOne({ where: { id: postId } });
+
+    // Find Feed (may or may not exist)
     const feed = await Feed.findOne({ where: { id: postId } });
 
     if (!reel && !feed) {
@@ -23,89 +26,48 @@ exports.reactToPost = async (req, res) => {
     }
 
     const fromUser = await User.findOne({ where: { id: userId } });
+
+    // Check if the user already reacted
     const existingReaction = await PostReaction.findOne({ where: { postId, userId } });
 
     let actionMessage = '';
-    let targetUserId = reel?.userId || feed?.userId;
-    let totalLikes = 0;
-
+    console.log("existingReaction", existingReaction);
     if (!existingReaction) {
+      // New like
       await PostReaction.create({ postId, userId, reactionType });
 
       if (reel) {
+        console.log("(reel.like_count || 0) + 1", (reel.like_count || 0) + 1);
         reel.like_count = (reel.like_count || 0) + 1;
         await reel.save();
-        totalLikes = reel.like_count;
       }
 
       if (feed) {
         feed.like_count = (feed.like_count || 0) + 1;
         await feed.save();
-        totalLikes = feed.like_count;
       }
 
       actionMessage = 'added';
     } else if (existingReaction.reactionType === reactionType) {
+      // Remove like
       await existingReaction.destroy();
 
       if (reel) {
         reel.like_count = Math.max(0, (reel.like_count || 0) - 1);
         await reel.save();
-        totalLikes = reel.like_count;
       }
 
       if (feed) {
         feed.like_count = Math.max(0, (feed.like_count || 0) - 1);
         await feed.save();
-        totalLikes = feed.like_count;
       }
 
       actionMessage = 'removed';
     } else {
+      // If other reactions are added in future
       existingReaction.reactionType = reactionType;
       await existingReaction.save();
       actionMessage = 'updated';
-    }
-
-    // Handle Notification
-    if (userId !== targetUserId && actionMessage === 'added') {
-      const [notification, created] = await Notification.findOrCreate({
-        where: {
-          userId: targetUserId,
-          relatedId: postId,
-          type: 'like',
-        },
-        defaults: {
-          fromUserId: userId,
-          description: `${fromUser.full_name} liked your post. Total likes: ${totalLikes}`,
-          isRead: false,
-        },
-      });
-
-      if (!created) {
-        notification.description = `${fromUser.full_name} and others liked your post. Total likes: ${totalLikes}`;
-        notification.updatedAt = new Date();
-        notification.isRead = false;
-        await notification.save();
-      }
-
-
-      const pushToken = PushNotification.findOne({userId: targetUserId});
-
-      // Optional: Push Notification
-      await sendPushNotification(
-        pushToken.expoPushToken,
-        'New Like',
-        notification.description
-      );
-
-      // Store push notification log
-      await Notification.create({
-        userId: targetUserId,
-        title: 'New Like',
-        message: notification.description,
-        relatedId: postId,
-      });
     }
 
     return res.status(200).json({ message: `Reaction ${actionMessage}` });
