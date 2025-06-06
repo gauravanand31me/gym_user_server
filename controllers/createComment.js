@@ -3,6 +3,8 @@ const User = require('../models/User');
 const Feed = require('../models/Feed');
 const Reel = require("../models/Reel");
 const Notification = require("../models/Notification");
+const PushNotification = require('../models/PushNotification');
+const { sendPushNotification } = require('../config/pushNotification');
 
 exports.createComment = async (req, res) => {
   const fromUserId = req.user.id;
@@ -63,6 +65,9 @@ exports.createComment = async (req, res) => {
         order: [['updatedAt', 'DESC']],
       });
 
+
+      
+
       if (existingNotification) {
         // Count-based message
         const othersCount = existingNotification.othersCount || 1;
@@ -87,6 +92,17 @@ exports.createComment = async (req, res) => {
         });
       }
     }
+
+    const notificationData = PushNotification.findOne({
+      where: { userId: receiverUserId }
+    });
+
+    const notificationTitle = {
+      title: "New Comment",
+      body: `${actorUser.full_name} and ${newCount - 1} others commented on your ${reel ? 'reel' : 'post'}`, // Notification message
+    }
+
+    sendPushNotification(notificationData?.expoPushToken, notificationTitle);
 
     return res.status(201).json({ message: 'Comment added successfully.', comment });
 
