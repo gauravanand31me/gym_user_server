@@ -61,7 +61,7 @@ exports.reactToPost = async (req, res) => {
         } else {
           // Create new notification
           await Notification.create({
-            userId: userId,
+            userId: toUserId,
             forUserId: toUserId,
             message: `${fromUser.full_name} liked your ${reel ? 'reel' : 'post'}`,
             type: 'reaction',
