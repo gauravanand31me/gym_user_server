@@ -93,16 +93,16 @@ exports.createComment = async (req, res) => {
       }
     }
 
-    const notificationData = PushNotification.findOne({
+    const notificationData = await PushNotification.findOne({
       where: { userId: receiverUserId }
     });
 
     const notificationTitle = {
       title: "New Comment",
-      body: `${actorUser.full_name} and ${newCount - 1} others commented on your ${reel ? 'reel' : 'post'}`, // Notification message
+      body: `${actorUser.full_name} commented on your ${reel ? 'reel' : 'post'}`, // Notification message
     }
 
-    sendPushNotification(notificationData?.expoPushToken, notificationTitle);
+    await sendPushNotification(notificationData?.expoPushToken, notificationTitle);
 
     return res.status(201).json({ message: 'Comment added successfully.', comment });
 
