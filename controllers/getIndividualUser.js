@@ -1510,71 +1510,69 @@ exports.uploadFeed = async (req, res) => {
 
 exports.getAllCategory = (req, res) => {
   const allCategories = [
-    // Popular workout types
-    'Chest Day', 'Leg Day', 'Back Day', 'Push Day', 'Pull Day', 'Arm Day', 'Shoulder Day',
-    'Abs Blast', 'HIIT Session', 'Strength Training', 'Powerlifting', 'CrossFit', 'Bodybuilding',
-    'Cardio Blast', 'Cycling Pump', 'Treadmill Run', 'Rowing Session', 'Zumba', 'Dance Workout',
+    // 🔹 Basic Muscle Groups
+    'Chest Day', 'Leg Day', 'Back Day', 'Shoulder Day', 'Arm Day', 'Biceps Focus', 'Triceps Workout',
+    'Abs Workout', 'Core Strength', 'Full Body Workout', 'Upper Body', 'Lower Body', 'Glutes Workout',
 
-    // Body focus
-    'Full Body', 'Upper Body', 'Lower Body', 'Core Strength', 'Glutes Focus', 'Hamstring Stretch',
-    'Quads Burn', 'Calf Training', 'Obliques Builder', 'Neck Mobility', 'Forearm Pump',
+    // 🔹 Beginner-Friendly Tags
+    'Easy Start', 'For Beginners', 'First Time Workout', 'Low Impact', 'Basic Cardio', 'Gentle Stretching',
+    'Home Workout', 'No Equipment', 'Simple Dumbbells', 'Chair Workout', 'Post Injury Care', 'Getting Back to Gym',
 
-    // Equipment-based
-    'Bodyweight Only', 'Resistance Bands', 'Dumbbells Only', 'Barbell Only', 'Kettlebell Burn',
-    'TRX Workout', 'No Equipment', 'Foam Roller Recovery', 'Weighted Vest Challenge',
+    // 🔹 Popular Indian Context Exercises
+    'Desi Leg Day', 'Desi Chest Pump', 'Mat Pe Workout', 'Apartment Friendly Workout', 'Early Morning Yoga',
+    'Evening Stretch', 'Morning Surya Namaskar', 'Shiv Thali Burn', 'Post-Paratha Cardio', 'Weekend Lassi Burn',
 
-    // Skill level
-    'Beginner Friendly', 'Intermediate Training', 'Advanced Beast Mode', 'Pro Athlete',
-    'First Timer', 'Getting Back', 'Post Injury Workout',
+    // 🔹 Cardio / Weight Loss
+    'Weight Loss', 'Fat Burn', 'Sweat Session', 'Power Walk', 'Treadmill Run', 'Skipping Rope',
+    'Fat Loss Challenge', 'Fasted Cardio', 'Calorie Burner', 'Staircase Workout', 'HIIT at Home', 'Step Up Routine',
 
-    // Goals
-    'Fat Loss', 'Muscle Gain', 'Weight Maintenance', 'Calorie Burn', 'Shredding', 'Bulking',
-    'Endurance Boost', 'Strength Gains', 'Flexibility Boost', 'Mobility Routine', 'Speed Training',
+    // 🔹 Stretch & Recovery
+    'Warm Up', 'Cool Down', 'Neck Mobility', 'Shoulder Mobility', 'Foam Rolling', 'Post Workout Stretch',
+    'Active Recovery', 'Rest Day Mobility', 'Spine Relief Stretch', 'Desk Job Recovery',
 
-    // Routines & programs
-    '5x5 Program', 'Push Pull Legs', 'Full Body Split', 'Arnold Split', 'Home Workout Plan',
-    'Gym Beast', 'Morning Routine', 'Evening Burn', 'Night Owl Training', 'Quick 20 Minutes',
-    'Stretch & Chill', 'Cool Down', 'Warm Up', 'Active Recovery',
+    // 🔹 Equipment-Based
+    'Dumbbell Only', 'Resistance Bands', 'Barbell Basics', 'Kettlebell Basics', 'Bodyweight Only',
+    'Yoga Mat Required', 'Towel Workout', 'Water Bottle Weights', 'Backpack Workout', 'Weighted Vest',
 
-    // Styles
-    'Tabata', 'Pilates', 'Yoga Flow', 'Vinyasa Yoga', 'Hatha Yoga', 'Power Yoga',
-    'Mobility Drills', 'Functional Fitness', 'Isometric Holds', 'Explosive Training',
+    // 🔹 Goals
+    'Muscle Gain', 'Lean Muscle', 'Strength Training', 'Endurance Boost', 'Flexibility Boost', 'Mobility Focus',
+    'Tone Up', 'Healthy Heart', 'Joint Friendly Routine', 'Fit Over 40',
 
-    // Sports specific
-    'Boxing Drills', 'Kickboxing Combo', 'MMA Conditioning', 'Athlete Mode', 'Football Drills',
-    'Basketball Training', 'Tennis Warm-Up', 'Cricket Agility',
+    // 🔹 Routine Style
+    '5x5 Workout', 'Push Pull Legs', 'Split Workout', 'Quick 20 Min', 'Mini Home Circuit', 'Daily Morning Burn',
+    'Evening Unwind', 'Sunday Reset', 'Midweek Boost', 'Night Owl Workout',
 
-    // Fun or niche
-    'Outdoor Workout', 'Beach Pump', 'Rainy Day Grind', 'Garage Gym', 'Office Workout',
-    'Partner Workout', 'Group Class', 'Virtual Trainer', 'Mind-Muscle Connection',
+    // 🔹 Yoga & Mindfulness
+    'Yoga for Beginners', 'Hatha Yoga', 'Vinyasa Flow', 'Power Yoga', 'Stretch & Breathe', 'Mindful Movement',
+    'Chakra Flow', 'Desk Yoga', 'Back Pain Relief', 'Anulom Vilom Breathing',
 
-    // Lifestyle/others
-    'Post Workout Stretch', 'Pre Workout Routine', 'Cheat Day Burn', 'Challenge Accepted',
-    'No Excuses', 'Consistency Wins', 'Discipline > Motivation', 'New PR!', 'Progress Over Perfection',
+    // 🔹 Fun or Indian Cultural
+    'Bollywood Dance Workout', 'Bhangra Burn', 'Garba Cardio', 'Kollywood Moves', 'South Indian Dance Burn',
+    'Kids Workout', 'Family Fitness', 'Couple Workout', 'Group Class', 'Desi Zumba',
 
-    // Generated combinations
-    'Ultimate Chest Circuit', 'Dynamic Legs Drill', 'Focused Back Challenge', 'Power Core Routine',
-    'Quick Arms Blitz', 'Targeted Shoulders Flow', 'High-Rep Glutes Circuit', 'Low-Impact Quads Program',
-    'Sweat Hamstrings Grind', 'Burn Full Body Session', 'Ultimate Core Challenge', 'Dynamic Quads Cycle',
-    'Focused Glutes Drill', 'Power Legs Routine', 'Quick Chest Circuit', 'Targeted Back Program',
-    'High-Rep Arms Grind', 'Low-Impact Shoulders Cycle', 'Sweat Full Body Blitz', 'Burn Core Flow',
-    'Ultimate Hamstrings Challenge', 'Dynamic Calf Routine', 'Focused Neck Circuit', 'Power Obliques Program',
-    'Quick Forearm Grind', 'Targeted Mobility Flow', 'High-Rep Strength Circuit', 'Low-Impact Endurance Routine',
-    'Sweat Flexibility Drill', 'Burn Speed Training', 'Ultimate Fat Loss Grind', 'Dynamic Muscle Gain Circuit',
-    'Focused Weight Maintenance Program', 'Power Calorie Burn Flow', 'Quick Shredding Blitz', 'Targeted Bulking Routine',
-    'High-Rep Strength Gains Challenge', 'Low-Impact Flexibility Cycle', 'Sweat Mobility Routine', 'Burn Speed Circuit',
-    'Ultimate Morning Routine', 'Dynamic Evening Burn', 'Focused Night Owl Session', 'Power Quick 20 Minutes',
-    'Quick Cool Down', 'Targeted Warm Up', 'High-Rep Active Recovery', 'Low-Impact Pre Workout',
-    'Sweat Post Workout', 'Burn Partner Drill', 'Garage Power Circuit', 'Rainy Day Cardio',
-    'Office Stretch Session', 'Virtual Coaching Grind', 'Mind-Muscle Flow', 'Group Burnout',
-    'No Excuses Blitz', 'Discipline Grind', 'Progress Routine', 'New PR Flow',
+    // 🔹 Sports Specific (Indian + Global)
+    'Cricket Agility', 'Football Conditioning', 'Kabaddi Strength', 'Badminton Footwork', 'Hockey Skills',
+    'Tennis Warmup', 'Boxing Basics', 'Wrestling Strength', 'Running Training', 'Cycling Legs',
 
-    // Repeat with slight variations to expand to 500
-    ...Array.from({ length: 350 }, (_, i) => `Custom Workout ${i + 1}`)
+    // 🔹 Lifestyle / Real Life Inspired
+    'Fit for Festivals', 'Wedding Workout', 'Shaadi Shape Up', 'After Office Burn', 'Sunday Family Fit',
+    'Diwali Detox', 'Holi Recovery', 'Ramzan Routine', 'Rainy Day Workout', 'Gym with Friends',
+
+    // 🔹 Gym Classics
+    'Chest & Triceps', 'Back & Biceps', 'Legs & Shoulders', 'Upper Push Day', 'Lower Pull Day', 'Abs & Core Blast',
+    'Machine Only', 'Free Weights', 'Stretching Room Workout', 'Cardio Before Weights',
+
+    // 🔹 Motivational & Challenge Tags
+    'Challenge Yourself', 'Consistency Wins', 'Progress Day', 'No Excuses Workout', 'Discipline Day',
+    'New PR Today', 'Feel the Burn', 'Beat Yesterday', 'Step Challenge', 'One More Rep',
+
+    // 🔹 Miscellaneous for Variety (auto-generated)
+    ...Array.from({ length: 90 }, (_, i) => `Custom Workout ${i + 1}`)  // For flexibility
   ];
 
-  res.status(201).json(allCategories);
+  res.status(200).json(allCategories);
 };
+
 
 
 
