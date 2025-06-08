@@ -1510,68 +1510,178 @@ exports.uploadFeed = async (req, res) => {
 
 exports.getAllCategory = (req, res) => {
   const allCategories = [
-    // Popular workout types
-    'Chest Day', 'Leg Day', 'Back Day', 'Push Day', 'Pull Day', 'Arm Day', 'Shoulder Day',
-    'Abs Blast', 'HIIT Session', 'Strength Training', 'Powerlifting', 'CrossFit', 'Bodybuilding',
-    'Cardio Blast', 'Cycling Pump', 'Treadmill Run', 'Rowing Session', 'Zumba', 'Dance Workout',
-
-    // Body focus
-    'Full Body', 'Upper Body', 'Lower Body', 'Core Strength', 'Glutes Focus', 'Hamstring Stretch',
-    'Quads Burn', 'Calf Training', 'Obliques Builder', 'Neck Mobility', 'Forearm Pump',
-
-    // Equipment-based
-    'Bodyweight Only', 'Resistance Bands', 'Dumbbells Only', 'Barbell Only', 'Kettlebell Burn',
-    'TRX Workout', 'No Equipment', 'Foam Roller Recovery', 'Weighted Vest Challenge',
-
-    // Skill level
-    'Beginner Friendly', 'Intermediate Training', 'Advanced Beast Mode', 'Pro Athlete',
-    'First Timer', 'Getting Back', 'Post Injury Workout',
-
-    // Goals
-    'Fat Loss', 'Muscle Gain', 'Weight Maintenance', 'Calorie Burn', 'Shredding', 'Bulking',
-    'Endurance Boost', 'Strength Gains', 'Flexibility Boost', 'Mobility Routine', 'Speed Training',
-
-    // Routines & programs
-    '5x5 Program', 'Push Pull Legs', 'Full Body Split', 'Arnold Split', 'Home Workout Plan',
-    'Gym Beast', 'Morning Routine', 'Evening Burn', 'Night Owl Training', 'Quick 20 Minutes',
-    'Stretch & Chill', 'Cool Down', 'Warm Up', 'Active Recovery',
-
-    // Styles
-    'Tabata', 'Pilates', 'Yoga Flow', 'Vinyasa Yoga', 'Hatha Yoga', 'Power Yoga',
-    'Mobility Drills', 'Functional Fitness', 'Isometric Holds', 'Explosive Training',
-
-    // Sports specific
-    'Boxing Drills', 'Kickboxing Combo', 'MMA Conditioning', 'Athlete Mode', 'Football Drills',
-    'Basketball Training', 'Tennis Warm-Up', 'Cricket Agility',
-
-    // Fun or niche
-    'Outdoor Workout', 'Beach Pump', 'Rainy Day Grind', 'Garage Gym', 'Office Workout',
-    'Partner Workout', 'Group Class', 'Virtual Trainer', 'Mind-Muscle Connection',
-
-    // Lifestyle/others
-    'Post Workout Stretch', 'Pre Workout Routine', 'Cheat Day Burn', 'Challenge Accepted',
-    'No Excuses', 'Consistency Wins', 'Discipline > Motivation', 'New PR!', 'Progress Over Perfection',
-
-    // Generated combinations
-    'Ultimate Chest Circuit', 'Dynamic Legs Drill', 'Focused Back Challenge', 'Power Core Routine',
-    'Quick Arms Blitz', 'Targeted Shoulders Flow', 'High-Rep Glutes Circuit', 'Low-Impact Quads Program',
-    'Sweat Hamstrings Grind', 'Burn Full Body Session', 'Ultimate Core Challenge', 'Dynamic Quads Cycle',
-    'Focused Glutes Drill', 'Power Legs Routine', 'Quick Chest Circuit', 'Targeted Back Program',
-    'High-Rep Arms Grind', 'Low-Impact Shoulders Cycle', 'Sweat Full Body Blitz', 'Burn Core Flow',
-    'Ultimate Hamstrings Challenge', 'Dynamic Calf Routine', 'Focused Neck Circuit', 'Power Obliques Program',
-    'Quick Forearm Grind', 'Targeted Mobility Flow', 'High-Rep Strength Circuit', 'Low-Impact Endurance Routine',
-    'Sweat Flexibility Drill', 'Burn Speed Training', 'Ultimate Fat Loss Grind', 'Dynamic Muscle Gain Circuit',
-    'Focused Weight Maintenance Program', 'Power Calorie Burn Flow', 'Quick Shredding Blitz', 'Targeted Bulking Routine',
-    'High-Rep Strength Gains Challenge', 'Low-Impact Flexibility Cycle', 'Sweat Mobility Routine', 'Burn Speed Circuit',
-    'Ultimate Morning Routine', 'Dynamic Evening Burn', 'Focused Night Owl Session', 'Power Quick 20 Minutes',
-    'Quick Cool Down', 'Targeted Warm Up', 'High-Rep Active Recovery', 'Low-Impact Pre Workout',
-    'Sweat Post Workout', 'Burn Partner Drill', 'Garage Power Circuit', 'Rainy Day Cardio',
-    'Office Stretch Session', 'Virtual Coaching Grind', 'Mind-Muscle Flow', 'Group Burnout',
-    'No Excuses Blitz', 'Discipline Grind', 'Progress Routine', 'New PR Flow',
-
-    // Repeat with slight variations to expand to 500
-    ...Array.from({ length: 350 }, (_, i) => `Custom Workout ${i + 1}`)
+    // 💪 Upper Body Muscles
+    "Chest",
+    "Upper Chest",
+    "Lower Chest",
+    "Back",
+    "Upper Back",
+    "Lower Back",
+    "Lats (Latissimus Dorsi)",
+    "Traps (Trapezius)",
+    "Shoulders (Deltoids)",
+    "Front Delts",
+    "Side Delts",
+    "Rear Delts",
+    "Biceps",
+    "Triceps",
+    "Forearms",
+    "Wrists",
+    "Hands",
+    "Fingers",
+    "Neck",
+  
+    // 💪 Core Muscles
+    "Abdominals (Abs)",
+    "Upper Abs",
+    "Lower Abs",
+    "Obliques",
+    "Transverse Abdominis",
+    "Pelvic Floor",
+    "Diaphragm",
+  
+    // 💪 Lower Body Muscles
+    "Glutes",
+    "Quadriceps (Quads)",
+    "Hamstrings",
+    "Adductors (Inner Thighs)",
+    "Abductors (Outer Thighs)",
+    "Hip Flexors",
+    "Hip Joints",
+    "Calves",
+    "Tibialis Anterior",
+    "Ankles",
+    "Feet",
+    "Toes",
+    "Legs",
+  
+    // 💪 Spine & Mobility
+    "Spine (Cervical, Thoracic, Lumbar)",
+    "Sacrum",
+    "Shoulder Girdle",
+    "Hip Girdle",
+    "Iliopsoas",
+  
+    // 💪 Foundational Compound Lifts
+    "Barbell Squat",
+    "Front Squat",
+    "Overhead Squat",
+    "Deadlift",
+    "Sumo Deadlift",
+    "Romanian Deadlift",
+    "Bench Press",
+    "Incline Bench Press",
+    "Decline Bench Press",
+    "Overhead Press (OHP)",
+    "Push Press",
+    "Military Press",
+    "Clean and Jerk",
+    "Snatch",
+    "Power Clean",
+    "Power Snatch",
+    "Split Jerk",
+  
+    // 💪 Gym Training Styles
+    "Strength Training",
+    "Hypertrophy Training",
+    "Endurance Training",
+    "Powerlifting",
+    "Olympic Weightlifting",
+    "Bodybuilding",
+    "Functional Training",
+    "Mobility Training",
+    "CrossFit",
+    "Core Stability",
+    "Plyometric Training",
+    "Resistance Band Training",
+    "Kettlebell Workouts",
+    "TRX Suspension Training",
+    "Calisthenics (Bodyweight Training)",
+    "Isolation Exercises",
+    "Compound Exercises",
+    "Superset Training",
+    "Circuit Training",
+    "Drop Set Training",
+    "Negative Reps",
+    "Isometric Training",
+  
+    // 💪 Cardio & Conditioning
+    "Jogging",
+    "Running",
+    "Sprint Training",
+    "Walking",
+    "Treadmill Workout",
+    "Elliptical Trainer",
+    "Stair Climber",
+    "Jump Rope",
+    "Cycling (Outdoor/Stationary)",
+    "Rowing Machine",
+    "HIIT",
+    "LISS",
+    "Tabata",
+    "Shadow Boxing",
+  
+    // 💪 Yoga Practices
+    "Surya Namaskar",
+    "Chandra Namaskar",
+    "Kapalbhati",
+    "Anulom Vilom",
+    "Bhastrika",
+    "Bhramari",
+    "Sheetali",
+    "Ujjayi",
+    "Nadi Shodhana",
+    "Trataka",
+    "Yoga Nidra",
+    "Mantra Chanting",
+  
+    // 💪 Yoga Asanas
+    "Tadasana",
+    "Vrikshasana",
+    "Adho Mukha Svanasana",
+    "Bhujangasana",
+    "Trikonasana",
+    "Setu Bandhasana",
+    "Balasana",
+    "Paschimottanasana",
+    "Shavasana",
+    "Utkatasana",
+    "Padmasana",
+    "Dhanurasana",
+    "Vajrasana",
+    "Marjariasana",
+    "Halasana",
+    "Sarvangasana",
+    "Matsyasana",
+  
+    // 💪 Mind-Body & Breath
+    "Mindfulness",
+    "Breath Control",
+    "Nervous System",
+    "Energy Centers",
+  
+    // 💪 Physical Sports
+    "Football",
+    "Cricket",
+    "Basketball",
+    "Volleyball",
+    "Tennis",
+    "Badminton",
+    "Swimming",
+    "Boxing",
+    "Kickboxing",
+    "Martial Arts",
+    "Wrestling",
+    "Skating",
+    "Cycling",
+    "Hiking",
+    "Climbing",
+    "Table Tennis",
+    "Squash",
+    "Dance Fitness",
+    "Zoomba"
   ];
+  
 
   res.status(201).json(allCategories);
 };
