@@ -1683,8 +1683,9 @@ exports.getAllCategory = (req, res) => {
   ];
   
 
-  res.status(201).json(allCategories);
+  res.status(200).json(allCategories);
 };
+
 
 
 
