@@ -1510,65 +1510,178 @@ exports.uploadFeed = async (req, res) => {
 
 exports.getAllCategory = (req, res) => {
   const allCategories = [
-    // 🔹 Basic Muscle Groups
-    'Chest Day', 'Leg Day', 'Back Day', 'Shoulder Day', 'Arm Day', 'Biceps Focus', 'Triceps Workout',
-    'Abs Workout', 'Core Strength', 'Full Body Workout', 'Upper Body', 'Lower Body', 'Glutes Workout',
-
-    // 🔹 Beginner-Friendly Tags
-    'Easy Start', 'For Beginners', 'First Time Workout', 'Low Impact', 'Basic Cardio', 'Gentle Stretching',
-    'Home Workout', 'No Equipment', 'Simple Dumbbells', 'Chair Workout', 'Post Injury Care', 'Getting Back to Gym',
-
-    // 🔹 Popular Indian Context Exercises
-    'Desi Leg Day', 'Desi Chest Pump', 'Mat Pe Workout', 'Apartment Friendly Workout', 'Early Morning Yoga',
-    'Evening Stretch', 'Morning Surya Namaskar', 'Shiv Thali Burn', 'Post-Paratha Cardio', 'Weekend Lassi Burn',
-
-    // 🔹 Cardio / Weight Loss
-    'Weight Loss', 'Fat Burn', 'Sweat Session', 'Power Walk', 'Treadmill Run', 'Skipping Rope',
-    'Fat Loss Challenge', 'Fasted Cardio', 'Calorie Burner', 'Staircase Workout', 'HIIT at Home', 'Step Up Routine',
-
-    // 🔹 Stretch & Recovery
-    'Warm Up', 'Cool Down', 'Neck Mobility', 'Shoulder Mobility', 'Foam Rolling', 'Post Workout Stretch',
-    'Active Recovery', 'Rest Day Mobility', 'Spine Relief Stretch', 'Desk Job Recovery',
-
-    // 🔹 Equipment-Based
-    'Dumbbell Only', 'Resistance Bands', 'Barbell Basics', 'Kettlebell Basics', 'Bodyweight Only',
-    'Yoga Mat Required', 'Towel Workout', 'Water Bottle Weights', 'Backpack Workout', 'Weighted Vest',
-
-    // 🔹 Goals
-    'Muscle Gain', 'Lean Muscle', 'Strength Training', 'Endurance Boost', 'Flexibility Boost', 'Mobility Focus',
-    'Tone Up', 'Healthy Heart', 'Joint Friendly Routine', 'Fit Over 40',
-
-    // 🔹 Routine Style
-    '5x5 Workout', 'Push Pull Legs', 'Split Workout', 'Quick 20 Min', 'Mini Home Circuit', 'Daily Morning Burn',
-    'Evening Unwind', 'Sunday Reset', 'Midweek Boost', 'Night Owl Workout',
-
-    // 🔹 Yoga & Mindfulness
-    'Yoga for Beginners', 'Hatha Yoga', 'Vinyasa Flow', 'Power Yoga', 'Stretch & Breathe', 'Mindful Movement',
-    'Chakra Flow', 'Desk Yoga', 'Back Pain Relief', 'Anulom Vilom Breathing',
-
-    // 🔹 Fun or Indian Cultural
-    'Bollywood Dance Workout', 'Bhangra Burn', 'Garba Cardio', 'Kollywood Moves', 'South Indian Dance Burn',
-    'Kids Workout', 'Family Fitness', 'Couple Workout', 'Group Class', 'Desi Zumba',
-
-    // 🔹 Sports Specific (Indian + Global)
-    'Cricket Agility', 'Football Conditioning', 'Kabaddi Strength', 'Badminton Footwork', 'Hockey Skills',
-    'Tennis Warmup', 'Boxing Basics', 'Wrestling Strength', 'Running Training', 'Cycling Legs',
-
-    // 🔹 Lifestyle / Real Life Inspired
-    'Fit for Festivals', 'Wedding Workout', 'Shaadi Shape Up', 'After Office Burn', 'Sunday Family Fit',
-    'Diwali Detox', 'Holi Recovery', 'Ramzan Routine', 'Rainy Day Workout', 'Gym with Friends',
-
-    // 🔹 Gym Classics
-    'Chest & Triceps', 'Back & Biceps', 'Legs & Shoulders', 'Upper Push Day', 'Lower Pull Day', 'Abs & Core Blast',
-    'Machine Only', 'Free Weights', 'Stretching Room Workout', 'Cardio Before Weights',
-
-    // 🔹 Motivational & Challenge Tags
-    'Challenge Yourself', 'Consistency Wins', 'Progress Day', 'No Excuses Workout', 'Discipline Day',
-    'New PR Today', 'Feel the Burn', 'Beat Yesterday', 'Step Challenge', 'One More Rep',
-
-    // 🔹 Miscellaneous for Variety (auto-generated)
-    ...Array.from({ length: 90 }, (_, i) => `Custom Workout ${i + 1}`)  // For flexibility
+    // 💪 Upper Body Muscles
+    "Chest",
+    "Upper Chest",
+    "Lower Chest",
+    "Back",
+    "Upper Back",
+    "Lower Back",
+    "Lats (Latissimus Dorsi)",
+    "Traps (Trapezius)",
+    "Shoulders (Deltoids)",
+    "Front Delts",
+    "Side Delts",
+    "Rear Delts",
+    "Biceps",
+    "Triceps",
+    "Forearms",
+    "Wrists",
+    "Hands",
+    "Fingers",
+    "Neck",
+  
+    // 💪 Core Muscles
+    "Abdominals (Abs)",
+    "Upper Abs",
+    "Lower Abs",
+    "Obliques",
+    "Transverse Abdominis",
+    "Pelvic Floor",
+    "Diaphragm",
+  
+    // 💪 Lower Body Muscles
+    "Glutes",
+    "Quadriceps (Quads)",
+    "Hamstrings",
+    "Adductors (Inner Thighs)",
+    "Abductors (Outer Thighs)",
+    "Hip Flexors",
+    "Hip Joints",
+    "Calves",
+    "Tibialis Anterior",
+    "Ankles",
+    "Feet",
+    "Toes",
+    "Legs",
+  
+    // 💪 Spine & Mobility
+    "Spine (Cervical, Thoracic, Lumbar)",
+    "Sacrum",
+    "Shoulder Girdle",
+    "Hip Girdle",
+    "Iliopsoas",
+  
+    // 💪 Foundational Compound Lifts
+    "Barbell Squat",
+    "Front Squat",
+    "Overhead Squat",
+    "Deadlift",
+    "Sumo Deadlift",
+    "Romanian Deadlift",
+    "Bench Press",
+    "Incline Bench Press",
+    "Decline Bench Press",
+    "Overhead Press (OHP)",
+    "Push Press",
+    "Military Press",
+    "Clean and Jerk",
+    "Snatch",
+    "Power Clean",
+    "Power Snatch",
+    "Split Jerk",
+  
+    // 💪 Gym Training Styles
+    "Strength Training",
+    "Hypertrophy Training",
+    "Endurance Training",
+    "Powerlifting",
+    "Olympic Weightlifting",
+    "Bodybuilding",
+    "Functional Training",
+    "Mobility Training",
+    "CrossFit",
+    "Core Stability",
+    "Plyometric Training",
+    "Resistance Band Training",
+    "Kettlebell Workouts",
+    "TRX Suspension Training",
+    "Calisthenics (Bodyweight Training)",
+    "Isolation Exercises",
+    "Compound Exercises",
+    "Superset Training",
+    "Circuit Training",
+    "Drop Set Training",
+    "Negative Reps",
+    "Isometric Training",
+  
+    // 💪 Cardio & Conditioning
+    "Jogging",
+    "Running",
+    "Sprint Training",
+    "Walking",
+    "Treadmill Workout",
+    "Elliptical Trainer",
+    "Stair Climber",
+    "Jump Rope",
+    "Cycling (Outdoor/Stationary)",
+    "Rowing Machine",
+    "HIIT",
+    "LISS",
+    "Tabata",
+    "Shadow Boxing",
+  
+    // 💪 Yoga Practices
+    "Surya Namaskar",
+    "Chandra Namaskar",
+    "Kapalbhati",
+    "Anulom Vilom",
+    "Bhastrika",
+    "Bhramari",
+    "Sheetali",
+    "Ujjayi",
+    "Nadi Shodhana",
+    "Trataka",
+    "Yoga Nidra",
+    "Mantra Chanting",
+  
+    // 💪 Yoga Asanas
+    "Tadasana",
+    "Vrikshasana",
+    "Adho Mukha Svanasana",
+    "Bhujangasana",
+    "Trikonasana",
+    "Setu Bandhasana",
+    "Balasana",
+    "Paschimottanasana",
+    "Shavasana",
+    "Utkatasana",
+    "Padmasana",
+    "Dhanurasana",
+    "Vajrasana",
+    "Marjariasana",
+    "Halasana",
+    "Sarvangasana",
+    "Matsyasana",
+  
+    // 💪 Mind-Body & Breath
+    "Mindfulness",
+    "Breath Control",
+    "Nervous System",
+    "Energy Centers",
+  
+    // 💪 Physical Sports
+    "Football",
+    "Cricket",
+    "Basketball",
+    "Volleyball",
+    "Tennis",
+    "Badminton",
+    "Swimming",
+    "Boxing",
+    "Kickboxing",
+    "Martial Arts",
+    "Wrestling",
+    "Skating",
+    "Cycling",
+    "Hiking",
+    "Climbing",
+    "Table Tennis",
+    "Squash",
+    "Dance Fitness",
+    "Zoomba"
   ];
+  
 
   res.status(200).json(allCategories);
 };
