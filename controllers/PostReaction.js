@@ -3,6 +3,8 @@ const Reel = require('../models/Reel');
 const Feed = require('../models/Feed');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
+const PushNotification = require('../models/PushNotification');
+const { sendPushNotification } = require('../config/pushNotification');
 
 exports.reactToPost = async (req, res) => {
   const { postId, reactionType } = req.body;
@@ -69,6 +71,19 @@ exports.reactToPost = async (req, res) => {
             relatedId: postId,
           });
         }
+
+
+        const notificationData = await PushNotification.findOne({
+          where: { userId: toUserId }
+        });
+    
+        const notificationTitle = {
+          title: "New Like",
+          body: `${fromUser.full_name} liked your ${reel ? 'reel' : 'post'}`, // Notification message
+        }
+
+        await sendPushNotification(notificationData?.expoPushToken, notificationTitle);
+
       }
 
     } else if (existingReaction.reactionType === reactionType) {
