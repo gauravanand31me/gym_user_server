@@ -77,6 +77,8 @@ exports.createComment = async (req, res) => {
         existingNotification.profileImage = actorUser.profile_pic || '';
         existingNotification.forUserId = fromUserId; // 👈 ACTOR
         existingNotification.othersCount = newCount;
+        existingNotification.status = "unread";
+        existingNotification.createdAt = new Date();
         existingNotification.updatedAt = new Date();
 
         await existingNotification.save();
