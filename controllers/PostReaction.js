@@ -58,6 +58,7 @@ exports.reactToPost = async (req, res) => {
 
         if (existingNotification) {
           // Just update the timestamp
+          existingNotification.status = "unread";
           existingNotification.updatedAt = new Date();
           await existingNotification.save();
         } else {
