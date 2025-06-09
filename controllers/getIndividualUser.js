@@ -1493,7 +1493,7 @@ exports.uploadFeed = async (req, res) => {
     const feed = await Feed.create({
       userId,
       activityType,
-      title: "User Shared a Thought 💬",
+      title: "",
       description: answer,
       imageUrl,
       timestamp: new Date(),
@@ -1554,6 +1554,7 @@ exports.getAllCategory = (req, res) => {
     "Feet",
     "Toes",
     "Legs",
+    "Cardio",
   
     // 💪 Spine & Mobility
     "Spine (Cervical, Thoracic, Lumbar)",
