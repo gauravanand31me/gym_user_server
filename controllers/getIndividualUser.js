@@ -249,7 +249,15 @@ exports.isBlockedByUser = async (req, res) => {
       }
     });
 
-    return res.status(200).json({ isBlocked: !!block });
+
+    const userBlocked = await Block.findOne({
+      where: {
+        blockerId: loggedInUserId,
+        blockingId: targetUserId
+      }
+    });
+
+    return res.status(200).json({ isBlocked: !!block, userBlocked: !!userBlocked });
   } catch (error) {
     console.error('Block check error:', error);
     return res.status(500).json({ message: 'Something went wrong', error: error.message });
