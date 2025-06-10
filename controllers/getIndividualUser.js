@@ -1276,7 +1276,7 @@ exports.getUserFeed = async (req, res) => {
     const followingIds = followings.map(f => f.followingId);
     const idsArray = [userId, ...followingIds];
 
-    // === Get friends (bidirectional) ===
+    // === Get friends ===
     const friends = await FriendRequest.findAll({
       where: {
         status: 'accepted',
@@ -1295,15 +1295,13 @@ exports.getUserFeed = async (req, res) => {
 
     const friendIdArray = Array.from(friendIds);
 
-    // === Block filter logic ===
-    // Users who have blocked the logged-in user
+    // === Get blocked users ===
     const blockedBy = await Block.findAll({
       where: { blockingId: userId },
       attributes: ['blockerId'],
     });
     const blockedByIds = blockedBy.map(b => b.blockerId);
 
-    // Users whom the logged-in user has blocked
     const userBlocked = await Block.findAll({
       where: { blockerId: userId },
       attributes: ['blockingId'],
@@ -1312,7 +1310,7 @@ exports.getUserFeed = async (req, res) => {
 
     const excludedUserIds = [...new Set([...blockedByIds, ...userBlockedIds])];
 
-    // === Visibility conditions ===
+    // === Build visibility conditions ===
     const visibilityConditions = [`f."postType" = 'public'`];
     if (followingIds.length > 0) {
       visibilityConditions.push(`(f."postType" = 'private' AND f."userId" IN (:ids))`);
@@ -1321,7 +1319,12 @@ exports.getUserFeed = async (req, res) => {
       visibilityConditions.push(`(f."postType" = 'onlyme' AND f."userId" IN (:friendIds))`);
     }
 
-    // === Single Feed Fetch ===
+    // === Conditionally include NOT IN clause ===
+    const excludeCondition = excludedUserIds.length
+      ? `AND f."userId" NOT IN (:excludedUserIds)`
+      : '';
+
+    // === Feed by ID ===
     if (feedId && feedId !== 'null') {
       const singleQuery = `
         SELECT
@@ -1342,7 +1345,7 @@ exports.getUserFeed = async (req, res) => {
         LEFT JOIN "Reels" r ON r.id = f.id
         WHERE f.id = :feedId
           AND (${visibilityConditions.join(' OR ')})
-          AND f."userId" NOT IN (:excludedUserIds)
+          ${excludeCondition}
         LIMIT :limit OFFSET :offset
       `;
 
@@ -1354,7 +1357,7 @@ exports.getUserFeed = async (req, res) => {
           feedId,
           limit,
           offset,
-          excludedUserIds
+          ...(excludedUserIds.length && { excludedUserIds })
         },
         type: sequelize.QueryTypes.SELECT,
         nest: true,
@@ -1371,7 +1374,7 @@ exports.getUserFeed = async (req, res) => {
       return res.status(200).json({ feed: [feedItem] });
     }
 
-    // === Full Feed Fetch ===
+    // === Full feed ===
     const fullQuery = `
       SELECT
         f.*,
@@ -1390,7 +1393,7 @@ exports.getUserFeed = async (req, res) => {
       LEFT JOIN "PostReactions" ur ON f.id = ur."postId" AND ur."userId" = :userId
       LEFT JOIN "Reels" r ON r.id = f.id
       WHERE (${visibilityConditions.join(' OR ')})
-        AND f."userId" NOT IN (:excludedUserIds)
+        ${excludeCondition}
       ORDER BY f."timestamp" DESC
       LIMIT :limit OFFSET :offset
     `;
@@ -1402,7 +1405,7 @@ exports.getUserFeed = async (req, res) => {
         friendIds: friendIdArray,
         limit,
         offset,
-        excludedUserIds
+        ...(excludedUserIds.length && { excludedUserIds })
       },
       type: sequelize.QueryTypes.SELECT,
       nest: true,
