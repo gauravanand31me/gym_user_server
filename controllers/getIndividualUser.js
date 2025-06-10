@@ -1163,20 +1163,36 @@ exports.getUserReels = async (req, res) => {
     let whereConditions = '';
     let replacements = { limit, offset };
 
-    // Case 1: Specific reel by ID
+    // === Block logic ===
+    const blockedBy = await Block.findAll({
+      where: { blockingId: loggedInUserId },
+      attributes: ['blockerId'],
+    });
+    const blockedByIds = blockedBy.map(b => b.blockerId);
+
+    const userBlocked = await Block.findAll({
+      where: { blockerId: loggedInUserId },
+      attributes: ['blockingId'],
+    });
+    const userBlockedIds = userBlocked.map(b => b.blockingId);
+
+    const excludedUserIds = [...new Set([...blockedByIds, ...userBlockedIds])];
+    const blockCondition = excludedUserIds.length ? `AND r."userId" NOT IN (:excludedUserIds)` : '';
+
+    // === Case 1: Specific reel by ID ===
     if (reel_id) {
-      whereConditions = `WHERE r."id" = :reelId`;
+      whereConditions = `WHERE r."id" = :reelId ${blockCondition}`;
       replacements.reelId = reel_id;
+      if (excludedUserIds.length) replacements.excludedUserIds = excludedUserIds;
     }
 
-    // Case 2: Specific user's reels
+    // === Case 2: Specific user's reels ===
     else if (user_id) {
       const isSelf = user_id === loggedInUserId;
 
       if (isSelf) {
-        whereConditions = `WHERE r."userId" = :userId`;
+        whereConditions = `WHERE r."userId" = :userId ${blockCondition}`;
       } else {
-        // check if logged-in user is following user_id
         const follow = await Follow.findOne({
           where: {
             followerId: loggedInUserId,
@@ -1188,42 +1204,64 @@ exports.getUserReels = async (req, res) => {
           whereConditions = `
             WHERE r."userId" = :userId
             AND (r."postType" = 'public' OR r."postType" = 'private')
+            ${blockCondition}
           `;
         } else {
           whereConditions = `
             WHERE r."userId" = :userId
             AND r."postType" = 'public'
+            ${blockCondition}
           `;
         }
       }
 
       replacements.userId = user_id;
+      if (excludedUserIds.length) replacements.excludedUserIds = excludedUserIds;
     }
 
-    // Case 3: Feed for logged-in user
+    // === Case 3: Feed for logged-in user ===
     else {
-      // Get who the user is following
       const followings = await Follow.findAll({
         where: { followerId: loggedInUserId },
         attributes: ['followingId'],
       });
-
       const followingIds = followings.map(f => f.followingId);
+
+      const friends = await FriendRequest.findAll({
+        where: {
+          status: 'accepted',
+          [Sequelize.Op.or]: [
+            { fromUserId: loggedInUserId },
+            { toUserId: loggedInUserId },
+          ],
+        },
+      });
+
+      const friendIds = new Set();
+      friends.forEach(req => {
+        if (req.fromUserId !== loggedInUserId) friendIds.add(req.fromUserId);
+        if (req.toUserId !== loggedInUserId) friendIds.add(req.toUserId);
+      });
+
+      const friendIdArray = Array.from(friendIds);
+
       const idsArray = [loggedInUserId, ...followingIds];
 
       whereConditions = `
         WHERE (
           r."postType" = 'public'
           OR (r."postType" = 'private' AND r."userId" IN (:ids))
-          OR (r."postType" = 'onlyme' AND r."userId" = :loggedInUserId)
+          OR (r."postType" = 'onlyme' AND r."userId" IN (:friendIds))
         )
+        ${blockCondition}
       `;
 
       replacements.ids = idsArray;
-      replacements.loggedInUserId = loggedInUserId;
+      replacements.friendIds = friendIdArray;
+      if (excludedUserIds.length) replacements.excludedUserIds = excludedUserIds;
     }
 
-    // Optional: Category filter
+    // === Category filter ===
     if (category) {
       whereConditions += ` AND EXISTS (
         SELECT 1 FROM unnest(r."hashtags") AS tag WHERE tag ILIKE :likeCategory
@@ -1231,6 +1269,7 @@ exports.getUserReels = async (req, res) => {
       replacements.likeCategory = `%${category}%`;
     }
 
+    // === Final query ===
     query += `
       ${whereConditions}
       ORDER BY r."timestamp" DESC
@@ -1253,7 +1292,7 @@ exports.getUserReels = async (req, res) => {
 
   } catch (error) {
     console.error('Error fetching reels:', error);
-    return res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 };
 
