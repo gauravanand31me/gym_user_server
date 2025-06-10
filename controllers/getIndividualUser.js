@@ -25,6 +25,7 @@ const path = require('path');
 const s3 = require('../config/aws'); // your s3 config
 const { sendPushNotification } = require('../config/pushNotification');
 const FeedReports = require('../models/FeedReports');
+const Block = require('../models/Block');
 
 const s3Client = new S3Client({
   region: process.env.AWS_REGION,
@@ -154,6 +155,8 @@ exports.reportFeed = async (req, res) => {
 
 
 
+
+
 exports.getFollowedUser = async (req, res) => {
   try {
     const fromUserId = req.user.id;        // Logged-in user
@@ -225,6 +228,88 @@ exports.unfollowUser = async (req, res) => {
     }
   } catch (error) {
     console.error('Unfollow error:', error);
+    return res.status(500).json({ message: 'Something went wrong', error: error.message });
+  }
+};
+
+
+exports.isBlockedByUser = async (req, res) => {
+  try {
+    const targetUserId = req.params.id; // the user who might have blocked you
+    const loggedInUserId = req.user.id;
+
+    if (!targetUserId || targetUserId === loggedInUserId) {
+      return res.status(400).json({ message: 'Invalid target user ID' });
+    }
+
+    const block = await Block.findOne({
+      where: {
+        blockerId: targetUserId,
+        blockingId: loggedInUserId
+      }
+    });
+
+    return res.status(200).json({ isBlocked: !!block });
+  } catch (error) {
+    console.error('Block check error:', error);
+    return res.status(500).json({ message: 'Something went wrong', error: error.message });
+  }
+};
+
+
+
+exports.blockUser = async (req, res) => {
+  try {
+    const { toUserId, isBlocked } = req.body;
+    const fromUserId = req.user.id;
+
+    if (!toUserId || typeof isBlocked !== 'boolean') {
+      return res.status(400).json({ message: 'toUserId and isBlocked (boolean) are required' });
+    }
+
+    if (toUserId === fromUserId) {
+      return res.status(400).json({ message: 'You cannot block yourself' });
+    }
+
+    const existingBlock = await Block.findOne({
+      where: {
+        blockerId: fromUserId,
+        blockingId: toUserId
+      }
+    });
+
+    if (!isBlocked) {
+      // 🔒 Block the user
+      if (existingBlock) {
+        return res.status(400).json({ message: 'User is already blocked' });
+      }
+
+      const newBlock = await Block.create({
+        id: uuidv4(),
+        blockerId: fromUserId,
+        blockingId: toUserId
+      });
+
+      return res.status(201).json({
+        message: 'User blocked successfully',
+        block: newBlock
+      });
+
+    } else {
+      // 🔓 Unblock the user
+      if (!existingBlock) {
+        return res.status(400).json({ message: 'User is not blocked' });
+      }
+
+      await existingBlock.destroy();
+
+      return res.status(200).json({
+        message: 'User unblocked successfully'
+      });
+    }
+
+  } catch (error) {
+    console.error('Block error:', error);
     return res.status(500).json({ message: 'Something went wrong', error: error.message });
   }
 };
