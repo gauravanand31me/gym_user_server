@@ -1263,14 +1263,12 @@ exports.getUserReels = async (req, res) => {
 
 exports.getUserFeed = async (req, res) => {
   const userId = req.user.id;
-  console.log("userId is", userId);
-  console.log("process.env.ADMIN_UUID", process.env.ADMIN_UUID);
   const limit = parseInt(req.query.limit || 10);
   const offset = parseInt(req.query.offset || 0);
   const feedId = req.query.feedId;
 
   try {
-    // 1. Get following users
+    // === Get followings ===
     const followings = await Follow.findAll({
       where: { followerId: userId },
       attributes: ['followingId'],
@@ -1278,7 +1276,7 @@ exports.getUserFeed = async (req, res) => {
     const followingIds = followings.map(f => f.followingId);
     const idsArray = [userId, ...followingIds];
 
-    // 2. Get friends (bidirectional)
+    // === Get friends (bidirectional) ===
     const friends = await FriendRequest.findAll({
       where: {
         status: 'accepted',
@@ -1297,7 +1295,24 @@ exports.getUserFeed = async (req, res) => {
 
     const friendIdArray = Array.from(friendIds);
 
-    // 3. Prepare visibility filters
+    // === Block filter logic ===
+    // Users who have blocked the logged-in user
+    const blockedBy = await Block.findAll({
+      where: { blockingId: userId },
+      attributes: ['blockerId'],
+    });
+    const blockedByIds = blockedBy.map(b => b.blockerId);
+
+    // Users whom the logged-in user has blocked
+    const userBlocked = await Block.findAll({
+      where: { blockerId: userId },
+      attributes: ['blockingId'],
+    });
+    const userBlockedIds = userBlocked.map(b => b.blockingId);
+
+    const excludedUserIds = [...new Set([...blockedByIds, ...userBlockedIds])];
+
+    // === Visibility conditions ===
     const visibilityConditions = [`f."postType" = 'public'`];
     if (followingIds.length > 0) {
       visibilityConditions.push(`(f."postType" = 'private' AND f."userId" IN (:ids))`);
@@ -1306,7 +1321,7 @@ exports.getUserFeed = async (req, res) => {
       visibilityConditions.push(`(f."postType" = 'onlyme' AND f."userId" IN (:friendIds))`);
     }
 
-    // === Specific feed fetch ===
+    // === Single Feed Fetch ===
     if (feedId && feedId !== 'null') {
       const singleQuery = `
         SELECT
@@ -1327,6 +1342,7 @@ exports.getUserFeed = async (req, res) => {
         LEFT JOIN "Reels" r ON r.id = f.id
         WHERE f.id = :feedId
           AND (${visibilityConditions.join(' OR ')})
+          AND f."userId" NOT IN (:excludedUserIds)
         LIMIT :limit OFFSET :offset
       `;
 
@@ -1338,6 +1354,7 @@ exports.getUserFeed = async (req, res) => {
           feedId,
           limit,
           offset,
+          excludedUserIds
         },
         type: sequelize.QueryTypes.SELECT,
         nest: true,
@@ -1347,16 +1364,15 @@ exports.getUserFeed = async (req, res) => {
         return res.status(404).json({ message: 'Feed not found or access denied.' });
       }
 
-      
       const feedItem = feedItems[0];
       feedItem.canDelete = feedItem.userId === userId || userId === process.env.ADMIN_UUID;
-      feedItem.canReport = feedItem.userId !== userId || userId !== process.env.ADMIN_UUID;
+      feedItem.canReport = feedItem.userId !== userId;
 
       return res.status(200).json({ feed: [feedItem] });
     }
 
-    // === Default feed ===
-    const query = `
+    // === Full Feed Fetch ===
+    const fullQuery = `
       SELECT
         f.*,
         u.full_name AS "user.full_name",
@@ -1374,17 +1390,19 @@ exports.getUserFeed = async (req, res) => {
       LEFT JOIN "PostReactions" ur ON f.id = ur."postId" AND ur."userId" = :userId
       LEFT JOIN "Reels" r ON r.id = f.id
       WHERE (${visibilityConditions.join(' OR ')})
+        AND f."userId" NOT IN (:excludedUserIds)
       ORDER BY f."timestamp" DESC
       LIMIT :limit OFFSET :offset
     `;
 
-    const feedItems = await sequelize.query(query, {
+    const feedItems = await sequelize.query(fullQuery, {
       replacements: {
         userId,
         ids: idsArray,
         friendIds: friendIdArray,
         limit,
         offset,
+        excludedUserIds
       },
       type: sequelize.QueryTypes.SELECT,
       nest: true,
@@ -1393,13 +1411,14 @@ exports.getUserFeed = async (req, res) => {
     const feedItemsWithPermissions = feedItems.map(feed => ({
       ...feed,
       canDelete: feed.userId === userId || userId === process.env.ADMIN_UUID,
-      canReport: feed.userId !== userId || userId !== process.env.ADMIN_UUID,
+      canReport: feed.userId !== userId
     }));
 
     return res.status(200).json({ feed: feedItemsWithPermissions });
+
   } catch (error) {
     console.error('Error fetching user feed:', error);
-    return res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 };
 
