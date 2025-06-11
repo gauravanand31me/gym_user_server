@@ -48,7 +48,7 @@ exports.reactToPost = async (req, res) => {
         const existingNotification = await Notification.findOne({
           where: {
             userId: toUserId,
-            forUserId: toUserId,
+            forUserId: userId,
             relatedId: postId,
             type: 'reaction',
           },
@@ -63,7 +63,7 @@ exports.reactToPost = async (req, res) => {
           // Create new notification
           await Notification.create({
             userId: toUserId,
-            forUserId: toUserId,
+            forUserId: userId,
             message: `${fromUser.full_name} liked your ${reel ? 'reel' : 'post'}`,
             type: 'reaction',
             profileImage: fromUser.profile_pic || '',
