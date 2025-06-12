@@ -457,49 +457,53 @@ exports.streamReelVideo = async (req, res) => {
     return res.status(400).json({ success: false, message: 'Video key is required.' });
   }
 
-  const CHUNK_SIZE = 1 * 1024 * 1024; // 1MB chunk
   const rangeHeader = req.headers.range;
 
   try {
-    const headData = await s3Client.send(new HeadObjectCommand({
+    const s3Head = await s3Client.send(new HeadObjectCommand({
       Bucket: process.env.AWS_S3_BUCKET_NAME,
       Key: videoKey,
     }));
 
-    const videoSize = headData.ContentLength;
+    const videoSize = s3Head.ContentLength;
 
-    let start = 0;
-    let end = videoSize - 1;
+    // If no Range header is sent, stream the full video with 200 OK
+    if (!rangeHeader) {
+      const s3Stream = await s3Client.send(new GetObjectCommand({
+        Bucket: process.env.AWS_S3_BUCKET_NAME,
+        Key: videoKey,
+      }));
 
-    // If range is provided (from browser/video player)
-    if (rangeHeader) {
-      const parts = rangeHeader.replace(/bytes=/, "").split("-");
-      start = parseInt(parts[0], 10);
-      end = parts[1] ? parseInt(parts[1], 10) : Math.min(start + CHUNK_SIZE - 1, videoSize - 1);
-    } else {
-      // No range header — stream the first chunk manually
-      end = Math.min(CHUNK_SIZE - 1, videoSize - 1);
+      res.writeHead(200, {
+        'Content-Length': videoSize,
+        'Content-Type': 'video/mp4',
+        'Accept-Ranges': 'bytes',
+        'Cache-Control': 'no-cache', // optional
+      });
+
+      return s3Stream.Body.pipe(res);
     }
 
+    // Handle partial range request (used for streaming by video players)
+    const parts = rangeHeader.replace(/bytes=/, "").split("-");
+    const start = parseInt(parts[0], 10);
+    const end = parts[1] ? parseInt(parts[1], 10) : videoSize - 1;
     const contentLength = end - start + 1;
 
-    const s3Response = await s3Client.send(new GetObjectCommand({
+    const s3Stream = await s3Client.send(new GetObjectCommand({
       Bucket: process.env.AWS_S3_BUCKET_NAME,
       Key: videoKey,
       Range: `bytes=${start}-${end}`,
     }));
 
-    res.writeHead(rangeHeader ? 206 : 200, {
+    res.writeHead(206, {
       'Content-Range': `bytes ${start}-${end}/${videoSize}`,
       'Accept-Ranges': 'bytes',
       'Content-Length': contentLength,
       'Content-Type': 'video/mp4',
-      'Cache-Control': 'no-cache',
     });
 
-    console.log(`▶️ Streaming video chunk: bytes ${start}-${end}`);
-
-    return s3Response.Body.pipe(res);
+    return s3Stream.Body.pipe(res);
 
   } catch (err) {
     console.error('❌ Error streaming video:', err.message);
