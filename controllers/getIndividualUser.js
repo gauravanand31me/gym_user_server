@@ -539,40 +539,43 @@ exports.uploadReel = async (req, res) => {
 
     // Step 2: Generate thumbnail
     // Step 1: Extract screenshot as JPEG
-    await new Promise((resolve, reject) => {
-      ffmpeg(compressedFilePath)
-        .screenshots({
-          timestamps: ['00:00:01'],
-          filename: 'temp-thumbnail.jpg',
-          folder: path.dirname(thumbnailPath),
-          size: '640x?', // Higher resolution for better quality
-        })
-        .on('end', resolve)
-        .on('error', reject);
-    });
+await new Promise((resolve, reject) => {
+  ffmpeg(compressedFilePath)
+    .screenshots({
+      timestamps: ['00:00:01'],
+      filename: 'temp-thumbnail.jpg',
+      folder: path.dirname(thumbnailPath),
+      size: '640x?', // Higher resolution for better quality
+    })
+    .on('end', resolve)
+    .on('error', reject);
+});
 
-    const tempJpegPath = path.join(path.dirname(thumbnailPath), 'temp-thumbnail.jpg');
-    const finalWebpPath = thumbnailPath.replace(/\.jpg$/, '.webp');
+const tempJpegPath = path.join(path.dirname(thumbnailPath), 'temp-thumbnail.jpg');
+const finalWebpPath = thumbnailPath.replace(/\.jpg$/, '.webp');
 
-    // Step 2: Convert JPEG to high-quality WebP using sharp
-    await sharp(tempJpegPath)
-      .webp({ quality: 90 })
-      .toFile(finalWebpPath);
+// Step 2: Convert JPEG to high-quality WebP using sharp
+await sharp(tempJpegPath)
+  .webp({ quality: 90 })
+  .toFile(finalWebpPath);
 
-    // Optional: Delete the temp JPEG file
-    fs.unlinkSync(tempJpegPath);
+// Optional: Delete the temp JPEG file
+fs.unlinkSync(tempJpegPath);
 
-    // Step 3: Upload WebP thumbnail to S3
-    const thumbnailStream = fs.createReadStream(finalWebpPath);
-    const thumbnailKey = `reels/thumbnails/${Date.now()}-thumbnail.webp`;
+// Step 3: Upload WebP thumbnail to S3
+const thumbnailStream = fs.createReadStream(finalWebpPath);
+const thumbnailKey = `reels/thumbnails/${Date.now()}-thumbnail.webp`;
 
-    await s3Client.send(new PutObjectCommand({
-      Bucket: process.env.AWS_S3_BUCKET_NAME,
-      Key: thumbnailKey,
-      Body: thumbnailStream,
-      ContentType: 'image/webp',
-      CacheControl: 'public, max-age=31536000',
-    }));
+await s3Client.send(new PutObjectCommand({
+  Bucket: process.env.AWS_S3_BUCKET_NAME,
+  Key: thumbnailKey,
+  Body: thumbnailStream,
+  ContentType: 'image/webp',
+  CacheControl: 'public, max-age=31536000',
+}));
+
+
+    const thumbnailUrl = `https://${process.env.CLOUDFRONT_URL}/${thumbnailKey}`;
 
     // Step 4: Upload compressed video to S3
     const compressedStream = fs.createReadStream(compressedFilePath);
@@ -1633,7 +1636,7 @@ exports.uploadFeed = async (req, res) => {
     if (req.file) {
       // Convert and resize image using sharp
       const processedImageBuffer = await sharp(req.file.buffer)
-        .rotate()
+        .rotate() 
         .resize({ width: 1080 }) // Resize if needed
         .webp({ quality: 80 })   // Convert to WebP
         .toBuffer();
@@ -1648,7 +1651,7 @@ exports.uploadFeed = async (req, res) => {
       });
 
       await s3.send(command);
-
+      
       imageUrl = `https://${process.env.CLOUDFRONT_URL}/${fileName}`;
     } else {
       imageUrl = "https://yupluck.com/Apple%20App%20Store.jpg";
@@ -1694,7 +1697,7 @@ exports.getAllCategory = (req, res) => {
     "Hands",
     "Fingers",
     "Neck",
-
+  
     // 💪 Core Muscles
     "Abdominals (Abs)",
     "Upper Abs",
@@ -1703,7 +1706,7 @@ exports.getAllCategory = (req, res) => {
     "Transverse Abdominis",
     "Pelvic Floor",
     "Diaphragm",
-
+  
     // 💪 Lower Body Muscles
     "Glutes",
     "Quadriceps (Quads)",
@@ -1719,14 +1722,14 @@ exports.getAllCategory = (req, res) => {
     "Toes",
     "Legs",
     "Cardio",
-
+  
     // 💪 Spine & Mobility
     "Spine (Cervical, Thoracic, Lumbar)",
     "Sacrum",
     "Shoulder Girdle",
     "Hip Girdle",
     "Iliopsoas",
-
+  
     // 💪 Foundational Compound Lifts
     "Barbell Squat",
     "Front Squat",
@@ -1745,7 +1748,7 @@ exports.getAllCategory = (req, res) => {
     "Power Clean",
     "Power Snatch",
     "Split Jerk",
-
+  
     // 💪 Gym Training Styles
     "Strength Training",
     "Hypertrophy Training",
@@ -1769,7 +1772,7 @@ exports.getAllCategory = (req, res) => {
     "Drop Set Training",
     "Negative Reps",
     "Isometric Training",
-
+  
     // 💪 Cardio & Conditioning
     "Jogging",
     "Running",
@@ -1785,7 +1788,7 @@ exports.getAllCategory = (req, res) => {
     "LISS",
     "Tabata",
     "Shadow Boxing",
-
+  
     // 💪 Yoga Practices
     "Surya Namaskar",
     "Chandra Namaskar",
@@ -1799,7 +1802,7 @@ exports.getAllCategory = (req, res) => {
     "Trataka",
     "Yoga Nidra",
     "Mantra Chanting",
-
+  
     // 💪 Yoga Asanas
     "Tadasana",
     "Vrikshasana",
@@ -1818,13 +1821,13 @@ exports.getAllCategory = (req, res) => {
     "Halasana",
     "Sarvangasana",
     "Matsyasana",
-
+  
     // 💪 Mind-Body & Breath
     "Mindfulness",
     "Breath Control",
     "Nervous System",
     "Energy Centers",
-
+  
     // 💪 Physical Sports
     "Football",
     "Cricket",
@@ -1846,7 +1849,7 @@ exports.getAllCategory = (req, res) => {
     "Dance Fitness",
     "Zoomba"
   ];
-
+  
 
   res.status(200).json(allCategories);
 };
