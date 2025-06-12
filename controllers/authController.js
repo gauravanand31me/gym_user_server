@@ -42,8 +42,10 @@ exports.register = async (req, res) => {
       full_name,
       username: username,
       mobile_number,
+      profile_pic: "https://d3tfjww6nofv30.cloudfront.net/a4c48204-30be-406c-a4a3-29708fd69aac/1749495872427_profileImage.jpg",
       password,
       otp,
+
       otpExpires: new Date(Date.now() + 3600000) // 1 hour expiry
     });
 
