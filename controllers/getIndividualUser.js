@@ -589,7 +589,7 @@ await s3Client.send(new PutObjectCommand({
       CacheControl: 'public, max-age=31536000',
     }));
 
-    const videoUrl = `https://yupluck.com/user/api/users/stream-reel/${s3Key}`;
+    const videoUrl = `https://${process.env.CLOUDFRONT_URL}/${s3Key}`;
 
     // Step 5: Save in Reel table
     const createdReel = await Reel.create({
