@@ -105,24 +105,34 @@ exports.resetFollowsAndFollowingCount = async (req, res) => {
   try {
     // Step 1: Delete all follow records
     await Follow.destroy({ where: {} });
-    // await FriendRequest.destroy({ where: {} });
-    // Step 2: Reset only following_count to 0
+
+    // Step 2: Reset following_count to 0
     await User.update(
       { following_count: 0 },
       { where: {} }
     );
 
-    // await User.update(
-    //   { followers_count: 0 },
-    //   { where: {} }
-    // );
+    // Step 3: Set default profile_pic if null
+    const defaultProfilePic = 'https://d3tfjww6nofv30.cloudfront.net/a4c48204-30be-406c-a4a3-29708fd69aac/1749495872427_profileImage.jpg';
 
-    return res.status(200).json({ message: 'All follows deleted and following_count reset to 0.' });
+    await User.update(
+      { profile_pic: defaultProfilePic },
+      {
+        where: {
+          profile_pic: null
+        }
+      }
+    );
+
+    return res.status(200).json({
+      message: 'All follows deleted, following_count reset, and default profile pics assigned.'
+    });
   } catch (error) {
-    console.error('Error resetting follows and following_count:', error);
+    console.error('Error resetting data:', error);
     return res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
+
 
 
 
