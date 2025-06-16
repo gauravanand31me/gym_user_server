@@ -1269,6 +1269,7 @@ exports.getUserReels = async (req, res) => {
         if (req.toUserId !== loggedInUserId) friendIds.add(req.toUserId);
       });
 
+      friendIds.add(loggedInUserId);
       const friendIdArray = Array.from(friendIds);
 
       const idsArray = [loggedInUserId, ...followingIds];
