@@ -725,8 +725,11 @@ exports.updateFeedVisibility = async (req, res) => {
   const { newVisibility } = req.body;
   const userId = req.user.id;
 
+
+  console.log("newVisibility", newVisibility);
+
   // Validate visibility value
-  if (!['public', 'private', 'friends'].includes(newVisibility)) {
+  if (!['public', 'private', 'onlyme'].includes(newVisibility)) {
     return res.status(400).json({ success: false, message: 'Invalid visibility type.' });
   }
 
