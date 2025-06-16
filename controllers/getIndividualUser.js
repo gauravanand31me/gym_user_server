@@ -1358,7 +1358,7 @@ exports.getUserFeed = async (req, res) => {
       if (req.fromUserId !== userId) friendIds.add(req.fromUserId);
       if (req.toUserId !== userId) friendIds.add(req.toUserId);
     });
-    
+
     friendIds.add(userId);
     const friendIdArray = Array.from(friendIds);
 
@@ -1669,7 +1669,7 @@ exports.uploadFeed = async (req, res) => {
       
       imageUrl = `https://${process.env.CLOUDFRONT_URL}/${fileName}`;
     } else {
-      imageUrl = "https://yupluck.com/Apple%20App%20Store.jpg";
+      imageUrl = "https://yupluck.com/going_gym.png";
     }
 
     const feed = await Feed.create({
