@@ -151,7 +151,7 @@ exports.login = async (req, res) => {
     await user.update({ otp, otpExpires: new Date(Date.now() + 3600000) }); // 1 hour expiry
 
     // Send OTP via SMS
-    console.log("Mobile otp received", otp);
+    
     sendSMS(`+91${user.mobile_number}`, `Your Yupluck OTP is ${otp}. Please use this code to complete your login. Do not share this OTP with anyone. – Yupluck Team`);
     res.status(200).json({
       status: true,

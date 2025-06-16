@@ -1358,7 +1358,8 @@ exports.getUserFeed = async (req, res) => {
       if (req.fromUserId !== userId) friendIds.add(req.fromUserId);
       if (req.toUserId !== userId) friendIds.add(req.toUserId);
     });
-
+    
+    friendIds.add(userId);
     const friendIdArray = Array.from(friendIds);
 
     // === Get blocked users ===
