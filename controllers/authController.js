@@ -50,6 +50,7 @@ exports.register = async (req, res) => {
     });
 
     // Send OTP via SMS
+    console.log("Mobile otp received", otp);
     sendSMS("+91"+mobile_number, `Welcome to Yupluck! Your OTP for registration is ${otp}. Please use this code to verify your account. Do not share this OTP with anyone. – Yupluck Team`);
 
     res.status(201).send({
