@@ -1669,7 +1669,7 @@ exports.uploadFeed = async (req, res) => {
       
       imageUrl = `https://${process.env.CLOUDFRONT_URL}/${fileName}`;
     } else {
-      imageUrl = "https://yupluck.com/going_gym.png";
+      imageUrl = `https://${process.env.CLOUDFRONT_URL}/IMG_5602.JPG`;
     }
 
     const feed = await Feed.create({
