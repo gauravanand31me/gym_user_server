@@ -1639,7 +1639,7 @@ exports.getMyFeed = async (req, res) => {
 
 exports.uploadFeed = async (req, res) => {
   try {
-    const { answer, postType, mode } = req.body;
+    const { answer, postType, mode, gymId } = req.body;
     const userId = req.user.id;
     let activityType = "questionPrompt";
 
@@ -1676,6 +1676,7 @@ exports.uploadFeed = async (req, res) => {
       userId,
       activityType,
       title: "",
+      gymId,
       description: answer,
       imageUrl,
       timestamp: new Date(),
