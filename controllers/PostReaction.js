@@ -106,29 +106,28 @@ exports.reactToPost = async (req, res) => {
 
 exports.getPostReactions = async (req, res) => {
   const { postId } = req.params;
+  const limit = parseInt(req.query.limit) || 10;
+  const offset = parseInt(req.query.offset) || 0;
 
   try {
-    const reactions = await PostReaction.findAll({
-      where: { postId, reactionType: 'like' },
-      include: [
-        {
-          model: User,
-          as: 'user',
-          attributes: ['id', 'full_name', 'profile_pic'],
-        },
-      ],
-      order: [['createdAt', 'DESC']],
-    });
+    const likes = await sequelize.query(
+      `
+      SELECT u.id, u.full_name, u.profile_pic
+      FROM PostReactions pr
+      JOIN Users u ON pr.userId = u.id
+      WHERE pr.postId = :postId AND pr.reactionType = 'like'
+      ORDER BY pr.createdAt DESC
+      LIMIT :limit OFFSET :offset
+      `,
+      {
+        replacements: { postId, limit, offset },
+        type: QueryTypes.SELECT,
+      }
+    );
 
-    const users = reactions.map(reaction => ({
-      id: reaction.user.id,
-      full_name: reaction.user.full_name,
-      profile_pic: reaction.user.profile_pic || 'https://cdn-icons-png.flaticon.com/512/149/149071.png',
-    }));
-
-    return res.status(200).json({ likes: users });
+    return res.status(200).json({ likes });
   } catch (error) {
-    console.error('Error fetching post reactions:', error);
+    console.error('Error in getPostReactions:', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
