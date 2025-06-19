@@ -122,7 +122,7 @@ exports.getPostReactions = async (req, res) => {
       `,
       {
         replacements: { postId, limit, offset },
-        type: QueryTypes.SELECT,
+        type: sequelize.QueryTypes.SELECT,
       }
     );
 
