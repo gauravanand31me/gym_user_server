@@ -101,3 +101,34 @@ exports.reactToPost = async (req, res) => {
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
+
+
+
+exports.getPostReactions = async (req, res) => {
+  const { postId } = req.params;
+
+  try {
+    const reactions = await PostReaction.findAll({
+      where: { postId, reactionType: 'like' },
+      include: [
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'full_name', 'profile_pic'],
+        },
+      ],
+      order: [['createdAt', 'DESC']],
+    });
+
+    const users = reactions.map(reaction => ({
+      id: reaction.user.id,
+      full_name: reaction.user.full_name,
+      profile_pic: reaction.user.profile_pic || 'https://cdn-icons-png.flaticon.com/512/149/149071.png',
+    }));
+
+    return res.status(200).json({ likes: users });
+  } catch (error) {
+    console.error('Error fetching post reactions:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
