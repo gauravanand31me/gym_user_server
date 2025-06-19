@@ -114,8 +114,8 @@ exports.getPostReactions = async (req, res) => {
     const likes = await sequelize.query(
       `
       SELECT u.id, u.full_name, u.profile_pic
-      FROM PostReactions pr
-      JOIN Users u ON pr.userId = u.id
+      FROM "PostReactions" pr
+      JOIN "Users" u ON pr.userId = u.id
       WHERE pr.postId = :postId AND pr.reactionType = 'like'
       ORDER BY pr.createdAt DESC
       LIMIT :limit OFFSET :offset
