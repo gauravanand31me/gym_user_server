@@ -1,4 +1,5 @@
 const PostReaction = require('../models/PostReaction');
+const sequelize = require("../config/db");
 const Reel = require('../models/Reel');
 const Feed = require('../models/Feed');
 const User = require('../models/User');
