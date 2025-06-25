@@ -1639,7 +1639,7 @@ exports.getMyFeed = async (req, res) => {
 
 exports.uploadFeed = async (req, res) => {
   try {
-    const { answer, postType, mode, gymId } = req.body;
+    const { title, answer, postType, mode, gymId } = req.body;
     const userId = req.user.id;
     let activityType = "questionPrompt";
 
@@ -1675,7 +1675,7 @@ exports.uploadFeed = async (req, res) => {
     const feed = await Feed.create({
       userId,
       activityType,
-      title: "",
+      title: title || "",
       gymId,
       description: answer,
       imageUrl,
