@@ -110,6 +110,9 @@ exports.getPostReactions = async (req, res) => {
   const limit = parseInt(req.query.limit) || 10;
   const offset = parseInt(req.query.offset) || 0;
 
+  console.log("Limit received", limit);
+  console.log("Offset received", offset);
+
   try {
     const likes = await sequelize.query(
       `
