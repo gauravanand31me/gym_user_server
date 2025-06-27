@@ -1645,6 +1645,7 @@ exports.uploadFeed = async (req, res) => {
 
     if (mode === "then_and_now") activityType = "then_now";
     if (mode === "meal_timeline") activityType = "meal";
+    if (mode === "challenge") activityType = "challenge";
 
     let imageUrl = null;
 
