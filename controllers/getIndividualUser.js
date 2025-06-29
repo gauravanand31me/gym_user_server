@@ -1750,20 +1750,32 @@ exports.mentionFriendsInChallenge = async (req, res) => {
     feed.mentionedUserIds = friendIds;
     await feed.save();
 
-    // Step 3: Fetch push tokens and profile info for notifications
-    const pushTokens = await PushNotification.findAll({
-      where: { userId: { [Op.in]: friendIds } },
-      include: [{ model: User, attributes: ['profile_pic'] }]
-    });
+    // Step 3: Fetch push tokens and profile pic using raw SQL
+    const pushTokens = await sequelize.query(
+      `
+      SELECT 
+        pn."userId", 
+        pn."expoPushToken", 
+        u."profile_pic"
+      FROM "PushNotifications" pn
+      JOIN "Users" u ON u.id = pn."userId"
+      WHERE pn."userId" IN (:friendIds)
+      `,
+      {
+        replacements: { friendIds },
+        type: sequelize.QueryTypes.SELECT
+      }
+    );
 
+    // Step 4: Get sender's name
     const senderUser = await User.findByPk(userId);
 
-    // Step 4: Send notifications and create DB entries
+    // Step 5: Notify each friend
     await Promise.all(
       friendIds.map(async (friendId) => {
         const target = pushTokens.find(p => p.userId === friendId);
         const expoPushToken = target?.expoPushToken;
-        const profilePic = senderUser?.profile_pic || 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
+        const profilePic = target?.profile_pic || 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
 
         if (expoPushToken) {
           await sendPushNotification(expoPushToken, {
@@ -1784,7 +1796,10 @@ exports.mentionFriendsInChallenge = async (req, res) => {
       })
     );
 
-    return res.status(200).json({ message: 'Friends tagged and notified successfully.', updatedFeed: feed });
+    return res.status(200).json({
+      message: 'Friends tagged and notified successfully.',
+      updatedFeed: feed
+    });
 
   } catch (err) {
     console.error('Error tagging users in challenge:', err);
