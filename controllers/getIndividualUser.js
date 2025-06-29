@@ -1731,6 +1731,69 @@ exports.getAllCategory = async (req, res) => {
 };
 
 
+exports.mentionFriendsInChallenge = async (req, res) => {
+  const { friendIds, challengeId } = req.body;
+  const userId = req.user.id;
+
+  if (!friendIds || !Array.isArray(friendIds) || !challengeId) {
+    return res.status(400).json({ message: 'Invalid input: friendIds (array) and challengeId are required.' });
+  }
+
+  try {
+    // Step 1: Find the challenge feed
+    const feed = await Feed.findByPk(challengeId);
+    if (!feed) {
+      return res.status(404).json({ message: 'Challenge not found.' });
+    }
+
+    // Step 2: Update Feed with mentionedUserIds
+    feed.mentionedUserIds = friendIds;
+    await feed.save();
+
+    // Step 3: Fetch push tokens and profile info for notifications
+    const pushTokens = await PushNotification.findAll({
+      where: { userId: { [Op.in]: friendIds } },
+      include: [{ model: User, attributes: ['profile_pic'] }]
+    });
+
+    const senderUser = await User.findByPk(userId);
+
+    // Step 4: Send notifications and create DB entries
+    await Promise.all(
+      friendIds.map(async (friendId) => {
+        const target = pushTokens.find(p => p.userId === friendId);
+        const expoPushToken = target?.expoPushToken;
+        const profilePic = senderUser?.profile_pic || 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
+
+        if (expoPushToken) {
+          await sendPushNotification(expoPushToken, {
+            title: "🏆 You've been tagged in a Challenge!",
+            body: `${senderUser.full_name} tagged you in a challenge. Check it out!`
+          });
+        }
+
+        await Notification.create({
+          userId, // who triggered it
+          forUserId: friendId,
+          message: `${senderUser.full_name} tagged you in a challenge.`,
+          type: 'tag',
+          status: 'unread',
+          relatedId: challengeId,
+          profileImage: profilePic
+        });
+      })
+    );
+
+    return res.status(200).json({ message: 'Friends tagged and notified successfully.', updatedFeed: feed });
+
+  } catch (err) {
+    console.error('Error tagging users in challenge:', err);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+
+
 
 
 
