@@ -80,6 +80,11 @@ const Feed = sequelize.define('Feed', {
     allowNull: false,
     defaultValue: 'public'
   },
+  mentionedUserIds: {
+    type: DataTypes.ARRAY(DataTypes.UUID),
+    allowNull: true,
+    defaultValue: []
+  },
   timestamp: {
     type: DataTypes.DATE,
     allowNull: false,
