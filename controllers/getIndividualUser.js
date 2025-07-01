@@ -538,7 +538,7 @@ exports.uploadReel = async (req, res) => {
   }
 
   const { title, description, postType, hashTags, link, mode } = req.body;
-  console.log("Mode receiced", mode);
+
   const userId = req.user.id;
 
   const uploadedFilePath = req.file.path;
@@ -1794,7 +1794,7 @@ exports.mentionFriendsInChallenge = async (req, res) => {
         }
 
         await Notification.create({
-          userId, // who triggered it
+          friendId, // who triggered it
           forUserId: friendId,
           message: `${senderUser.full_name} tagged you in a challenge.`,
           type: 'tag',
