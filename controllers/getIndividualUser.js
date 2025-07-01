@@ -537,7 +537,7 @@ exports.uploadReel = async (req, res) => {
     return res.status(400).json({ success: false, message: 'Video file is required.' });
   }
 
-  const { title, description, postType, hashTags, link } = req.body;
+  const { title, description, postType, hashTags, link, mode } = req.body;
   const userId = req.user.id;
 
   const uploadedFilePath = req.file.path;
@@ -639,13 +639,21 @@ await s3Client.send(new PutObjectCommand({
     const feed = await Feed.create({
       id: reel.id,
       userId,
-      activityType: 'aiPromo',
+      activityType: (mode === "challenge") ? "challenge" : 'aiPromo',
       title: title || 'AI Promotional Video 🤖',
       description: description || null,
-      imageUrl: videoUrl,
+      imageUrl: (mode === "challenge") ? thumbnailUrl: videoUrl,
       timestamp: new Date(),
       postType: postType || 'public',
     });
+
+
+    if (mode === "challenge" && title) {
+      const [category, created] = await Category.findOrCreate({
+        where: { name: title.trim() },
+        defaults: { name: title.trim() },
+      });
+    }
 
     // Step 8: Push notification
     try {
