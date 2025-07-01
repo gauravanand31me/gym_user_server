@@ -538,6 +538,7 @@ exports.uploadReel = async (req, res) => {
   }
 
   const { title, description, postType, hashTags, link, mode } = req.body;
+  console.log("Mode receiced", mode);
   const userId = req.user.id;
 
   const uploadedFilePath = req.file.path;
