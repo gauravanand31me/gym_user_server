@@ -1800,7 +1800,7 @@ exports.mentionFriendsInChallenge = async (req, res) => {
           type: 'tag',
           status: 'unread',
           relatedId: challengeId,
-          profileImage: profilePic
+          profileImage: senderUser?.profile_pic
         });
       })
     );
