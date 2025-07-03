@@ -1794,7 +1794,7 @@ exports.mentionFriendsInChallenge = async (req, res) => {
         }
 
         await Notification.create({
-          friendId, // who triggered it
+          userId: friendId, // who triggered it
           forUserId: friendId,
           message: `${senderUser.full_name} tagged you in a challenge.`,
           type: 'tag',
