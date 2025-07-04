@@ -539,7 +539,6 @@ exports.uploadReel = async (req, res) => {
 
   const { title, description, postType, hashTags, link, mode, challengeId } = req.body;
 
-  console.log("Challenge Id received", challengeId);
   const userId = req.user.id;
 
   const uploadedFilePath = req.file.path;
@@ -1821,6 +1820,43 @@ exports.mentionFriendsInChallenge = async (req, res) => {
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
+
+
+
+exports.saveChallengeForUser = async (req, res) => {
+  const { challengeId } = req.body;
+  const userId = req.user.id;
+
+  if (!challengeId) {
+    return res.status(400).json({ message: 'challengeId is required.' });
+  }
+
+  try {
+    // Step 1: Find the challenge feed
+    const feed = await Feed.findByPk(challengeId);
+    if (!feed) {
+      return res.status(404).json({ message: 'Challenge not found.' });
+    }
+
+    // Step 2: Add userId to savedUserIds if not already present
+    const savedUserIds = feed.savedUserIds || [];
+    if (!savedUserIds.includes(userId)) {
+      savedUserIds.push(userId);
+      feed.savedUserIds = savedUserIds;
+      await feed.save();
+    }
+
+    return res.status(200).json({
+      message: 'Challenge saved successfully.',
+      updatedFeed: feed
+    });
+
+  } catch (err) {
+    console.error('Error saving challenge:', err);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 
 
 
