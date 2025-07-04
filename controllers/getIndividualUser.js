@@ -539,6 +539,7 @@ exports.uploadReel = async (req, res) => {
 
   const { title, description, postType, hashTags, link, mode, challengeId } = req.body;
 
+  console.log("Challenge Id received", challengeId);
   const userId = req.user.id;
 
   const uploadedFilePath = req.file.path;
