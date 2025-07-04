@@ -537,7 +537,7 @@ exports.uploadReel = async (req, res) => {
     return res.status(400).json({ success: false, message: 'Video file is required.' });
   }
 
-  const { title, description, postType, hashTags, link, mode } = req.body;
+  const { title, description, postType, hashTags, link, mode, challengeId } = req.body;
 
   const userId = req.user.id;
 
@@ -614,6 +614,7 @@ await s3Client.send(new PutObjectCommand({
       isPublic: postType === 'public',
       hashtags: hashTags ? hashTags.split(",") : [],
       link,
+      challengeId,
       timestamp: new Date(),
     });
 
@@ -1415,6 +1416,7 @@ exports.getUserFeed = async (req, res) => {
           r."videoUrl" AS "videoUrl",
           r."thumbnailUrl" AS "thumbnailUrl",
           r."hashtags" AS "reelTags",
+          r."challengeId" AS "challengeId",
           CASE WHEN ur."reactionType" = 'like' THEN true ELSE false END AS "userLiked"
         FROM "Feeds" f
         LEFT JOIN "Users" u ON f."userId" = u.id
@@ -1465,6 +1467,7 @@ exports.getUserFeed = async (req, res) => {
         r."videoUrl" AS "videoUrl",
         r."thumbnailUrl" AS "thumbnailUrl",
         r."hashtags" AS "reelTags",
+        r."challengeId" AS "challengeId",
         CASE WHEN ur."reactionType" = 'like' THEN true ELSE false END AS "userLiked"
       FROM "Feeds" f
       LEFT JOIN "Users" u ON f."userId" = u.id

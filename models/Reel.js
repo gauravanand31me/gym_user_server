@@ -16,6 +16,10 @@ const Reel = sequelize.define('Reel', {
       key: 'id',
     },
   },
+  challengeId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+  },
   videoUrl: {
     type: DataTypes.STRING,
     allowNull: false,
@@ -75,7 +79,6 @@ const Reel = sequelize.define('Reel', {
     allowNull: false,
     defaultValue: DataTypes.NOW,
   },
-  
 }, {
   tableName: 'Reels',
   timestamps: true,
