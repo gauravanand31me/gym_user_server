@@ -1414,6 +1414,7 @@ exports.getUserFeed = async (req, res) => {
           f.comment_count AS "commentCount",
           r."videoUrl" AS "videoUrl",
           r."thumbnailUrl" AS "thumbnailUrl",
+          r."hashtags" AS "reelTags",
           CASE WHEN ur."reactionType" = 'like' THEN true ELSE false END AS "userLiked"
         FROM "Feeds" f
         LEFT JOIN "Users" u ON f."userId" = u.id
@@ -1463,6 +1464,7 @@ exports.getUserFeed = async (req, res) => {
         f.comment_count AS "commentCount",
         r."videoUrl" AS "videoUrl",
         r."thumbnailUrl" AS "thumbnailUrl",
+        r."hashtags" AS "reelTags",
         CASE WHEN ur."reactionType" = 'like' THEN true ELSE false END AS "userLiked"
       FROM "Feeds" f
       LEFT JOIN "Users" u ON f."userId" = u.id
