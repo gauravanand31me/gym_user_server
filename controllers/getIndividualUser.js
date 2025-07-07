@@ -1646,6 +1646,8 @@ exports.getMyFeed = async (req, res) => {
       nest: true,
     });
 
+    console.log('Saved User IDs:', feedItems.map(f => f.savedUserIds));
+
     return res.status(200).json({ feed: feedItems });
 
   } catch (error) {
@@ -1827,6 +1829,8 @@ exports.mentionFriendsInChallenge = async (req, res) => {
 exports.saveChallengeForUser = async (req, res) => {
   const { challengeId } = req.body;
   const userId = req.user.id;
+
+
 
   if (!challengeId) {
     return res.status(400).json({ message: 'challengeId is required.' });
