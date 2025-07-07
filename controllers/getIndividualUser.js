@@ -1646,7 +1646,7 @@ exports.getMyFeed = async (req, res) => {
       nest: true,
     });
 
-    console.log('Saved User IDs:', feedItems.map(f => f.savedUserIds));
+    
 
     return res.status(200).json({ feed: feedItems });
 
@@ -1847,8 +1847,10 @@ exports.saveChallengeForUser = async (req, res) => {
     const savedUserIds = feed.savedUserIds || [];
     if (!savedUserIds.includes(userId)) {
       savedUserIds.push(userId);
+      console.log("Before Save", feed.savedUserIds);
       feed.savedUserIds = savedUserIds;
       await feed.save();
+      console.log("After Save", feed.savedUserIds);
     }
 
     return res.status(200).json({
