@@ -1840,25 +1840,23 @@ exports.saveChallengeForUser = async (req, res) => {
   }
 
   try {
-    // Step 1: Find the challenge feed
     const feed = await Feed.findByPk(challengeId);
-    console.log('Feed before update:', feed?.toJSON());
+    if (!feed) return res.status(404).json({ message: 'Challenge not found.' });
 
-    if (!feed) {
-      return res.status(404).json({ message: 'Challenge not found.' });
-    }
+    console.log('Before:', feed.bookmarkedUserIds);
 
-    // Step 2: Add userId to savedUserIds if not already present
-    const savedUserIds = feed.bookmarkedUserIds || [];
+    const current = feed.bookmarkedUserIds || [];
+    if (!current.includes(userId)) {
+      current.push(userId);
+      feed.bookmarkedUserIds = current;
 
-    if (savedUserIds.indexOf(userId) == -1) {
-      savedUserIds.push(userId);
-      feed.bookmarkedUserIds = savedUserIds;
+      console.log('Saving bookmarkedUserIds:', feed.bookmarkedUserIds);
       await feed.save();
-    }
-    
 
-    
+      // Re-fetch to verify
+      const refetched = await Feed.findByPk(challengeId);
+      console.log('After save:', refetched.toJSON());
+    }
 
     return res.status(200).json({
       message: 'Challenge saved successfully.',
@@ -1870,6 +1868,7 @@ exports.saveChallengeForUser = async (req, res) => {
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
+
 
 
 
