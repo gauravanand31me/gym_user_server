@@ -91,9 +91,14 @@ const Feed = sequelize.define('Feed', {
     defaultValue: []
   },
   bookmarkedUserIds: {
-    type: DataTypes.ARRAY(DataTypes.TEXT),
+    type: DataTypes.ARRAY(DataTypes.UUID),
     allowNull: true,
     defaultValue: []
+  },
+  myBookmarks: {
+    type: DataTypes.ARRAY(DataTypes.TEXT),
+    allowNull: true,
+    defaultValue: [],
   },
   timestamp: {
     type: DataTypes.DATE,
