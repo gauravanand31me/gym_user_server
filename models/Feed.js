@@ -91,7 +91,7 @@ const Feed = sequelize.define('Feed', {
     defaultValue: []
   },
   bookmarkedUserIds: {
-    type: DataTypes.ARRAY(DataTypes.UUID),
+    type: DataTypes.ARRAY(DataTypes.TEXT),
     allowNull: true,
     defaultValue: []
   },
