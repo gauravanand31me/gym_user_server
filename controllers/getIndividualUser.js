@@ -1841,33 +1841,49 @@ exports.saveChallengeForUser = async (req, res) => {
 
   try {
     const feed = await Feed.findByPk(challengeId);
-    if (!feed) return res.status(404).json({ message: 'Challenge not found.' });
-
-    console.log('Before:', feed.myBookmarks);
-
-    const current = feed.myBookmarks || [];
-    if (!current.includes(userId)) {
-      current.push(userId);
-      feed.myBookmarks = current;
-
-      console.log('Saving myBookmarks:', feed.myBookmarks);
-      await feed.save();
-
-      // Re-fetch to verify
-      const refetched = await Feed.findByPk(challengeId);
-      console.log('After save:', refetched.toJSON());
+    if (!feed) {
+      return res.status(404).json({ message: 'Challenge not found.' });
     }
+
+    // Check if userId already exists
+    const existing = feed.myBookmarks || [];
+
+    if (!existing.includes(userId)) {
+      // Use raw SQL to append userId
+      await sequelize.query(
+        `
+        UPDATE "Feeds"
+        SET "myBookmarks" = 
+          CASE 
+            WHEN "myBookmarks" IS NULL THEN ARRAY[:userId]
+            ELSE array_append("myBookmarks", :userId)
+          END
+        WHERE id = :challengeId
+        `,
+        {
+          replacements: { userId, challengeId },
+        }
+      );
+
+      console.log('Raw SQL update done.');
+    } else {
+      console.log('User already bookmarked.');
+    }
+
+    const refetched = await Feed.findByPk(challengeId);
+    console.log('After save (raw):', refetched.toJSON());
 
     return res.status(200).json({
       message: 'Challenge saved successfully.',
-      updatedFeed: feed
+      updatedFeed: refetched,
     });
 
   } catch (err) {
-    console.error('Error saving challenge:', err);
+    console.error('Error saving challenge (raw):', err);
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
+
 
 
 
