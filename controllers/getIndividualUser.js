@@ -1846,17 +1846,17 @@ exports.saveChallengeForUser = async (req, res) => {
     }
 
     // Check if userId already exists
-    const existing = feed.myBookmarks || [];
+    const existing = feed.savedUserIds || [];
 
     if (!existing.includes(userId)) {
       // Use raw SQL to append userId
       await sequelize.query(
         `
         UPDATE "Feeds"
-        SET "myBookmarks" = 
+        SET "savedUserIds" = 
           CASE 
-            WHEN "myBookmarks" IS NULL THEN ARRAY[:userId]
-            ELSE array_append("myBookmarks", :userId)
+            WHEN "savedUserIds" IS NULL THEN ARRAY[:userId]
+            ELSE array_append("savedUserIds", :userId)
           END
         WHERE id = :challengeId
         `,
