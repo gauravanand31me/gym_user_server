@@ -1843,14 +1843,14 @@ exports.saveChallengeForUser = async (req, res) => {
     const feed = await Feed.findByPk(challengeId);
     if (!feed) return res.status(404).json({ message: 'Challenge not found.' });
 
-    console.log('Before:', feed.bookmarkedUserIds);
+    console.log('Before:', feed.myBookmarks);
 
-    const current = feed.bookmarkedUserIds || [];
+    const current = feed.myBookmarks || [];
     if (!current.includes(userId)) {
       current.push(userId);
-      feed.bookmarkedUserIds = current;
+      feed.myBookmarks = current;
 
-      console.log('Saving bookmarkedUserIds:', feed.bookmarkedUserIds);
+      console.log('Saving myBookmarks:', feed.myBookmarks);
       await feed.save();
 
       // Re-fetch to verify
