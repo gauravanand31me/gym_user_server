@@ -1832,8 +1832,6 @@ exports.saveChallengeForUser = async (req, res) => {
   const { challengeId } = req.body;
   const userId = req.user.id;
 
-
-
   if (!challengeId) {
     return res.status(400).json({ message: 'challengeId is required.' });
   }
@@ -1841,16 +1839,23 @@ exports.saveChallengeForUser = async (req, res) => {
   try {
     // Step 1: Find the challenge feed
     const feed = await Feed.findByPk(challengeId);
+    console.log('Feed before update:', feed?.toJSON());
+
     if (!feed) {
       return res.status(404).json({ message: 'Challenge not found.' });
     }
 
     // Step 2: Add userId to savedUserIds if not already present
     const savedUserIds = feed.savedUserIds || [];
+
     if (!savedUserIds.includes(userId)) {
       savedUserIds.push(userId);
       feed.savedUserIds = savedUserIds;
       await feed.save();
+
+      console.log('Feed after update:', feed.toJSON());
+    } else {
+      console.log('User already saved this challenge:', userId);
     }
 
     return res.status(200).json({
@@ -1863,6 +1868,7 @@ exports.saveChallengeForUser = async (req, res) => {
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
+
 
 
 
