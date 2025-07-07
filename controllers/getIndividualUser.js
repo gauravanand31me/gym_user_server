@@ -1497,7 +1497,7 @@ exports.getUserFeed = async (req, res) => {
       ...feed,
       canDelete: feed.userId === userId || userId === process.env.ADMIN_UUID,
       canReport: feed.userId !== userId,
-      isSaved: feed.savedUserIds.indexOf(userId) > -1
+      isSaved: feed.myBookmarks.indexOf(userId) > -1
     }));
 
     return res.status(200).json({ feed: feedItemsWithPermissions });
@@ -1608,7 +1608,7 @@ exports.getMyFeed = async (req, res) => {
   SELECT
     f."id", f."userId", f."activityType", f."title", f."description", f."gymId",
     f."imageUrl", f."like_count", f."comment_count", f."report_count",
-    f."postType", f."mentionedUserIds", f."savedUserIds", f."timestamp", f."createdAt", f."updatedAt",
+    f."postType", f."mentionedUserIds", f."myBookmarks", f."timestamp", f."createdAt", f."updatedAt",
     u.full_name AS "user.full_name",
     u.profile_pic AS "user.profile_pic",
     g.name AS "gym.name",
@@ -1846,17 +1846,17 @@ exports.saveChallengeForUser = async (req, res) => {
     }
 
     // Check if userId already exists
-    const existing = feed.savedUserIds || [];
+    const existing = feed.myBookmarks || [];
 
     if (!existing.includes(userId)) {
       // Use raw SQL to append userId
       await sequelize.query(
         `
         UPDATE "Feeds"
-        SET "savedUserIds" = 
+        SET "myBookmarks" = 
           CASE 
-            WHEN "savedUserIds" IS NULL THEN ARRAY[:userId]
-            ELSE array_append("savedUserIds", :userId)
+            WHEN "myBookmarks" IS NULL THEN ARRAY[:userId]
+            ELSE array_append("myBookmarks", :userId)
           END
         WHERE id = :challengeId
         `,
