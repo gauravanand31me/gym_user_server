@@ -1752,7 +1752,6 @@ exports.getAllCategory = async (req, res) => {
   }
 };
 
-
 exports.mentionFriendsInChallenge = async (req, res) => {
   const { friendIds, challengeId } = req.body;
   const userId = req.user.id;
@@ -1768,58 +1767,74 @@ exports.mentionFriendsInChallenge = async (req, res) => {
       return res.status(404).json({ message: 'Challenge not found.' });
     }
 
-    // Step 2: Update Feed with mentionedUserIds
-    feed.mentionedUserIds = friendIds;
+    // Step 2: Toggle mentionedUserIds
+    const currentMentioned = feed.mentionedUserIds || [];
+
+    // Create a Set for easier manipulation
+    const updatedMentionedSet = new Set(currentMentioned);
+
+    friendIds.forEach(friendId => {
+      if (updatedMentionedSet.has(friendId)) {
+        updatedMentionedSet.delete(friendId); // untag
+      } else {
+        updatedMentionedSet.add(friendId);    // tag
+      }
+    });
+
+    feed.mentionedUserIds = Array.from(updatedMentionedSet);
     await feed.save();
 
-    // Step 3: Fetch push tokens and profile pic using raw SQL
-    const pushTokens = await sequelize.query(
-      `
-      SELECT 
-        pn."userId", 
-        pn."expoPushToken", 
-        u."profile_pic"
-      FROM "PushNotifications" pn
-      JOIN "Users" u ON u.id = pn."userId"
-      WHERE pn."userId" IN (:friendIds)
-      `,
-      {
-        replacements: { friendIds },
-        type: sequelize.QueryTypes.SELECT
-      }
-    );
+    // Step 3: Fetch push tokens and profile pics for newly added users only
+    const newTaggedUserIds = friendIds.filter(id => !currentMentioned.includes(id));
 
-    // Step 4: Get sender's name
-    const senderUser = await User.findByPk(userId);
-
-    // Step 5: Notify each friend
-    await Promise.all(
-      friendIds.map(async (friendId) => {
-        const target = pushTokens.find(p => p.userId === friendId);
-        const expoPushToken = target?.expoPushToken;
-        const profilePic = target?.profile_pic || 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
-
-        if (expoPushToken) {
-          await sendPushNotification(expoPushToken, {
-            title: "🏆 You've been tagged in a Challenge!",
-            body: `${senderUser.full_name} tagged you in a challenge. Check it out!`
-          });
+    if (newTaggedUserIds.length > 0) {
+      const pushTokens = await sequelize.query(
+        `
+        SELECT 
+          pn."userId", 
+          pn."expoPushToken", 
+          u."profile_pic"
+        FROM "PushNotifications" pn
+        JOIN "Users" u ON u.id = pn."userId"
+        WHERE pn."userId" IN (:friendIds)
+        `,
+        {
+          replacements: { friendIds: newTaggedUserIds },
+          type: sequelize.QueryTypes.SELECT
         }
+      );
 
-        await Notification.create({
-          userId: friendId, // who triggered it
-          forUserId: friendId,
-          message: `${senderUser.full_name} tagged you in a challenge.`,
-          type: 'tag',
-          status: 'unread',
-          relatedId: challengeId,
-          profileImage: senderUser?.profile_pic
-        });
-      })
-    );
+      const senderUser = await User.findByPk(userId);
+
+      // Step 4: Send notifications only to newly tagged users
+      await Promise.all(
+        newTaggedUserIds.map(async (friendId) => {
+          const target = pushTokens.find(p => p.userId === friendId);
+          const expoPushToken = target?.expoPushToken;
+          const profilePic = target?.profile_pic || 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
+
+          if (expoPushToken) {
+            await sendPushNotification(expoPushToken, {
+              title: "🏆 You've been tagged in a Challenge!",
+              body: `${senderUser.full_name} tagged you in a challenge. Check it out!`
+            });
+          }
+
+          await Notification.create({
+            userId: friendId, // who triggered it
+            forUserId: friendId,
+            message: `${senderUser.full_name} tagged you in a challenge.`,
+            type: 'tag',
+            status: 'unread',
+            relatedId: challengeId,
+            profileImage: senderUser?.profile_pic
+          });
+        })
+      );
+    }
 
     return res.status(200).json({
-      message: 'Friends tagged and notified successfully.',
+      message: 'Tagging updated successfully.',
       updatedFeed: feed
     });
 
@@ -1828,6 +1843,7 @@ exports.mentionFriendsInChallenge = async (req, res) => {
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
+
 
 
 
