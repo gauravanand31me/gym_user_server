@@ -1605,22 +1605,21 @@ exports.getMyFeed = async (req, res) => {
 
     // Base query
     let query = `
-  SELECT
-    f."id", f."savedUserIds", f."userId", f."gymId", f."activityType", f."timestamp", f."title", f."description", f."imageUrl", f."mode",
-    u.full_name AS "user.full_name",
-    u.profile_pic AS "user.profile_pic",
-    g.name AS "gym.name",
-    COUNT(r."id") AS "reactionCount",
-    r2."videoUrl" AS "videoUrl",
-    r2."thumbnailUrl" AS "thumbnailUrl"
-  FROM "Feeds" f
-  LEFT JOIN "Users" u ON f."userId" = u.id
-  LEFT JOIN "Gyms" g ON f."gymId" = g.id
-  LEFT JOIN "PostReactions" r ON f."id" = r."postId"
-  LEFT JOIN "Reels" r2 ON r2."id" = f."id"
-  WHERE 1 = 1
-`;
-
+      SELECT
+        f.*,
+        u.full_name AS "user.full_name",
+        u.profile_pic AS "user.profile_pic",
+        g.name AS "gym.name",
+        COUNT(r."id") AS "reactionCount",
+        r2."videoUrl" AS "videoUrl",
+        r2."thumbnailUrl" AS "thumbnailUrl"
+      FROM "Feeds" f
+      LEFT JOIN "Users" u ON f."userId" = u.id
+      LEFT JOIN "Gyms" g ON f."gymId" = g.id
+      LEFT JOIN "PostReactions" r ON f."id" = r."postId"
+      LEFT JOIN "Reels" r2 ON r2."id" = f."id"
+      WHERE 1 = 1
+    `;
 
     const replacements = { limit, offset };
 
@@ -1647,7 +1646,9 @@ exports.getMyFeed = async (req, res) => {
       nest: true,
     });
 
+    
     console.log('Feed items sample:', feedItems[0]);
+
 
     return res.status(200).json({ feed: feedItems });
 
