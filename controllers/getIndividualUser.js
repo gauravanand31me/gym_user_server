@@ -1914,6 +1914,52 @@ exports.saveChallengeForUser = async (req, res) => {
 
 
 
+exports.getChallengeStats = async (req, res) => {
+  const { challengeId } = req.query;
+
+  if (!challengeId) {
+    return res.status(400).json({ success: false, message: 'challengeId is required in query params.' });
+  }
+
+  try {
+    // Count number of unique participants (distinct userIds for the challenge)
+    const [participantResult] = await sequelize.query(`
+      SELECT COUNT(DISTINCT "userId") AS "participantCount"
+      FROM "Reels"
+      WHERE "challengeId" = :challengeId
+    `, {
+      replacements: { challengeId },
+      type: sequelize.QueryTypes.SELECT,
+    });
+
+    // Count total videos (reels) for the challenge
+    const [videoResult] = await sequelize.query(`
+      SELECT COUNT(*) AS "videoCount"
+      FROM "Reels"
+      WHERE "challengeId" = :challengeId
+    `, {
+      replacements: { challengeId },
+      type: sequelize.QueryTypes.SELECT,
+    });
+
+    return res.status(200).json({
+      success: true,
+      stats: {
+        challengeId,
+        participantCount: Number(participantResult.participantCount),
+        videoCount: Number(videoResult.videoCount),
+      }
+    });
+
+  } catch (err) {
+    console.error('❌ Error fetching challenge stats:', err.message);
+    return res.status(500).json({ success: false, message: 'Internal Server Error' });
+  }
+};
+
+
+
+
 
 
 
