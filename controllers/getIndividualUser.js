@@ -1849,11 +1849,11 @@ exports.saveChallengeForUser = async (req, res) => {
     }
 
     // Step 2: Add userId to savedUserIds if not already present
-    const savedUserIds = feed.savedUserIds || [];
+    const savedUserIds = feed.bookmarkedUserIds || [];
 
     if (savedUserIds.indexOf(userId) == -1) {
       savedUserIds.push(userId);
-      feed.savedUserIds = savedUserIds;
+      feed.bookmarkedUserIds = savedUserIds;
       await feed.save();
     }
     
