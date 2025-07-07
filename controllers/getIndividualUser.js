@@ -1638,6 +1638,7 @@ exports.getMyFeed = async (req, res) => {
     }
 
     query += `
+      GROUP BY f.id, u.id, g.id, r2."id"
       ORDER BY f."timestamp" DESC
       LIMIT :limit OFFSET :offset
     `;
