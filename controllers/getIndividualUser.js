@@ -1851,15 +1851,10 @@ exports.saveChallengeForUser = async (req, res) => {
     // Step 2: Add userId to savedUserIds if not already present
     const savedUserIds = feed.savedUserIds || [];
 
-    if (!savedUserIds.includes(userId)) {
-      savedUserIds.push(userId);
-      feed.savedUserIds = savedUserIds;
-      await feed.save();
+    feed.savedUserIds = savedUserIds;
+    await feed.save();
 
-      console.log('Feed after update:', feed.toJSON());
-    } else {
-      console.log('User already saved this challenge:', userId);
-    }
+    
 
     return res.status(200).json({
       message: 'Challenge saved successfully.',
