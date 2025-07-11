@@ -100,6 +100,10 @@ const Feed = sequelize.define('Feed', {
     allowNull: true,
     defaultValue: [],
   },
+  challengeId: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
   timestamp: {
     type: DataTypes.DATE,
     allowNull: false,
