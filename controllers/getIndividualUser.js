@@ -603,6 +603,12 @@ await s3Client.send(new PutObjectCommand({
 
     const videoUrl = `https://${process.env.CLOUDFRONT_URL}/${s3Key}`;
 
+
+    const parsedChallengeId =
+  challengeId && challengeId !== 'undefined' && challengeId !== 'null'
+    ? challengeId
+    : null;
+
     // Step 5: Save in Reel table
     const createdReel = await Reel.create({
       userId,
@@ -614,7 +620,7 @@ await s3Client.send(new PutObjectCommand({
       isPublic: postType === 'public',
       hashtags: hashTags ? hashTags.split(",") : [],
       link,
-      challengeId: challengeId || null,
+      challengeId: parsedChallengeId,
       timestamp: new Date(),
     });
 
@@ -647,7 +653,7 @@ await s3Client.send(new PutObjectCommand({
       imageUrl: (mode === "challenge") ? thumbnailUrl: videoUrl,
       timestamp: new Date(),
       postType: postType || 'public',
-      challengeId: challengeId || null
+      challengeId: parsedChallengeId
     });
 
 
