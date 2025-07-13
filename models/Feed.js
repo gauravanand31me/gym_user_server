@@ -26,7 +26,8 @@ const Feed = sequelize.define('Feed', {
   },
   description: {
     type: DataTypes.TEXT,
-    allowNull: true
+    allowNull: true,
+    defaultValue: null
   },
   gymId: {
     type: DataTypes.UUID,
