@@ -691,7 +691,7 @@ await s3Client.send(new PutObjectCommand({
     res.status(201).json({ success: true, feed, reel });
 
   } catch (err) {
-    console.error('❌ AI Promo upload failed:', err.message);
+    console.error('❌ AI Promo upload failed:', err);
     res.status(500).json({ success: false, message: 'Internal Server Error' });
   } finally {
     try { if (fs.existsSync(uploadedFilePath)) fs.unlinkSync(uploadedFilePath); } catch { }
