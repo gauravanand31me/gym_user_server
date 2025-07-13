@@ -19,6 +19,7 @@ const Reel = sequelize.define('Reel', {
   challengeId: {
     type: DataTypes.UUID,
     allowNull: true,
+    defaultValue: null
   },
   videoUrl: {
     type: DataTypes.STRING,
