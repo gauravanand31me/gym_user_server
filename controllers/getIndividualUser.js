@@ -614,7 +614,7 @@ await s3Client.send(new PutObjectCommand({
       isPublic: postType === 'public',
       hashtags: hashTags ? hashTags.split(",") : [],
       link,
-      challengeId,
+      challengeId: challengeId || null,
       timestamp: new Date(),
     });
 
@@ -647,6 +647,7 @@ await s3Client.send(new PutObjectCommand({
       imageUrl: (mode === "challenge") ? thumbnailUrl: videoUrl,
       timestamp: new Date(),
       postType: postType || 'public',
+      challengeId: challengeId || null
     });
 
 
