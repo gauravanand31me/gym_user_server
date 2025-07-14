@@ -551,40 +551,40 @@ exports.uploadReel = async (req, res) => {
 
     // Step 2: Generate thumbnail
     // Step 1: Extract screenshot as JPEG
-await new Promise((resolve, reject) => {
-  ffmpeg(compressedFilePath)
-    .screenshots({
-      timestamps: ['00:00:01'],
-      filename: 'temp-thumbnail.jpg',
-      folder: path.dirname(thumbnailPath),
-      size: '640x?', // Higher resolution for better quality
-    })
-    .on('end', resolve)
-    .on('error', reject);
-});
+    await new Promise((resolve, reject) => {
+      ffmpeg(compressedFilePath)
+        .screenshots({
+          timestamps: ['00:00:01'],
+          filename: 'temp-thumbnail.jpg',
+          folder: path.dirname(thumbnailPath),
+          size: '640x?', // Higher resolution for better quality
+        })
+        .on('end', resolve)
+        .on('error', reject);
+    });
 
-const tempJpegPath = path.join(path.dirname(thumbnailPath), 'temp-thumbnail.jpg');
-const finalWebpPath = thumbnailPath.replace(/\.jpg$/, '.webp');
+    const tempJpegPath = path.join(path.dirname(thumbnailPath), 'temp-thumbnail.jpg');
+    const finalWebpPath = thumbnailPath.replace(/\.jpg$/, '.webp');
 
-// Step 2: Convert JPEG to high-quality WebP using sharp
-await sharp(tempJpegPath)
-  .webp({ quality: 90 })
-  .toFile(finalWebpPath);
+    // Step 2: Convert JPEG to high-quality WebP using sharp
+    await sharp(tempJpegPath)
+      .webp({ quality: 90 })
+      .toFile(finalWebpPath);
 
-// Optional: Delete the temp JPEG file
-fs.unlinkSync(tempJpegPath);
+    // Optional: Delete the temp JPEG file
+    fs.unlinkSync(tempJpegPath);
 
-// Step 3: Upload WebP thumbnail to S3
-const thumbnailStream = fs.createReadStream(finalWebpPath);
-const thumbnailKey = `reels/thumbnails/${Date.now()}-thumbnail.webp`;
+    // Step 3: Upload WebP thumbnail to S3
+    const thumbnailStream = fs.createReadStream(finalWebpPath);
+    const thumbnailKey = `reels/thumbnails/${Date.now()}-thumbnail.webp`;
 
-await s3Client.send(new PutObjectCommand({
-  Bucket: process.env.AWS_S3_BUCKET_NAME,
-  Key: thumbnailKey,
-  Body: thumbnailStream,
-  ContentType: 'image/webp',
-  CacheControl: 'public, max-age=31536000',
-}));
+    await s3Client.send(new PutObjectCommand({
+      Bucket: process.env.AWS_S3_BUCKET_NAME,
+      Key: thumbnailKey,
+      Body: thumbnailStream,
+      ContentType: 'image/webp',
+      CacheControl: 'public, max-age=31536000',
+    }));
 
 
     const thumbnailUrl = `https://${process.env.CLOUDFRONT_URL}/${thumbnailKey}`;
@@ -605,9 +605,9 @@ await s3Client.send(new PutObjectCommand({
 
 
     const parsedChallengeId =
-  challengeId && challengeId !== 'undefined' && challengeId !== 'null'
-    ? challengeId
-    : null;
+      challengeId && challengeId !== 'undefined' && challengeId !== 'null'
+        ? challengeId
+        : null;
 
     // Step 5: Save in Reel table
     const createdReel = await Reel.create({
@@ -650,7 +650,7 @@ await s3Client.send(new PutObjectCommand({
       activityType: (mode === "challenge") ? "challenge" : 'aiPromo',
       title: title || 'AI Promotional Video 🤖',
       description: description || null,
-      imageUrl: (mode === "challenge") ? thumbnailUrl: videoUrl,
+      imageUrl: (mode === "challenge") ? thumbnailUrl : videoUrl,
       timestamp: new Date(),
       postType: postType || 'public',
       challengeId: parsedChallengeId
@@ -668,6 +668,66 @@ await s3Client.send(new PutObjectCommand({
     try {
       const fromUser = await PushNotification.findOne({ where: { userId } });
 
+      if (parsedChallengeId) {
+        const challengeFeed = await Feed.findOne({ where: { id: parsedChallengeId } });
+
+        if (challengeFeed && challengeFeed.userId) {
+          const challengeCreatorId = challengeFeed.userId;
+
+          if (challengeCreatorId !== userId) {
+            const challengeCreator = await PushNotification.findOne({ where: { userId: challengeCreatorId } });
+
+            if (challengeCreator?.expoPushToken) {
+              const challengeNotification = {
+                title: "New Reel in Your Challenge 🎉",
+                body: `${reel.user.full_name || 'Someone'} uploaded a reel to your challenge "${challengeFeed.title || 'Challenge'}".`,
+              };
+
+              await sendPushNotification(challengeCreator.expoPushToken, challengeNotification);
+
+              // Check if notification for this relatedId and user already exists
+              const existingNotification = await Notification.findOne({
+                where: {
+                  userId: challengeCreatorId,
+                  relatedId: createdReel.id,
+                  type: 'tag',   // Optional: limit by type if needed
+                  forUserId: challengeCreatorId
+                }
+              });
+
+              if (existingNotification) {
+                // Increment a counter field (create it in your Notification model if not present)
+                const newCount = (existingNotification.counter || 1) + 1;
+
+                await existingNotification.update({
+                  counter: newCount,
+                  status: 'unread', // Reset status to unread on new event
+                  updatedAt: new Date()
+                });
+
+                console.log(`🔁 Notification counter incremented to ${newCount} for UserID: ${challengeCreatorId}`);
+              } else {
+                // Create new notification
+                await Notification.create({
+                  userId: challengeCreatorId,
+                  message: `A new reel has been added to your challenge "${challengeFeed.title || 'Challenge'}".`,
+                  type: 'tag',
+                  status: 'unread',
+                  relatedId: createdReel.id,
+                  profileImage: reel.user.profile_pic || "https://png.pngtree.com/png-vector/20190223/ourmid/pngtree-profile-glyph-black-icon-png-image_691589.jpg",
+                  forUserId: challengeCreatorId,
+                  counter: 1 // Start with 1
+                });
+
+                console.log(`✅ New notification created for UserID: ${challengeCreatorId}`);
+              }
+            }
+          }
+
+        }
+
+      }
+
       if (fromUser?.expoPushToken) {
         const notificationTitle = {
           title: "Reel Uploaded Successfully 🎥",
@@ -676,13 +736,13 @@ await s3Client.send(new PutObjectCommand({
         await sendPushNotification(fromUser.expoPushToken, notificationTitle);
 
         await Notification.create({
-                    userId: userId, // The user who made the original booking (to be notified)
-                    message: `Your reel is ready. check now.`, // Notification message
-                    type: 'reaction', // Notification type
-                    status: 'unread', // Unread by default
-                    relatedId: reel.id, // Related to the bookingId (buddy request)
-                    profileImage: fromUser.profile_pic || "https://png.pngtree.com/png-vector/20190223/ourmid/pngtree-profile-glyph-black-icon-png-image_691589.jpg", // Use default profile pic if not available
-                    forUserId: userId
+          userId: userId, // The user who made the original booking (to be notified)
+          message: `Your reel is ready. check now.`, // Notification message
+          type: 'reaction', // Notification type
+          status: 'unread', // Unread by default
+          relatedId: reel.id, // Related to the bookingId (buddy request)
+          profileImage: fromUser.profile_pic || "https://png.pngtree.com/png-vector/20190223/ourmid/pngtree-profile-glyph-black-icon-png-image_691589.jpg", // Use default profile pic if not available
+          forUserId: userId
         });
 
         console.log('✅ Push Notification sent.');
@@ -1656,7 +1716,7 @@ exports.getMyFeed = async (req, res) => {
       nest: true,
     });
 
-    
+
     console.log('Feed items sample:', feedItems[0]);
 
 
@@ -1688,7 +1748,7 @@ exports.uploadFeed = async (req, res) => {
     if (req.file) {
       // Convert and resize image using sharp
       const processedImageBuffer = await sharp(req.file.buffer)
-        .rotate() 
+        .rotate()
         .resize({ width: 1080 }) // Resize if needed
         .webp({ quality: 80 })   // Convert to WebP
         .toBuffer();
@@ -1703,7 +1763,7 @@ exports.uploadFeed = async (req, res) => {
       });
 
       await s3.send(command);
-      
+
       imageUrl = `https://${process.env.CLOUDFRONT_URL}/${fileName}`;
     } else {
       imageUrl = `https://${process.env.CLOUDFRONT_URL}/IMG_5602.JPG`;
@@ -1742,7 +1802,7 @@ exports.getAllCategory = async (req, res) => {
     const count = await Category.count();
 
     // Step 2: If no categories found, insert default list
-    
+
 
     // Step 3: Fetch all categories
     const categories = await Category.findAll({
