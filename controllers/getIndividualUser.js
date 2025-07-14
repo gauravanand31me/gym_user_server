@@ -689,7 +689,7 @@ exports.uploadReel = async (req, res) => {
               const existingNotification = await Notification.findOne({
                 where: {
                   userId: challengeCreatorId,
-                  relatedId: createdReel.id,
+                  relatedId: parsedChallengeId,
                   type: 'tag',   // Optional: limit by type if needed
                   forUserId: challengeCreatorId
                 }
@@ -713,7 +713,7 @@ exports.uploadReel = async (req, res) => {
                   message: `A new reel has been added to your challenge "${challengeFeed.title || 'Challenge'}".`,
                   type: 'tag',
                   status: 'unread',
-                  relatedId: createdReel.id,
+                  relatedId: parsedChallengeId,
                   profileImage: reel.user.profile_pic || "https://png.pngtree.com/png-vector/20190223/ourmid/pngtree-profile-glyph-black-icon-png-image_691589.jpg",
                   forUserId: challengeCreatorId,
                   counter: 1 // Start with 1
