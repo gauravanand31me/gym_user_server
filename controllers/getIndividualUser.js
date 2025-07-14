@@ -667,6 +667,39 @@ await s3Client.send(new PutObjectCommand({
     // Step 8: Push notification
     try {
       const fromUser = await PushNotification.findOne({ where: { userId } });
+      
+      if (parsedChallengeId) {
+        const challengeFeed = await Feed.findOne({ where: { id: parsedChallengeId } });
+
+        if (challengeFeed && challengeFeed.userId) {
+          const challengeCreatorId = challengeFeed.userId;
+
+          if (challengeCreatorId !== userId) {
+            const challengeCreator = await PushNotification.findOne({ where: { userId: challengeCreatorId } });
+
+            if (challengeCreator?.expoPushToken) {
+              const challengeNotification = {
+                title: "New Reel in Your Challenge 🎉",
+                body: `${reel.user.full_name || 'Someone'} uploaded a reel to your challenge "${challengeFeed.title || 'Challenge'}".`,
+              };
+    
+              await sendPushNotification(challengeCreator.expoPushToken, challengeNotification);
+    
+              await Notification.create({
+                userId: challengeCreatorId,
+                message: `A new reel has been added to your challenge "${challengeFeed.title || 'Challenge'}".`,
+                type: 'tag',
+                status: 'unread',
+                relatedId: createdReel.id,
+                profileImage: reel.user.profile_pic || "https://png.pngtree.com/png-vector/20190223/ourmid/pngtree-profile-glyph-black-icon-png-image_691589.jpg",
+                forUserId: challengeCreatorId
+              });
+            }
+          }
+
+        }
+
+      }
 
       if (fromUser?.expoPushToken) {
         const notificationTitle = {
