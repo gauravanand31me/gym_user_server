@@ -68,6 +68,7 @@ exports.createComment = async (req, res) => {
 
       
 
+    
       if (existingNotification) {
         // Count-based message
         const othersCount = existingNotification.othersCount || 1;
@@ -93,18 +94,19 @@ exports.createComment = async (req, res) => {
           othersCount: 1, // optional column you can add
         });
       }
+
+      const notificationData = await PushNotification.findOne({
+        where: { userId: receiverUserId }
+      });
+  
+      const notificationTitle = {
+        title: "New Comment",
+        body: `${actorUser.full_name} commented on your ${reel ? 'reel' : 'post'}`, // Notification message
+      }
+  
+      await sendPushNotification(notificationData?.expoPushToken, notificationTitle);
+
     }
-
-    const notificationData = await PushNotification.findOne({
-      where: { userId: receiverUserId }
-    });
-
-    const notificationTitle = {
-      title: "New Comment",
-      body: `${actorUser.full_name} commented on your ${reel ? 'reel' : 'post'}`, // Notification message
-    }
-
-    await sendPushNotification(notificationData?.expoPushToken, notificationTitle);
 
     return res.status(201).json({ message: 'Comment added successfully.', comment });
 
@@ -130,6 +132,7 @@ exports.deleteComment = async (req, res) => {
     }
 
     const post = await Feed.findByPk(comment.postId);
+    const reel = await Reel.findByPk(comment.postId);
 
     // Save parentId before deletion
     const parentId = comment.parentId;
@@ -142,6 +145,8 @@ exports.deleteComment = async (req, res) => {
       if (post) {
         post.comment_count = Math.max(0, post.comment_count - 1);
         await post.save();
+        reel.comment_count = Math.max(0, post.comment_count - 1);
+        await reel.save();
       }
     } else {
       // Reply: decrement replies_count of the parent comment
