@@ -691,7 +691,7 @@ exports.uploadReel = async (req, res) => {
                   userId: challengeCreatorId,
                   relatedId: parsedChallengeId,
                   type: 'tag',   // Optional: limit by type if needed
-                  forUserId: challengeCreatorId
+                  forUserId: userId
                 }
               });
 
@@ -715,7 +715,7 @@ exports.uploadReel = async (req, res) => {
                   status: 'unread',
                   relatedId: parsedChallengeId,
                   profileImage: reel.user.profile_pic || "https://png.pngtree.com/png-vector/20190223/ourmid/pngtree-profile-glyph-black-icon-png-image_691589.jpg",
-                  forUserId: challengeCreatorId,
+                  forUserId: userId,
                   counter: 1 // Start with 1
                 });
 
@@ -1890,7 +1890,7 @@ exports.mentionFriendsInChallenge = async (req, res) => {
 
           await Notification.create({
             userId: friendId, // who triggered it
-            forUserId: friendId,
+            forUserId: userId,
             message: `${senderUser.full_name} tagged you in a challenge.`,
             type: 'tag',
             status: 'unread',
