@@ -9,6 +9,7 @@ const { sendPushNotification } = require('../config/pushNotification');
 exports.createComment = async (req, res) => {
   const fromUserId = req.user.id;
   const { postId, commentText, parentId } = req.body;
+  let repliedUserId;
 
   if (!commentText || !postId) {
     return res.status(400).json({ message: 'postId and commentText are required.' });
@@ -48,11 +49,13 @@ exports.createComment = async (req, res) => {
       if (parentComment) {
         parentComment.comment_reply_count += 1;
         await parentComment.save();
+        repliedUserId = parentComment.userId;
       }
     }
 
     // 🔔 Notification Logic
     const actorUser = await User.findOne({ where: { id: fromUserId } });
+    
     const receiverUserId = post?.userId || reel?.userId;
 
     if (receiverUserId && receiverUserId !== fromUserId) {
@@ -108,7 +111,23 @@ exports.createComment = async (req, res) => {
 
     }
 
-    return res.status(201).json({ message: 'Comment added successfully.', comment });
+    res.status(201).json({ message: 'Comment added successfully.', comment });
+    
+    if (repliedUserId) {
+      const repliedActorUser = await User.findOne({ where: { id: repliedUserId } });
+
+      await Notification.create({
+        userId: repliedUserId, // 👈 RECEIVER
+        forUserId: fromUserId,  // 👈 ACTOR
+        relatedId: postId,
+        type: 'comment',
+        profileImage: repliedActorUser.profile_pic || '',
+        message: `${repliedActorUser.full_name} replied to your comment on ${reel ? 'reel' : 'post'}`,
+        othersCount: 1, // optional column you can add
+      });
+
+    }
+    
 
   } catch (error) {
     console.error('Error adding comment:', error);
