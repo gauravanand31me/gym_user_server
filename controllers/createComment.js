@@ -9,7 +9,7 @@ const { sendPushNotification } = require('../config/pushNotification');
 exports.createComment = async (req, res) => {
   const fromUserId = req.user.id;
   const { postId, commentText, parentId } = req.body;
-  let repliedUserId;
+  let repliedUserId, parentCommentData;
 
   if (!commentText || !postId) {
     return res.status(400).json({ message: 'postId and commentText are required.' });
@@ -50,6 +50,7 @@ exports.createComment = async (req, res) => {
         parentComment.comment_reply_count += 1;
         await parentComment.save();
         repliedUserId = parentComment.userId;
+        parentCommentData = parentComment.commentText;
       }
     }
 
@@ -122,7 +123,7 @@ exports.createComment = async (req, res) => {
         relatedId: postId,
         type: 'comment',
         profileImage: repliedActorUser.profile_pic || '',
-        message: `${repliedActorUser.full_name} replied to your comment on ${reel ? 'reel' : 'post'}`,
+        message: `${repliedActorUser.full_name} replied to your comment on ${reel ? 'reel' : 'post'} - "${parentCommentData}"`,
         othersCount: 1, // optional column you can add
       });
 
