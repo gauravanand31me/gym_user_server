@@ -739,6 +739,7 @@ exports.getAllBuddiesWithWorkoutHours = async (req, res) => {
       SELECT 
         "Users"."id" AS "buddyId",
         "Users"."full_name" AS "buddyName",
+        "Users"."profile_pic" AS "profilePic",
         COALESCE(SUM("BookingCheckins"."duration"), 0) AS "totalWorkoutHours"
       FROM "BuddyRequests"
       JOIN "Users" ON "BuddyRequests"."toUserId" = "Users"."id"
