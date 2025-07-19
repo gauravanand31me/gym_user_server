@@ -122,8 +122,8 @@ exports.createComment = async (req, res) => {
         forUserId: fromUserId,  // 👈 ACTOR
         relatedId: postId,
         type: 'comment',
-        profileImage: repliedActorUser.profile_pic || '',
-        message: `${repliedActorUser.full_name} replied to your comment on ${reel ? 'reel' : 'post'} - "${parentCommentData}"`,
+        profileImage: actorUser.profile_pic || '',
+        message: `${actorUser.full_name} replied to your comment on ${reel ? 'reel' : 'post'} - "${parentCommentData}"`,
         othersCount: 1, // optional column you can add
       });
 
