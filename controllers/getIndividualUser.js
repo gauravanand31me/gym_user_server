@@ -423,7 +423,7 @@ exports.deleteReel = async (req, res) => {
     }
 
     // Step 2: Check ownership
-    if (reel.userId !== userId) {
+    if (reel.userId !== userId || userId === process.env.ADMIN_UUID) {
       return res.status(403).json({ success: false, message: 'You are not authorized to delete this reel.' });
     }
 
