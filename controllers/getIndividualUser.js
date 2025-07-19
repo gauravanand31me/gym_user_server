@@ -1389,7 +1389,7 @@ exports.getUserReels = async (req, res) => {
 
     const result = reels.map(reel => ({
       ...reel,
-      canDelete: reel.userId === loggedInUserId,
+      canDelete: reel.userId === loggedInUserId  || loggedInUserId === process.env.ADMIN_UUID,
       canReport: reel.userId !== loggedInUserId,
     }));
 
