@@ -292,7 +292,7 @@ exports.getAllBookingsByUser = async (req, res) => {
 
 // Create Order with custom bookingId and userId
 exports.createOrder = async (req, res) => {
-  const { amount, bookingId, requestId } = req.body; // Get amount from frontend
+  const { amount, bookingId, requestId, type } = req.body; // Get amount from frontend
 
 
   const userId = req.user.id;  // Assuming the user is authenticated and userId is available
@@ -313,6 +313,7 @@ exports.createOrder = async (req, res) => {
   const notes = {
     bookingId: bookingId, // Include bookingId in notes
     userId: userId, // Include userId in notes
+    type: type
 
   }
   if (requestId) {
