@@ -58,10 +58,6 @@ const Feed = sequelize.define('Feed', {
     type: DataTypes.TEXT,
     allowNull: true
   },
-  price: {
-    type: DataTypes.INTEGER,
-    allowNull: true
-  },
   imageUrl: {
     type: DataTypes.TEXT,
     allowNull: true
