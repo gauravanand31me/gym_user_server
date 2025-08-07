@@ -593,6 +593,34 @@ exports.razorPayWebhookPost = async (req, res) => {
 
 };
 
+
+exports.checkChallengePayment = async (req, res) => {
+  try {
+    const { challengeId } = req.query;
+    const userId = req.user.id;
+
+    if (!challengeId || !userId) {
+      return res.status(400).json({ success: false, message: 'Missing challengeId or userId' });
+    }
+
+    const payment = await ChallengePayment.findOne({
+      where: {
+        challengeId,
+        userId,
+      },
+    });
+
+    if (payment) {
+      return res.status(200).json({ success: true, paid: true });
+    } else {
+      return res.status(200).json({ success: true, paid: false });
+    }
+  } catch (error) {
+    console.error('Error checking challenge payment:', error);
+    return res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
 exports.getAllGymCoupons = async (req, res) => {
   try {
     const gymId = req.query.gym_id;
