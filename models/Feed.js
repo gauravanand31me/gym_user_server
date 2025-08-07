@@ -20,6 +20,11 @@ const Feed = sequelize.define('Feed', {
     type: DataTypes.ENUM('checkin', 'workoutInvite', 'milestone', 'questionPrompt', 'gymAd', 'aiPromo', 'general', 'then_now', 'meal', "challenge"),
     allowNull: false
   },
+  price: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    defaultValue: 0
+  },
   title: {
     type: DataTypes.STRING,
     allowNull: true
