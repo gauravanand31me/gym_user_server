@@ -1675,7 +1675,7 @@ exports.getMyFeed = async (req, res) => {
   SELECT
     f."id", f."userId", f."activityType", f."title", f."description", f."gymId",
     f."imageUrl", f."like_count", f."comment_count", f."report_count",
-    f."postType", f."mentionedUserIds", f."myBookmarks", f."timestamp", f."createdAt", f."updatedAt",
+    f."postType", f."mentionedUserIds", f."price", f."myBookmarks", f."timestamp", f."createdAt", f."updatedAt",
     u.full_name AS "user.full_name",
     u.profile_pic AS "user.profile_pic",
     g.name AS "gym.name",
