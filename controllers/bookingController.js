@@ -384,12 +384,12 @@ exports.razorPayWebhookPost = async (req, res) => {
   const receivedSignature = req.headers['x-razorpay-signature'];
   
   if (webhookData?.payload?.payment?.entity?.notes && "bookingId" in webhookData?.payload?.payment?.entity?.notes) {
-    const { bookingId, request, userId } = webhookData?.payload?.payment?.entity?.notes;
+    const { bookingId, request, userId, type } = webhookData?.payload?.payment?.entity?.notes;
     const bookingData = await Booking.findByPk(bookingId);
     const paymentId = webhookData?.payload?.payment?.entity?.id; // Extract the payment ID
 
     if (receivedSignature == digest) {
-      if (request) {
+      if (request && type !== "challenge") {
         // Find the booking that the requestId (bookingId) refers to
         const relatedBooking = await Booking.findByPk(request);
 
