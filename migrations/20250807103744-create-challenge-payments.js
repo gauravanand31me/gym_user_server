@@ -10,22 +10,12 @@ module.exports = {
         primaryKey: true,
       },
       challengeId: {
-        type: Sequelize.UUID,
+        type: Sequelize.STRING, // changed from UUID with reference to plain string
         allowNull: false,
-        references: {
-          model: 'Challenges', // adjust to your challenge table name
-          key: 'id',
-        },
-        onDelete: 'CASCADE',
       },
       userId: {
-        type: Sequelize.UUID,
+        type: Sequelize.STRING, // changed from UUID with reference to plain string
         allowNull: false,
-        references: {
-          model: 'Users', // adjust to your user table name
-          key: 'id',
-        },
-        onDelete: 'CASCADE',
       },
       paymentDate: {
         type: Sequelize.DATE,
