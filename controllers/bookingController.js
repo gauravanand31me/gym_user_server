@@ -11,6 +11,7 @@ const { v4: uuidv4 } = require('uuid');
 const { sendPushNotification } = require('../config/pushNotification');
 const PushNotification = require('../models/PushNotification');
 const Feed = require('../models/Feed');
+const ChallengePayment = require('../models/ChallengePayment');
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZOR_PAY_PAYMENT_KEY,
@@ -389,7 +390,8 @@ exports.razorPayWebhookPost = async (req, res) => {
     const paymentId = webhookData?.payload?.payment?.entity?.id; // Extract the payment ID
 
     if (receivedSignature == digest) {
-      if (request && type !== "challenge") {
+      if (type !== "challenge") {
+      if (request) {
         // Find the booking that the requestId (bookingId) refers to
         const relatedBooking = await Booking.findByPk(request);
 
@@ -479,6 +481,33 @@ exports.razorPayWebhookPost = async (req, res) => {
       };
 
       await sendPushNotification(notificationData?.expoPushToken, newnotificationTitle, data);
+    } else {
+
+
+      const existingPayment = await ChallengePayment.findOne({
+        where: {
+          userId,
+          challengeId: bookingId, // since you're passing challengeId as bookingId in notes
+        }
+      });
+    
+      if (!existingPayment) {
+        // Insert new ChallengePayment record
+        await ChallengePayment.create({
+          userId,
+          challengeId: bookingId,
+          paymentId,
+          paymentDate: new Date(),
+          amount: webhookData?.payload?.payment?.entity?.amount / 100, // Razorpay returns amount in paise
+          status: 'success'
+        });
+    
+        console.log(`✅ Challenge payment recorded for user ${userId}, challenge ${bookingId}`);
+      } else {
+        console.log(`⚠️ Challenge payment already exists for user ${userId}, challenge ${bookingId}`);
+      }
+      
+    }
 
 
 
