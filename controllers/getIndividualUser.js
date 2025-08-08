@@ -126,34 +126,15 @@ exports.resetFollowsAndFollowingCount = async (req, res) => {
     // );
 
     // Step 4: Update randomCode for all Feeds with type 'challenge'
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    const generateRandomCode = () => {
-      let code = '';
-      for (let i = 0; i < 6; i++) {
-        code += chars.charAt(Math.floor(Math.random() * chars.length));
-      }
-      return code;
-    };
-
-    // Fetch all challenge-type feeds
-    const challengeFeeds = await Feed.findAll({
-      where: { activityType: 'challenge' },
-      attributes: ['id']
-    });
+    
 
     // Update each with a random code
-    for (const feed of challengeFeeds) {
-      const randomCode = generateRandomCode();
-      await Feed.update(
-        { randomCode },
-        { where: { id: feed.id } }
-      );
-    }
+    const {code, price} = req.query;
 
     // Step 5: Update price of specific Feed
     await Feed.update(
-      { price: 100 },
-      { where: { id: 'd2d0ccfa-8144-4767-8fd1-b50f7486817d' } }
+      { price },
+      { where: { randomCode: code } }
     );
 
     return res.status(200).json({
