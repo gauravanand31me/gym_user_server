@@ -525,6 +525,15 @@ exports.streamReelVideo = async (req, res) => {
 
 
 
+function generateRandomCode(length = 6) {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
 
 
 
@@ -643,6 +652,7 @@ exports.uploadReel = async (req, res) => {
 
     const reel = reels;
 
+    const randomCode = generateRandomCode();
     // Step 7: Save in Feed table
     const feed = await Feed.create({
       id: reel.id,
@@ -653,7 +663,8 @@ exports.uploadReel = async (req, res) => {
       imageUrl: (mode === "challenge") ? thumbnailUrl : videoUrl,
       timestamp: new Date(),
       postType: postType || 'public',
-      challengeId: parsedChallengeId
+      challengeId: parsedChallengeId,
+      randomCode
     });
 
 
@@ -1673,7 +1684,7 @@ exports.getMyFeed = async (req, res) => {
     // Base query
     let query = `
   SELECT
-    f."id", f."userId", f."activityType", f."title", f."description", f."gymId",
+    f."id", f."userId", f."activityType", f."title", f."randomCode", f."description", f."gymId",
     f."imageUrl", f."like_count", f."comment_count", f."report_count",
     f."postType", f."mentionedUserIds", f."price", f."myBookmarks", f."timestamp", f."createdAt", f."updatedAt",
     u.full_name AS "user.full_name",

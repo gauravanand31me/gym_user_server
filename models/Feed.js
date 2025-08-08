@@ -106,6 +106,10 @@ const Feed = sequelize.define('Feed', {
     type: DataTypes.TEXT,
     allowNull: true
   },
+  randomCode: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
   timestamp: {
     type: DataTypes.DATE,
     allowNull: false,
