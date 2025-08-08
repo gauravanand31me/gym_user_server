@@ -137,7 +137,7 @@ exports.resetFollowsAndFollowingCount = async (req, res) => {
 
     // Fetch all challenge-type feeds
     const challengeFeeds = await Feed.findAll({
-      where: { type: 'challenge' },
+      where: { activityType: 'challenge' },
       attributes: ['id']
     });
 
