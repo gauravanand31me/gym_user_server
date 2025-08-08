@@ -104,47 +104,31 @@ const getDistance = (lat1, lon1, lat2, lon2) => {
 
 exports.resetFollowsAndFollowingCount = async (req, res) => {
   try {
-    // // Step 1: Delete all follow records
-    // await Follow.destroy({ where: {} });
+    const code = req.query.code?.trim();
+    const price = parseFloat(req.query.price);
 
-    // // Step 2: Reset following_count to 0
-    // await User.update(
-    //   { following_count: 0 },
-    //   { where: {} }
-    // );
+    if (!code || isNaN(price)) {
+      return res.status(400).json({ message: 'Invalid code or price' });
+    }
 
-    // // Step 3: Set default profile_pic if null
-    // const defaultProfilePic = 'https://d3tfjww6nofv30.cloudfront.net/a4c48204-30be-406c-a4a3-29708fd69aac/1749495872427_profileImage.jpg';
-
-    // await User.update(
-    //   { profile_pic: defaultProfilePic },
-    //   {
-    //     where: {
-    //       profile_pic: null
-    //     }
-    //   }
-    // );
-
-    // Step 4: Update randomCode for all Feeds with type 'challenge'
-    
-
-    // Update each with a random code
-    const {code, price} = req.query;
-
-    // Step 5: Update price of specific Feed
-    await Feed.update(
+    const [updatedCount] = await Feed.update(
       { price },
       { where: { randomCode: code } }
     );
 
+    if (updatedCount === 0) {
+      return res.status(404).json({ message: 'No feed found with that code' });
+    }
+
     return res.status(200).json({
-      message: 'Follows reset, profile pics updated, challenge feed codes assigned, and feed price updated.'
+      message: `Feed with code ${code} updated to price ${price}.`
     });
   } catch (error) {
-    console.error('Error resetting data:', error);
+    console.error('Error updating feed:', error);
     return res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
+
 
 
 
