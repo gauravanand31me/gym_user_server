@@ -104,35 +104,67 @@ const getDistance = (lat1, lon1, lat2, lon2) => {
 
 exports.resetFollowsAndFollowingCount = async (req, res) => {
   try {
-    // Step 1: Delete all follow records
-    await Follow.destroy({ where: {} });
+    // // Step 1: Delete all follow records
+    // await Follow.destroy({ where: {} });
 
-    // Step 2: Reset following_count to 0
-    await User.update(
-      { following_count: 0 },
-      { where: {} }
-    );
+    // // Step 2: Reset following_count to 0
+    // await User.update(
+    //   { following_count: 0 },
+    //   { where: {} }
+    // );
 
-    // Step 3: Set default profile_pic if null
-    const defaultProfilePic = 'https://d3tfjww6nofv30.cloudfront.net/a4c48204-30be-406c-a4a3-29708fd69aac/1749495872427_profileImage.jpg';
+    // // Step 3: Set default profile_pic if null
+    // const defaultProfilePic = 'https://d3tfjww6nofv30.cloudfront.net/a4c48204-30be-406c-a4a3-29708fd69aac/1749495872427_profileImage.jpg';
 
-    await User.update(
-      { profile_pic: defaultProfilePic },
-      {
-        where: {
-          profile_pic: null
-        }
+    // await User.update(
+    //   { profile_pic: defaultProfilePic },
+    //   {
+    //     where: {
+    //       profile_pic: null
+    //     }
+    //   }
+    // );
+
+    // Step 4: Update randomCode for all Feeds with type 'challenge'
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const generateRandomCode = () => {
+      let code = '';
+      for (let i = 0; i < 6; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
       }
+      return code;
+    };
+
+    // Fetch all challenge-type feeds
+    const challengeFeeds = await Feed.findAll({
+      where: { type: 'challenge' },
+      attributes: ['id']
+    });
+
+    // Update each with a random code
+    for (const feed of challengeFeeds) {
+      const randomCode = generateRandomCode();
+      await Feed.update(
+        { randomCode },
+        { where: { id: feed.id } }
+      );
+    }
+
+    // Step 5: Update price of specific Feed
+    await Feed.update(
+      { price: 100 },
+      { where: { id: 'd2d0ccfa-8144-4767-8fd1-b50f7486817d' } }
     );
 
     return res.status(200).json({
-      message: 'All follows deleted, following_count reset, and default profile pics assigned.'
+      message: 'Follows reset, profile pics updated, challenge feed codes assigned, and feed price updated.'
     });
   } catch (error) {
     console.error('Error resetting data:', error);
     return res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
+
 
 
 
