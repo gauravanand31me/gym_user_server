@@ -58,6 +58,10 @@ const Feed = sequelize.define('Feed', {
     type: DataTypes.TEXT,
     allowNull: true
   },
+  awards: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
   imageUrl: {
     type: DataTypes.TEXT,
     allowNull: true
