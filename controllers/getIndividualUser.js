@@ -1673,6 +1673,7 @@ exports.deletePost = async (req, res) => {
 exports.getMyFeed = async (req, res) => {
   const userId = req.query.user_id || req.user?.id;
   const type = req.query.type;
+  const mode = req.query.mode;
 
   try {
     const limit = parseInt(req.query.limit || 10);
@@ -1680,24 +1681,23 @@ exports.getMyFeed = async (req, res) => {
 
     // Base query
     let query = `
-  SELECT
-    f."id", f."userId", f."activityType", f."title", f."randomCode", f."awards", f."description", f."gymId",
-    f."imageUrl", f."like_count", f."comment_count", f."report_count",
-    f."postType", f."mentionedUserIds", f."price", f."myBookmarks", f."timestamp", f."createdAt", f."updatedAt",
-    u.full_name AS "user.full_name",
-    u.profile_pic AS "user.profile_pic",
-    g.name AS "gym.name",
-    COUNT(r."id") AS "reactionCount",
-    r2."videoUrl" AS "videoUrl",
-    r2."thumbnailUrl" AS "thumbnailUrl"
-  FROM "Feeds" f
-  LEFT JOIN "Users" u ON f."userId" = u.id
-  LEFT JOIN "Gyms" g ON f."gymId" = g.id
-  LEFT JOIN "PostReactions" r ON f."id" = r."postId"
-  LEFT JOIN "Reels" r2 ON r2."id" = f."id"
-  WHERE 1 = 1
-`;
-
+      SELECT
+        f."id", f."userId", f."activityType", f."title", f."randomCode", f."awards", f."description", f."gymId",
+        f."imageUrl", f."like_count", f."comment_count", f."report_count",
+        f."postType", f."mentionedUserIds", f."price", f."myBookmarks", f."timestamp", f."createdAt", f."updatedAt",
+        u.full_name AS "user.full_name",
+        u.profile_pic AS "user.profile_pic",
+        g.name AS "gym.name",
+        COUNT(r."id") AS "reactionCount",
+        r2."videoUrl" AS "videoUrl",
+        r2."thumbnailUrl" AS "thumbnailUrl"
+      FROM "Feeds" f
+      LEFT JOIN "Users" u ON f."userId" = u.id
+      LEFT JOIN "Gyms" g ON f."gymId" = g.id
+      LEFT JOIN "PostReactions" r ON f."id" = r."postId"
+      LEFT JOIN "Reels" r2 ON r2."id" = f."id"
+      WHERE 1 = 1
+    `;
 
     const replacements = { limit, offset };
 
@@ -1712,6 +1712,11 @@ exports.getMyFeed = async (req, res) => {
       replacements.type = type;
     }
 
+    // New condition for paid mode
+    if (mode === 'paid') {
+      query += ` AND f."price" > 0`;
+    }
+
     query += `
       GROUP BY f.id, u.id, g.id, r2."id"
       ORDER BY f."timestamp" DESC
@@ -1724,17 +1729,15 @@ exports.getMyFeed = async (req, res) => {
       nest: true,
     });
 
-
     console.log('Feed items sample:', feedItems[0]);
 
-
     return res.status(200).json({ feed: feedItems });
-
   } catch (error) {
     console.error('Error fetching my posts feed:', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
+
 
 
 
