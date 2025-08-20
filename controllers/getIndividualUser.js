@@ -1672,7 +1672,7 @@ exports.deletePost = async (req, res) => {
 
 exports.getMyFeed = async (req, res) => {
   const loggedInUserId = req.user?.id;
-  const requestedUserId = req.query.user_id; // optional user profile mode
+  const requestedUserId = req.query.user_id || req.user?.id; // optional user profile mode
   const type = req.query.type;
   const mode = req.query.mode;
 
@@ -1809,7 +1809,6 @@ exports.getMyFeed = async (req, res) => {
     return res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 };
-
 
 
 
