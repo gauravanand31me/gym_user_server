@@ -1777,9 +1777,15 @@ exports.getMyFeed = async (req, res) => {
 
     // === Extra filters ===
     if (type) {
-      query += ` AND f."activityType" = :type`;
-      replacements.type = type;
+      if (type === "participated") {
+        query += ` AND f."challengeId" IS NOT NULL AND f."userId" = :participatedUserId`;
+        replacements.participatedUserId = requestedUserId || loggedInUserId;
+      } else {
+        query += ` AND f."activityType" = :type`;
+        replacements.type = type;
+      }
     }
+    
     if (mode === 'paid') {
       query += ` AND f."price" > 0`;
     }
