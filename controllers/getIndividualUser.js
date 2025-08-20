@@ -1671,7 +1671,8 @@ exports.deletePost = async (req, res) => {
 
 
 exports.getMyFeed = async (req, res) => {
-  const userId = req.query.user_id || req.user?.id;
+  const loggedInUserId = req.user?.id;
+  const requestedUserId = req.query.user_id; // optional user profile mode
   const type = req.query.type;
   const mode = req.query.mode;
 
@@ -1681,40 +1682,40 @@ exports.getMyFeed = async (req, res) => {
 
     // === Get followings ===
     const followings = await Follow.findAll({
-      where: { followerId: userId },
+      where: { followerId: loggedInUserId },
       attributes: ['followingId'],
     });
     const followingIds = followings.map(f => f.followingId);
-    const idsArray = [userId, ...followingIds];
+    const idsArray = [loggedInUserId, ...followingIds];
 
     // === Get friends ===
     const friends = await FriendRequest.findAll({
       where: {
         status: 'accepted',
         [Sequelize.Op.or]: [
-          { fromUserId: userId },
-          { toUserId: userId },
+          { fromUserId: loggedInUserId },
+          { toUserId: loggedInUserId },
         ],
       },
     });
 
     const friendIds = new Set();
     friends.forEach(req => {
-      if (req.fromUserId !== userId) friendIds.add(req.fromUserId);
-      if (req.toUserId !== userId) friendIds.add(req.toUserId);
+      if (req.fromUserId !== loggedInUserId) friendIds.add(req.fromUserId);
+      if (req.toUserId !== loggedInUserId) friendIds.add(req.toUserId);
     });
-    friendIds.add(userId);
+    friendIds.add(loggedInUserId);
     const friendIdArray = Array.from(friendIds);
 
     // === Get blocked users ===
     const blockedBy = await Block.findAll({
-      where: { blockingId: userId },
+      where: { blockingId: loggedInUserId },
       attributes: ['blockerId'],
     });
     const blockedByIds = blockedBy.map(b => b.blockerId);
 
     const userBlocked = await Block.findAll({
-      where: { blockerId: userId },
+      where: { blockerId: loggedInUserId },
       attributes: ['blockingId'],
     });
     const userBlockedIds = userBlocked.map(b => b.blockingId);
@@ -1724,7 +1725,7 @@ exports.getMyFeed = async (req, res) => {
     // === Build visibility conditions ===
     const visibilityConditions = [
       `f."postType" = 'public'`,
-      `(f."userId" = :userId)` // 👈 allow user to always see their own posts
+      `(f."userId" = :loggedInUserId)` // always see own posts
     ];
     if (followingIds.length > 0) {
       visibilityConditions.push(`(f."postType" = 'private' AND f."userId" IN (:ids))`);
@@ -1762,11 +1763,17 @@ exports.getMyFeed = async (req, res) => {
     const replacements = {
       limit,
       offset,
-      userId,
+      loggedInUserId,
       ids: idsArray,
       friendIds: friendIdArray,
       ...(excludedUserIds.length && { excludedUserIds }),
     };
+
+    // === Profile mode (specific user_id requested) ===
+    if (requestedUserId) {
+      query += ` AND f."userId" = :requestedUserId`;
+      replacements.requestedUserId = requestedUserId;
+    }
 
     // === Extra filters ===
     if (type) {
@@ -1791,9 +1798,9 @@ exports.getMyFeed = async (req, res) => {
 
     const feedItemsWithPermissions = feedItems.map(feed => ({
       ...feed,
-      canDelete: feed.userId === userId || userId === process.env.ADMIN_UUID,
-      canReport: feed.userId !== userId,
-      isSaved: feed.myBookmarks?.indexOf(userId) > -1
+      canDelete: feed.userId === loggedInUserId || loggedInUserId === process.env.ADMIN_UUID,
+      canReport: feed.userId !== loggedInUserId,
+      isSaved: feed.myBookmarks?.indexOf(loggedInUserId) > -1
     }));
 
     return res.status(200).json({ feed: feedItemsWithPermissions });
