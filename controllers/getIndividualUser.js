@@ -1679,7 +1679,66 @@ exports.getMyFeed = async (req, res) => {
     const limit = parseInt(req.query.limit || 10);
     const offset = parseInt(req.query.offset || 0);
 
-    // Base query
+    // === Get followings ===
+    const followings = await Follow.findAll({
+      where: { followerId: userId },
+      attributes: ['followingId'],
+    });
+    const followingIds = followings.map(f => f.followingId);
+    const idsArray = [userId, ...followingIds];
+
+    // === Get friends ===
+    const friends = await FriendRequest.findAll({
+      where: {
+        status: 'accepted',
+        [Sequelize.Op.or]: [
+          { fromUserId: userId },
+          { toUserId: userId },
+        ],
+      },
+    });
+
+    const friendIds = new Set();
+    friends.forEach(req => {
+      if (req.fromUserId !== userId) friendIds.add(req.fromUserId);
+      if (req.toUserId !== userId) friendIds.add(req.toUserId);
+    });
+    friendIds.add(userId);
+    const friendIdArray = Array.from(friendIds);
+
+    // === Get blocked users ===
+    const blockedBy = await Block.findAll({
+      where: { blockingId: userId },
+      attributes: ['blockerId'],
+    });
+    const blockedByIds = blockedBy.map(b => b.blockerId);
+
+    const userBlocked = await Block.findAll({
+      where: { blockerId: userId },
+      attributes: ['blockingId'],
+    });
+    const userBlockedIds = userBlocked.map(b => b.blockingId);
+
+    const excludedUserIds = [...new Set([...blockedByIds, ...userBlockedIds])];
+
+    // === Build visibility conditions ===
+    const visibilityConditions = [
+      `f."postType" = 'public'`,
+      `(f."userId" = :userId)` // 👈 allow user to always see their own posts
+    ];
+    if (followingIds.length > 0) {
+      visibilityConditions.push(`(f."postType" = 'private' AND f."userId" IN (:ids))`);
+    }
+    if (friendIdArray.length > 0) {
+      visibilityConditions.push(`(f."postType" = 'onlyme' AND f."userId" IN (:friendIds))`);
+    }
+
+    // === Exclude blocked users ===
+    const excludeCondition = excludedUserIds.length
+      ? `AND f."userId" NOT IN (:excludedUserIds)`
+      : '';
+
+    // === Base query ===
     let query = `
       SELECT
         f."id", f."userId", f."activityType", f."title", f."randomCode", f."awards", f."description", f."gymId",
@@ -1696,23 +1755,24 @@ exports.getMyFeed = async (req, res) => {
       LEFT JOIN "Gyms" g ON f."gymId" = g.id
       LEFT JOIN "PostReactions" r ON f."id" = r."postId"
       LEFT JOIN "Reels" r2 ON r2."id" = f."id"
-      WHERE 1 = 1
+      WHERE (${visibilityConditions.join(' OR ')})
+      ${excludeCondition}
     `;
 
-    const replacements = { limit, offset };
+    const replacements = {
+      limit,
+      offset,
+      userId,
+      ids: idsArray,
+      friendIds: friendIdArray,
+      ...(excludedUserIds.length && { excludedUserIds }),
+    };
 
-    // Add condition only if type is not 'challenge'
-    if (type !== 'challenge') {
-      query += ` AND f."userId" = :userId`;
-      replacements.userId = userId;
-    }
-
+    // === Extra filters ===
     if (type) {
       query += ` AND f."activityType" = :type`;
       replacements.type = type;
     }
-
-    // New condition for paid mode
     if (mode === 'paid') {
       query += ` AND f."price" > 0`;
     }
@@ -1729,14 +1789,20 @@ exports.getMyFeed = async (req, res) => {
       nest: true,
     });
 
-    console.log('Feed items sample:', feedItems[0]);
+    const feedItemsWithPermissions = feedItems.map(feed => ({
+      ...feed,
+      canDelete: feed.userId === userId || userId === process.env.ADMIN_UUID,
+      canReport: feed.userId !== userId,
+      isSaved: feed.myBookmarks?.indexOf(userId) > -1
+    }));
 
-    return res.status(200).json({ feed: feedItems });
+    return res.status(200).json({ feed: feedItemsWithPermissions });
   } catch (error) {
     console.error('Error fetching my posts feed:', error);
-    return res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 };
+
 
 
 
