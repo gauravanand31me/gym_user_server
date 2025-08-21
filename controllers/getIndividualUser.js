@@ -1750,7 +1750,10 @@ exports.getMyFeed = async (req, res) => {
         g.name AS "gym.name",
         COUNT(r."id") AS "reactionCount",
         r2."videoUrl" AS "videoUrl",
-        r2."thumbnailUrl" AS "thumbnailUrl"
+        r2."thumbnailUrl" AS "thumbnailUrl",
+        r2."hashtags" AS "reelTags",
+        r2."challengeId" AS "challengeId",
+
       FROM "Feeds" f
       LEFT JOIN "Users" u ON f."userId" = u.id
       LEFT JOIN "Gyms" g ON f."gymId" = g.id
@@ -1785,7 +1788,7 @@ exports.getMyFeed = async (req, res) => {
         replacements.type = type;
       }
     }
-    
+
     if (mode === 'paid') {
       query += ` AND f."price" > 0`;
     }
