@@ -1752,8 +1752,7 @@ exports.getMyFeed = async (req, res) => {
         r2."videoUrl" AS "videoUrl",
         r2."thumbnailUrl" AS "thumbnailUrl",
         r2."hashtags" AS "reelTags",
-        r2."challengeId" AS "challengeId",
-
+        r2."challengeId" AS "challengeId"
       FROM "Feeds" f
       LEFT JOIN "Users" u ON f."userId" = u.id
       LEFT JOIN "Gyms" g ON f."gymId" = g.id
