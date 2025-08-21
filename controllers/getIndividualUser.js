@@ -1770,11 +1770,11 @@ exports.getMyFeed = async (req, res) => {
       friendIds: friendIdArray,
       ...(excludedUserIds.length && { excludedUserIds }),
     };
-
+    
     // === Profile mode (specific user_id requested) ===
     if (requestedUserId) {
       query += ` AND f."userId" = :requestedUserId`;
-      replacements.requestedUserId = requestedUserId;
+      replacements.requestedUserId = requestedUserId || loggedInUserId;
     }
 
     // === Extra filters ===
@@ -1811,6 +1811,7 @@ exports.getMyFeed = async (req, res) => {
       isSaved: feed.myBookmarks?.indexOf(loggedInUserId) > -1
     }));
 
+    console.log("feedItemsWithPermissions", feedItemsWithPermissions);
     return res.status(200).json({ feed: feedItemsWithPermissions });
   } catch (error) {
     console.error('Error fetching my posts feed:', error);
