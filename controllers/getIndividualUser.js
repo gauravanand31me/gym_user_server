@@ -1772,9 +1772,9 @@ exports.getMyFeed = async (req, res) => {
     };
     
     // === Profile mode (specific user_id requested) ===
-    if (requestedUserId) {
-      query += ` AND f."userId" = :requestedUserId`;
-      replacements.requestedUserId = requestedUserId || loggedInUserId;
+    if (type !== 'challenge') {
+      query += ` AND f."userId" = :userId`;
+      replacements.userId = requestedUserId;
     }
 
     // === Extra filters ===
