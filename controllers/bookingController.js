@@ -12,6 +12,7 @@ const { sendPushNotification } = require('../config/pushNotification');
 const PushNotification = require('../models/PushNotification');
 const Feed = require('../models/Feed');
 const ChallengePayment = require('../models/ChallengePayment');
+const Reel = require('../models/Reel');
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZOR_PAY_PAYMENT_KEY,
@@ -603,6 +604,7 @@ exports.checkChallengePayment = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Missing challengeId or userId' });
     }
 
+    // Check if payment exists
     const payment = await ChallengePayment.findOne({
       where: {
         challengeId,
@@ -610,16 +612,26 @@ exports.checkChallengePayment = async (req, res) => {
       },
     });
 
-    if (payment) {
-      return res.status(200).json({ success: true, paid: true });
-    } else {
-      return res.status(200).json({ success: true, paid: false });
-    }
+    // Check if reel already uploaded for this challenge
+    const reel = await Reel.findOne({
+      where: {
+        challengeId,
+        userId,
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      paid: !!payment,
+      uploaded: !!reel,
+    });
+
   } catch (error) {
-    console.error('Error checking challenge payment:', error);
+    console.error('Error checking challenge payment/upload:', error);
     return res.status(500).json({ success: false, message: 'Server error' });
   }
 };
+
 
 exports.getAllGymCoupons = async (req, res) => {
   try {
