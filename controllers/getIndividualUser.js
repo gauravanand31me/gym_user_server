@@ -1781,7 +1781,7 @@ exports.getMyFeed = async (req, res) => {
     if (type) {
       if (type === "participated") {
         query += ` AND f."challengeId" IS NOT NULL AND f."userId" = :participatedUserId`;
-        replacements.participatedUserId = requestedUserId || loggedInUserId;
+        replacements.participatedUserId = requestedUserId;
       } else {
         query += ` AND f."activityType" = :type`;
         replacements.type = type;
