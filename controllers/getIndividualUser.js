@@ -1368,7 +1368,7 @@ exports.getUserFeed = async (req, res) => {
           r."thumbnailUrl" AS "thumbnailUrl",
           r."hashtags" AS "reelTags",
           r."challengeId" AS "challengeId",
-          r."processing" AS "processing"
+          r."processing" AS "processing",
           CASE WHEN ur."reactionType" = 'like' THEN true ELSE false END AS "userLiked"
         FROM "Feeds" f
         LEFT JOIN "Users" u ON f."userId" = u.id
