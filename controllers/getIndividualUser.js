@@ -550,6 +550,7 @@ function generateRandomCode(length = 6) {
 
 
 
+
 exports.uploadReel = async (req, res) => {
   console.log('🤖 Reel upload started');
 
@@ -592,7 +593,7 @@ exports.uploadReel = async (req, res) => {
     const randomCode = generateRandomCode();
 
     const feed = await Feed.create({
-      id: reel.id,
+      id: createdReel.id,
       userId,
       activityType: (mode === "challenge") ? "challenge" : 'aiPromo',
       title: title || 'AI Promotional Video 🤖',
