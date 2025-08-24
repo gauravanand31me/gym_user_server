@@ -550,7 +550,7 @@ function generateRandomCode(length = 6) {
 
 
 exports.uploadReel = async (req, res) => {
-  console.log('🤖 AI Promo upload started');
+  console.log('🤖 Reel upload started');
 
   if (!req.file) {
     return res.status(400).json({ success: false, message: 'Video file is required.' });
@@ -565,43 +565,7 @@ exports.uploadReel = async (req, res) => {
   const finalThumbnailWebp = rawThumbnailJpg.replace(/\.jpg$/, '.webp');
 
   try {
-    // Step 1: Run compression + thumbnail extraction in parallel
-    await Promise.all([
-      compressVideo(uploadedFilePath, compressedFilePath),
-      generateThumbnail(uploadedFilePath, rawThumbnailJpg),
-    ]);
-
-    // Step 2: Convert thumbnail JPG → WebP
-    await sharp(rawThumbnailJpg)
-      .webp({ quality: 90 })
-      .toFile(finalThumbnailWebp);
-    fs.unlinkSync(rawThumbnailJpg);
-
-    // Step 3: Upload both to S3 in parallel
-    const thumbnailKey = `reels/thumbnails/${Date.now()}-thumbnail.webp`;
-    const s3Key = `reels/${Date.now()}-compressed.mp4`;
-
-    const [_, __] = await Promise.all([
-      s3Client.send(new PutObjectCommand({
-        Bucket: process.env.AWS_S3_BUCKET_NAME,
-        Key: thumbnailKey,
-        Body: fs.createReadStream(finalThumbnailWebp),
-        ContentType: 'image/webp',
-        CacheControl: 'public, max-age=31536000',
-      })),
-      s3Client.send(new PutObjectCommand({
-        Bucket: process.env.AWS_S3_BUCKET_NAME,
-        Key: s3Key,
-        Body: fs.createReadStream(compressedFilePath),
-        ContentType: 'video/mp4',
-        CacheControl: 'public, max-age=31536000',
-      })),
-    ]);
-
-    const thumbnailUrl = `https://${process.env.CLOUDFRONT_URL}/${thumbnailKey}`;
-    const videoUrl = `https://${process.env.CLOUDFRONT_URL}/${s3Key}`;
-
-    // Step 4: Save in DB
+    // Step 1: Insert Reel immediately with processing = true
     const parsedChallengeId =
       challengeId && challengeId !== 'undefined' && challengeId !== 'null'
         ? challengeId
@@ -609,8 +573,8 @@ exports.uploadReel = async (req, res) => {
 
     const createdReel = await Reel.create({
       userId,
-      videoUrl,
-      thumbnailUrl,
+      videoUrl: null, // not ready yet
+      thumbnailUrl: null,
       title: title || null,
       description: description || null,
       postType: postType || 'public',
@@ -619,54 +583,72 @@ exports.uploadReel = async (req, res) => {
       link,
       challengeId: parsedChallengeId,
       timestamp: new Date(),
+      processing: true, // mark as processing
     });
 
-    const [reels] = await sequelize.query(`
-      SELECT 
-        r.*, 
-        u.id AS "user.id", 
-        u.username AS "user.username", 
-        u.full_name AS "user.full_name", 
-        u.profile_pic AS "user.profile_pic"
-      FROM "Reels" r
-      LEFT JOIN "Users" u ON r."userId" = u.id
-      WHERE r.id = :reelId
-    `, {
-      replacements: { reelId: createdReel.id },
-      type: sequelize.QueryTypes.SELECT,
-      nest: true,
-    });
+    // Immediately respond to client so they don’t wait for ffmpeg
+    res.status(201).json({ success: true, reel: createdReel, message: "Video is processing" });
 
-    const reel = reels;
-    const randomCode = generateRandomCode();
+    // Step 2: Process in background
+    (async () => {
+      try {
+        await Promise.all([
+          compressVideo(uploadedFilePath, compressedFilePath),
+          generateThumbnail(uploadedFilePath, rawThumbnailJpg),
+        ]);
 
-    const feed = await Feed.create({
-      id: reel.id,
-      userId,
-      activityType: (mode === "challenge") ? "challenge" : 'aiPromo',
-      title: title || 'AI Promotional Video 🤖',
-      description: description || null,
-      imageUrl: (mode === "challenge") ? thumbnailUrl : videoUrl,
-      timestamp: new Date(),
-      postType: postType || 'public',
-      challengeId: parsedChallengeId,
-      randomCode
-    });
+        await sharp(rawThumbnailJpg)
+          .webp({ quality: 90 })
+          .toFile(finalThumbnailWebp);
+        fs.unlinkSync(rawThumbnailJpg);
 
-    // ... your notification logic unchanged ...
+        const thumbnailKey = `reels/thumbnails/${Date.now()}-thumbnail.webp`;
+        const s3Key = `reels/${Date.now()}-compressed.mp4`;
 
-    res.status(201).json({ success: true, feed, reel });
+        await Promise.all([
+          s3Client.send(new PutObjectCommand({
+            Bucket: process.env.AWS_S3_BUCKET_NAME,
+            Key: thumbnailKey,
+            Body: fs.createReadStream(finalThumbnailWebp),
+            ContentType: 'image/webp',
+            CacheControl: 'public, max-age=31536000',
+          })),
+          s3Client.send(new PutObjectCommand({
+            Bucket: process.env.AWS_S3_BUCKET_NAME,
+            Key: s3Key,
+            Body: fs.createReadStream(compressedFilePath),
+            ContentType: 'video/mp4',
+            CacheControl: 'public, max-age=31536000',
+          })),
+        ]);
+
+        const thumbnailUrl = `https://${process.env.CLOUDFRONT_URL}/${thumbnailKey}`;
+        const videoUrl = `https://${process.env.CLOUDFRONT_URL}/${s3Key}`;
+
+        // Step 3: Update DB when processing complete
+        await createdReel.update({
+          videoUrl,
+          thumbnailUrl,
+          processing: false,
+        });
+
+        console.log(`✅ Processing complete for Reel ${createdReel.id}`);
+      } catch (err) {
+        console.error(`❌ Processing failed for Reel ${createdReel.id}:`, err);
+        await createdReel.update({ processing: false }); // prevent stuck state
+      } finally {
+        [uploadedFilePath, compressedFilePath, rawThumbnailJpg, finalThumbnailWebp].forEach(f => {
+          try { if (fs.existsSync(f)) fs.unlinkSync(f); } catch { }
+        });
+      }
+    })();
 
   } catch (err) {
-    console.error('❌ AI Promo upload failed:', err);
+    console.error('❌ Upload error:', err);
     res.status(500).json({ success: false, message: 'Internal Server Error' });
-  } finally {
-    // Cleanup
-    [uploadedFilePath, compressedFilePath, rawThumbnailJpg, finalThumbnailWebp].forEach(f => {
-      try { if (fs.existsSync(f)) fs.unlinkSync(f); } catch { }
-    });
   }
 };
+
 
 
 
