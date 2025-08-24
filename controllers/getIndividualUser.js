@@ -573,7 +573,7 @@ exports.uploadReel = async (req, res) => {
 
     const createdReel = await Reel.create({
       userId,
-      videoUrl: null, // not ready yet
+      videoUrl: `https://${process.env.CLOUDFRONT_URL}/reels/upload_progress.mp4`, // not ready yet
       thumbnailUrl: null,
       title: title || null,
       description: description || null,
@@ -1368,6 +1368,7 @@ exports.getUserFeed = async (req, res) => {
           r."thumbnailUrl" AS "thumbnailUrl",
           r."hashtags" AS "reelTags",
           r."challengeId" AS "challengeId",
+          r."processing" AS "processing"
           CASE WHEN ur."reactionType" = 'like' THEN true ELSE false END AS "userLiked"
         FROM "Feeds" f
         LEFT JOIN "Users" u ON f."userId" = u.id
@@ -1628,7 +1629,8 @@ exports.getMyFeed = async (req, res) => {
         r2."videoUrl" AS "videoUrl",
         r2."thumbnailUrl" AS "thumbnailUrl",
         r2."hashtags" AS "reelTags",
-        r2."challengeId" AS "challengeId"
+        r2."challengeId" AS "challengeId",
+        r2."processing" AS "processing"
       FROM "Feeds" f
       LEFT JOIN "Users" u ON f."userId" = u.id
       LEFT JOIN "Gyms" g ON f."gymId" = g.id
