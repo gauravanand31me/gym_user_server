@@ -75,6 +75,11 @@ const Reel = sequelize.define('Reel', {
     type: DataTypes.STRING,
     allowNull: true,
   },
+  processing: {
+    type: DataTypes.BOOLEAN,
+    allowNull: true,
+    defaultValue: false,
+  },
   timestamp: {
     type: DataTypes.DATE,
     allowNull: false,
