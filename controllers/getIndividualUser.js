@@ -549,6 +549,7 @@ function generateRandomCode(length = 6) {
 
 
 
+
 exports.uploadReel = async (req, res) => {
   console.log('🤖 Reel upload started');
 
@@ -586,8 +587,25 @@ exports.uploadReel = async (req, res) => {
       processing: true, // mark as processing
     });
 
+
+
+    const randomCode = generateRandomCode();
+
+    const feed = await Feed.create({
+      id: reel.id,
+      userId,
+      activityType: (mode === "challenge") ? "challenge" : 'aiPromo',
+      title: title || 'AI Promotional Video 🤖',
+      description: description || null,
+      imageUrl: (mode === "challenge") ? `https://${process.env.CLOUDFRONT_URL}/reels/thumbnails/upload_progress.png` : `https://${process.env.CLOUDFRONT_URL}/reels/upload_progress.mp4`,
+      timestamp: new Date(),
+      postType: postType || 'public',
+      challengeId: parsedChallengeId,
+      randomCode
+    });
+
     // Immediately respond to client so they don’t wait for ffmpeg
-    res.status(201).json({ success: true, reel: createdReel, message: "Video is processing" });
+    res.status(201).json({ success: true, reel: createdReel, feed: feed, message: "Video is processing" });
 
     // Step 2: Process in background
     (async () => {
@@ -632,6 +650,10 @@ exports.uploadReel = async (req, res) => {
           processing: false,
         });
 
+        await feed.update({
+          imageUrl: (mode === "challenge") ? thumbnailUrl : videoUrl,
+        });
+
         console.log(`✅ Processing complete for Reel ${createdReel.id}`);
       } catch (err) {
         console.error(`❌ Processing failed for Reel ${createdReel.id}:`, err);
@@ -648,7 +670,6 @@ exports.uploadReel = async (req, res) => {
     res.status(500).json({ success: false, message: 'Internal Server Error' });
   }
 };
-
 
 
 
@@ -1368,7 +1389,6 @@ exports.getUserFeed = async (req, res) => {
           r."thumbnailUrl" AS "thumbnailUrl",
           r."hashtags" AS "reelTags",
           r."challengeId" AS "challengeId",
-          r."processing" AS "processing",
           CASE WHEN ur."reactionType" = 'like' THEN true ELSE false END AS "userLiked"
         FROM "Feeds" f
         LEFT JOIN "Users" u ON f."userId" = u.id
@@ -1629,8 +1649,7 @@ exports.getMyFeed = async (req, res) => {
         r2."videoUrl" AS "videoUrl",
         r2."thumbnailUrl" AS "thumbnailUrl",
         r2."hashtags" AS "reelTags",
-        r2."challengeId" AS "challengeId",
-        r2."processing" AS "processing"
+        r2."challengeId" AS "challengeId"
       FROM "Feeds" f
       LEFT JOIN "Users" u ON f."userId" = u.id
       LEFT JOIN "Gyms" g ON f."gymId" = g.id
