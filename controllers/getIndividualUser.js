@@ -573,7 +573,7 @@ exports.uploadReel = async (req, res) => {
 
     const createdReel = await Reel.create({
       userId,
-      videoUrl: null, // not ready yet
+      videoUrl: `https://${process.env.CLOUDFRONT_URL}/reels/upload_progress.mp4`, // not ready yet
       thumbnailUrl: null,
       title: title || null,
       description: description || null,
