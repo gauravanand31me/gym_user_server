@@ -49,5 +49,5 @@ router.get('/stream-reel/*',  authMiddleware,  streamReelVideo);
 router.put('/tag',  authMiddleware,  mentionFriendsInChallenge);
 router.put('/save',  authMiddleware,  saveChallengeForUser);
 router.get('/stats',  authMiddleware,  getChallengeStats);
-router.get('/push',  authMiddleware,  PushNotification);
+router.get('/push',  PushNotification);
 module.exports = router;
