@@ -7,7 +7,7 @@ const { reactToPost, getPostReactions } = require('../controllers/PostReaction')
 const { createComment, deleteComment, getCommentsByPost } = require('../controllers/createComment');
 const uploadVideo = require('../middleware/uploadVideo');
 const { getFollowers } = require('../controllers/friendRequest');
-const PushNotification = require('../models/PushNotification');
+const { sendPushNotificationToAll } = require('../controllers/pushNotification');
 const router = express.Router();
 
 router.get('/nearby-users', authMiddleware, searchUsersByUsernameOrLocation);
@@ -49,5 +49,5 @@ router.get('/stream-reel/*',  authMiddleware,  streamReelVideo);
 router.put('/tag',  authMiddleware,  mentionFriendsInChallenge);
 router.put('/save',  authMiddleware,  saveChallengeForUser);
 router.get('/stats',  authMiddleware,  getChallengeStats);
-router.get('/push',  PushNotification);
+router.get('/push',  sendPushNotificationToAll);
 module.exports = router;
