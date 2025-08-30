@@ -18,21 +18,17 @@ async function sendNotification() {
     console.log("🔔 Sending push notification to all users with tokens...");
     console.log("Message:", message);
 
-    // ✅ Fetch all registered push tokens (only non-null ones)
+    // 🔄 Modified this block to include ALL tokens (even null ones)
     const pushTokens = await PushNotification.findAll({
-      where: {
-        expoPushToken: {
-          [Op.ne]: null,
-        },
-      },
+      // Removed filter: where: { expoPushToken: { [Op.ne]: null } }
       attributes: ["expoPushToken", "userId"],
     });
 
     const totalTokens = pushTokens.length;
-    console.log(`📦 Found ${totalTokens} push token(s) in the database.`);
+    console.log(`📦 Found ${totalTokens} push token(s) in the database (including nulls).`);
 
     if (totalTokens === 0) {
-      console.log("⚠️ No valid push tokens found.");
+      console.log("⚠️ No push token records found.");
       process.exit(0);
     }
 
@@ -43,6 +39,9 @@ async function sendNotification() {
     for (const tokenObj of pushTokens) {
       const token = tokenObj.expoPushToken;
       const userId = tokenObj.userId;
+
+      // ✅ Log all userId/token pairs, even null
+      console.log(`👤 userId: ${userId}, token: ${token}`);
 
       if (token && typeof token === "string" && token.trim() !== "") {
         await sendPushNotification(token, {
