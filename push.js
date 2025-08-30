@@ -2,6 +2,7 @@
 const sequelize = require("./config/db");
 const PushNotification = require("./models/PushNotification");
 const { sendPushNotification } = require("./config/pushNotification");
+const { Op } = require("sequelize"); // ✅ Needed for filtering
 
 async function sendNotification() {
   try {
@@ -17,28 +18,48 @@ async function sendNotification() {
     console.log("🔔 Sending push notification to all users with tokens...");
     console.log("Message:", message);
 
-    // ✅ Fetch all registered push tokens
+    // ✅ Fetch all registered push tokens (only non-null ones)
     const pushTokens = await PushNotification.findAll({
+      where: {
+        expoPushToken: {
+          [Op.ne]: null,
+        },
+      },
       attributes: ["expoPushToken", "userId"],
     });
 
-    if (pushTokens.length === 0) {
-      console.log("⚠️ No push tokens found in the database.");
+    const totalTokens = pushTokens.length;
+    console.log(`📦 Found ${totalTokens} push token(s) in the database.`);
+
+    if (totalTokens === 0) {
+      console.log("⚠️ No valid push tokens found.");
       process.exit(0);
     }
 
+    let sentCount = 0;
+    let skippedCount = 0;
+
     // ✅ Send push notifications
     for (const tokenObj of pushTokens) {
-      if (tokenObj.expoPushToken) {
-        await sendPushNotification(tokenObj.expoPushToken, {
+      const token = tokenObj.expoPushToken;
+      const userId = tokenObj.userId;
+
+      if (token && typeof token === "string" && token.trim() !== "") {
+        await sendPushNotification(token, {
           title: "📢 Announcement",
           body: message,
         });
-        console.log(`📨 Sent push to userId ${tokenObj.userId}`);
+        console.log(`📨 Sent push to userId ${userId}`);
+        sentCount++;
+      } else {
+        console.log(`⏭️ Skipped userId ${userId} due to invalid token`);
+        skippedCount++;
       }
     }
 
-    console.log(`✅ Push notifications sent to ${pushTokens.length} users.`);
+    console.log(`✅ Push notifications sent: ${sentCount}`);
+    console.log(`🚫 Skipped users (invalid/missing tokens): ${skippedCount}`);
+    console.log("🎉 Done.");
     process.exit(0);
 
   } catch (error) {
