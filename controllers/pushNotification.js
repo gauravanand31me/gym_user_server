@@ -22,7 +22,7 @@ exports.sendPushNotificationToAll = async (req, res) => {
 
     // 🧍‍♂️ Fetch all users
     const users = await User.findAll({
-      attributes: ["id", "name", "username", "email"], // Add or remove fields as needed
+      attributes: ["id", "full_name"], // Add or remove fields as needed
     });
 
     const totalUsers = users.length;
@@ -47,9 +47,7 @@ exports.sendPushNotificationToAll = async (req, res) => {
       // 📝 Track user and token in response
       usersList.push({
         userId,
-        name: user.name,
-        username: user.username,
-        email: user.email,
+        name: user.full_name,
         expoPushToken: token,
       });
 
