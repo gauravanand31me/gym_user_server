@@ -1,11 +1,14 @@
 // controllers/notificationController.js
+
+const User = require("../models/User");
 const PushNotification = require("../models/PushNotification");
 const { sendPushNotification } = require("../config/pushNotification");
 
 exports.sendPushNotificationToAll = async (req, res) => {
   const { title, message } = req.query;
 
-  if (!message || !title) {
+  // 🔒 Validate query params
+  if (!title || !message) {
     return res.status(400).json({
       success: false,
       error: "Missing required query parameters: 'title' and 'message'",
@@ -17,24 +20,40 @@ exports.sendPushNotificationToAll = async (req, res) => {
     console.log("Title:", title);
     console.log("Message:", message);
 
-    // Fetch all records (including those with null tokens)
-    const pushTokens = await PushNotification.findAll({
-      attributes: ["expoPushToken", "userId"],
+    // 🧍‍♂️ Fetch all users
+    const users = await User.findAll({
+      attributes: ["id", "name", "username", "email"], // Add or remove fields as needed
     });
 
-    const totalTokens = pushTokens.length;
-    console.log(`📦 Found ${totalTokens} record(s) in the database (including nulls).`);
+    const totalUsers = users.length;
+    console.log(`👥 Found ${totalUsers} user(s) in the database.`);
 
     let sentCount = 0;
     let skippedCount = 0;
     const usersList = [];
 
-    for (const tokenObj of pushTokens) {
-      const token = tokenObj.expoPushToken;
-      const userId = tokenObj.userId;
+    // 🔁 Iterate over users and get their push tokens
+    for (const user of users) {
+      const userId = user.id;
 
-      usersList.push({ userId, expoPushToken: token });
+      // 🧠 Fetch token for this user from PushNotification table
+      const tokenEntry = await PushNotification.findOne({
+        where: { userId },
+        attributes: ["expoPushToken"],
+      });
 
+      const token = tokenEntry?.expoPushToken || null;
+
+      // 📝 Track user and token in response
+      usersList.push({
+        userId,
+        name: user.name,
+        username: user.username,
+        email: user.email,
+        expoPushToken: token,
+      });
+
+      // ✅ Send if token is valid
       if (token && typeof token === "string" && token.trim() !== "") {
         await sendPushNotification(token, {
           title,
@@ -43,20 +62,22 @@ exports.sendPushNotificationToAll = async (req, res) => {
         console.log(`📨 Sent push to userId ${userId}`);
         sentCount++;
       } else {
-        console.log(`⏭️ Skipped userId ${userId} due to invalid token`);
+        console.log(`⏭️ Skipped userId ${userId} due to invalid or missing token`);
         skippedCount++;
       }
     }
 
+    // 📦 Send final response
     return res.status(200).json({
       success: true,
       title,
       message,
-      total: totalTokens,
+      totalUsers,
       sent: sentCount,
       skipped: skippedCount,
       users: usersList,
     });
+
   } catch (error) {
     console.error("❌ Error sending push notifications:", error);
     return res.status(500).json({
