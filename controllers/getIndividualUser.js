@@ -1730,9 +1730,15 @@ exports.uploadFeed = async (req, res) => {
     let activityType = "questionPrompt";
 
     let mentionIds = [];
-    console.log("mentions", mentions);
     if (mentions) {
-      mentionIds = JSON.parse(mentions);
+      try {
+        mentionIds = JSON.parse(mentions);
+        if (!Array.isArray(mentionIds)) {
+          return res.status(400).json({ success: false, message: "Invalid input: mentions must be an array." });
+        }
+      } catch (error) {
+        return res.status(400).json({ success: false, message: "Invalid mentions format." });
+      }
     }
 
     if (mode === "then_and_now") activityType = "then_now";
@@ -1742,11 +1748,10 @@ exports.uploadFeed = async (req, res) => {
     let imageUrl = null;
 
     if (req.file) {
-      // Convert and resize image using sharp
       const processedImageBuffer = await sharp(req.file.buffer)
         .rotate()
-        .resize({ width: 1080 }) // Resize if needed
-        .webp({ quality: 80 })   // Convert to WebP
+        .resize({ width: 1080 })
+        .webp({ quality: 80 })
         .toBuffer();
 
       const fileName = `${userId}/${Date.now()}_feedImage.webp`;
@@ -1785,6 +1790,60 @@ exports.uploadFeed = async (req, res) => {
       mentions: mentionIds,
       link
     });
+
+    // Send notifications for mentioned users
+    if (mentionIds.length > 0) {
+      try {
+        // Fetch push tokens and profile pics for mentioned users
+        const pushTokens = await sequelize.query(
+          `
+          SELECT 
+            pn."userId", 
+            pn."expoPushToken", 
+            u."full_name",
+            u."profile_pic"
+          FROM "PushNotifications" pn
+          JOIN "Users" u ON u.id = pn."userId"
+          WHERE pn."userId" IN (:mentionIds)
+          `,
+          {
+            replacements: { mentionIds },
+            type: sequelize.QueryTypes.SELECT
+          }
+        );
+
+        const senderUser = await User.findByPk(userId);
+
+        // Send push notifications and create Notification records
+        await Promise.all(
+          mentionIds.map(async (mentionedUserId) => {
+            const target = pushTokens.find(p => p.userId === mentionedUserId);
+            const expoPushToken = target?.expoPushToken;
+            const profilePic = target?.profile_pic || 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
+
+            if (expoPushToken) {
+              await sendPushNotification(expoPushToken, {
+                title: "📢 You've been mentioned in a post!",
+                body: `${senderUser.full_name} mentioned you in their ${activityType === 'challenge' ? 'challenge' : 'post'}. Check it out!`
+              });
+            }
+
+            await Notification.create({
+              userId: mentionedUserId, // Recipient of the notification
+              forUserId: userId, // Sender who triggered it
+              message: `${senderUser.full_name} mentioned you in a ${activityType === 'challenge' ? 'challenge' : 'post'}.`,
+              type: 'tag',
+              status: 'unread',
+              relatedId: feed.id,
+              profileImage: senderUser?.profile_pic
+            });
+          })
+        );
+      } catch (notificationError) {
+        console.error('Error sending notifications for mentions:', notificationError);
+        // Do not fail the feed upload if notifications fail
+      }
+    }
 
     res.status(201).json({ success: true, feed });
   } catch (err) {
