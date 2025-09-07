@@ -1725,7 +1725,7 @@ exports.getMyFeed = async (req, res) => {
 
 exports.uploadFeed = async (req, res) => {
   try {
-    const { title, answer, postType, mode, gymId, challengeId } = req.body;
+    const { title, answer, postType, mode, gymId, challengeId, mentions } = req.body;
     const userId = req.user.id;
     let activityType = "questionPrompt";
 
@@ -1775,7 +1775,8 @@ exports.uploadFeed = async (req, res) => {
       imageUrl,
       timestamp: new Date(),
       postType: postType || "public",
-      challengeId
+      challengeId,
+      mentions
     });
 
     res.status(201).json({ success: true, feed });
