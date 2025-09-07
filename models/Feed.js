@@ -114,6 +114,11 @@ const Feed = sequelize.define('Feed', {
     type: DataTypes.TEXT,
     allowNull: true
   },
+  link: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    defaultValue: ""
+  },
   mentions: {
     type: DataTypes.ARRAY(DataTypes.STRING),
     defaultValue: [],
