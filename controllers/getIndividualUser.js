@@ -1832,7 +1832,7 @@ exports.uploadFeed = async (req, res) => {
               userId: mentionedUserId, // Recipient of the notification
               forUserId: userId, // Sender who triggered it
               message: `${senderUser.full_name} mentioned you in a ${activityType === 'challenge' ? 'challenge' : 'post'}.`,
-              type: 'tag',
+              type: 'reaction',
               status: 'unread',
               relatedId: feed.id,
               profileImage: senderUser?.profile_pic
