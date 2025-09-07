@@ -1729,6 +1729,12 @@ exports.uploadFeed = async (req, res) => {
     const userId = req.user.id;
     let activityType = "questionPrompt";
 
+    const mentionIds = [];
+    console.log("mentions", mentions);
+    if (mentions) {
+      mentionIds = JSON.parse(mentions);
+    }
+
     if (mode === "then_and_now") activityType = "then_now";
     if (mode === "meal_timeline") activityType = "meal";
     if (mode === "challenge") activityType = "challenge";
@@ -1776,7 +1782,7 @@ exports.uploadFeed = async (req, res) => {
       timestamp: new Date(),
       postType: postType || "public",
       challengeId,
-      mentions
+      mentions: mentionIds
     });
 
     res.status(201).json({ success: true, feed });
