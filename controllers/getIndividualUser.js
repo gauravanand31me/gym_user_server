@@ -1729,7 +1729,7 @@ exports.uploadFeed = async (req, res) => {
     const userId = req.user.id;
     let activityType = "questionPrompt";
 
-    const mentionIds = [];
+    let mentionIds = [];
     console.log("mentions", mentions);
     if (mentions) {
       mentionIds = JSON.parse(mentions);
