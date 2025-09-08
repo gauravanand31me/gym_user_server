@@ -6,9 +6,10 @@ const Notification = require("../models/Notification");
 const PushNotification = require('../models/PushNotification');
 const { sendPushNotification } = require('../config/pushNotification');
 
+
 exports.createComment = async (req, res) => {
   const fromUserId = req.user.id;
-  const { postId, commentText, parentId } = req.body;
+  const { postId, commentText, parentId, mentions } = req.body;
   let repliedUserId, parentCommentData;
 
   if (!commentText || !postId) {
@@ -29,6 +30,7 @@ exports.createComment = async (req, res) => {
       commentText,
       parentId: parentId || null,
       timestamp: new Date(),
+      mentions: mentions || [], // Store mentions as an array of user IDs
     });
 
     // If top-level comment, increment comment_count in Feed or Reel
@@ -54,9 +56,8 @@ exports.createComment = async (req, res) => {
       }
     }
 
-    // 🔔 Notification Logic
+    // 🔔 Notification Logic for Post/Reel Owner
     const actorUser = await User.findOne({ where: { id: fromUserId } });
-    
     const receiverUserId = post?.userId || reel?.userId;
 
     if (receiverUserId && receiverUserId !== fromUserId) {
@@ -69,12 +70,7 @@ exports.createComment = async (req, res) => {
         order: [['updatedAt', 'DESC']],
       });
 
-
-      
-
-    
       if (existingNotification) {
-        // Count-based message
         const othersCount = existingNotification.othersCount || 1;
         const newCount = othersCount + 1;
 
@@ -95,25 +91,23 @@ exports.createComment = async (req, res) => {
           type: 'comment',
           profileImage: actorUser.profile_pic || '',
           message: `${actorUser.full_name} commented on your ${reel ? 'reel' : 'post'}`,
-          othersCount: 1, // optional column you can add
+          othersCount: 1,
         });
       }
 
       const notificationData = await PushNotification.findOne({
         where: { userId: receiverUserId }
       });
-  
+
       const notificationTitle = {
         title: "New Comment",
         body: `${actorUser.full_name} commented on your ${reel ? 'reel' : 'post'}`, // Notification message
-      }
-  
-      await sendPushNotification(notificationData?.expoPushToken, notificationTitle);
+      };
 
+      await sendPushNotification(notificationData?.expoPushToken, notificationTitle);
     }
 
-    res.status(201).json({ message: 'Comment added successfully.', comment });
-    
+    // 🔔 Notification Logic for Replied-to User
     if (repliedUserId) {
       const repliedActorUser = await User.findOne({ where: { id: repliedUserId } });
 
@@ -124,17 +118,49 @@ exports.createComment = async (req, res) => {
         type: 'comment',
         profileImage: actorUser.profile_pic || '',
         message: `${actorUser.full_name} replied to your comment on ${reel ? 'reel' : 'post'} - "${parentCommentData}"`,
-        othersCount: 1, // optional column you can add
+        othersCount: 1,
       });
-
     }
-    
 
+    // 🔔 Notification Logic for Mentioned Users
+    if (mentions && Array.isArray(mentions) && mentions.length > 0) {
+      const uniqueMentions = [...new Set(mentions)]; // Remove duplicates
+      for (const mentionedUserId of uniqueMentions) {
+        if (mentionedUserId !== fromUserId && mentionedUserId !== receiverUserId && mentionedUserId !== repliedUserId) {
+          const mentionedUser = await User.findOne({ where: { id: mentionedUserId } });
+          if (mentionedUser) {
+            await Notification.create({
+              userId: mentionedUserId, // 👈 RECEIVER
+              forUserId: fromUserId,  // 👈 ACTOR
+              relatedId: postId,
+              type: 'mention',
+              profileImage: actorUser.profile_pic || '',
+              message: `${actorUser.full_name} mentioned you in a ${reel ? 'reel' : 'post'}`,
+              othersCount: 1,
+            });
+
+            const mentionNotificationData = await PushNotification.findOne({
+              where: { userId: mentionedUserId }
+            });
+
+            const mentionNotificationTitle = {
+              title: "You Were Mentioned",
+              body: `${actorUser.full_name} mentioned you in a ${reel ? 'reel' : 'post'}`,
+            };
+
+            await sendPushNotification(mentionNotificationData?.expoPushToken, mentionNotificationTitle);
+          }
+        }
+      }
+    }
+
+    res.status(201).json({ message: 'Comment added successfully.', comment });
   } catch (error) {
     console.error('Error adding comment:', error);
     return res.status(500).json({ message: 'Failed to add comment.' });
   }
 };
+
 
 
 exports.deleteComment = async (req, res) => {
