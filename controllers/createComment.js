@@ -133,7 +133,7 @@ exports.createComment = async (req, res) => {
               userId: mentionedUserId, // 👈 RECEIVER
               forUserId: fromUserId,  // 👈 ACTOR
               relatedId: postId,
-              type: 'mention',
+              type: 'tag',
               profileImage: actorUser.profile_pic || '',
               message: `${actorUser.full_name} mentioned you in a ${reel ? 'reel' : 'post'}`,
               othersCount: 1,
