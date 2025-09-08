@@ -43,6 +43,11 @@ const PostComment = sequelize.define('PostComment', {
     defaultValue: 0,
     allowNull: true,
   },
+  mentions: {
+      type: DataTypes.ARRAY(DataTypes.STRING),
+      defaultValue: [],
+      allowNull: true
+  },
   parentId: {
     type: DataTypes.UUID,
     allowNull: true,
