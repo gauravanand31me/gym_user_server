@@ -1730,7 +1730,7 @@ exports.uploadFeed = async (req, res) => {
     let activityType = "questionPrompt";
 
     let mentionIds = [];
-
+    const hashtagRegex = /#\w+/g;
     const hashtags = answer.match(hashtagRegex) || [];
     const uniqueCategories = new Set(hashtags);
 
