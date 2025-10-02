@@ -1730,6 +1730,29 @@ exports.uploadFeed = async (req, res) => {
     let activityType = "questionPrompt";
 
     let mentionIds = [];
+
+    const hashtags = answer.match(hashtagRegex) || [];
+    const uniqueCategories = new Set(hashtags);
+
+    if (mode !== "challenge") {
+      for (const categoryName of uniqueCategories) {
+        const [category, created] = await Category.findOrCreate({
+          where: { name: categoryName },
+          defaults: { name: categoryName, numberOfPosts: 1, isChallenge: false },
+        });
+    
+        if (!created) {
+          await category.increment('numberOfPosts');
+        }
+      }
+    }
+    
+
+
+
+
+
+
     if (mentions) {
       try {
         mentionIds = JSON.parse(mentions);
@@ -1771,9 +1794,9 @@ exports.uploadFeed = async (req, res) => {
     }
 
     if (activityType === "challenge" && title) {
-      const [category, created] = await Category.findOrCreate({
+      await Category.findOrCreate({
         where: { name: title.trim() },
-        defaults: { name: title.trim() },
+        defaults: { name: title.trim() , isChallenge: true},
       });
     }
 
@@ -1855,24 +1878,42 @@ exports.uploadFeed = async (req, res) => {
 
 exports.getAllCategory = async (req, res) => {
   try {
-    // Step 1: Check if any category exists
-    const count = await Category.count();
-
-    // Step 2: If no categories found, insert default list
-
-
-    // Step 3: Fetch all categories
+    // Fetch all categories
     const categories = await Category.findAll({
-      attributes: ['name'],
-      order: [['name', 'ASC']],
+      attributes: ['id', 'name'],
       raw: true
     });
 
-    const allCategories = categories.map(c => c.name);
-    res.status(200).json(allCategories);
+    const toCamelCase = (str) => {
+      return str
+        .replace(/\s+/g, ' ')
+        .trim()
+        .split(' ')
+        .map((word, index) => {
+          if (index === 0) {
+            return word.toLowerCase();
+          }
+          return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+        })
+        .join('');
+    };
+
+    let updatedCount = 0;
+    for (const cat of categories) {
+      const newName = toCamelCase(cat.name);
+      if (newName !== cat.name) {
+        await Category.update({ name: newName }, { where: { id: cat.id } });
+        updatedCount++;
+      }
+    }
+
+    res.status(200).json({ 
+      message: `Updated ${updatedCount} categories to camelCase.`,
+      updated: updatedCount > 0
+    });
 
   } catch (error) {
-    console.error('Error fetching categories from DB:', error);
+    console.error('Error updating categories:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 };

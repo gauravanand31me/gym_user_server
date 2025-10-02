@@ -9,8 +9,18 @@ const Category = sequelize.define('Category', {
   },
   name: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: true,
     unique: true,
+  },
+  numberOfPosts: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    defaultValue: 0
+  },
+  isChallenge: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false
   },
   created_at: {
     type: DataTypes.DATE,
