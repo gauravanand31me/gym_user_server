@@ -1588,6 +1588,7 @@ exports.getMyFeed = async (req, res) => {
   const requestedUserId = req.query.user_id || req.user?.id; // optional user profile mode
   const type = req.query.type;
   const mode = req.query.mode;
+  const tags = req.query.tags;
 
   try {
     const limit = parseInt(req.query.limit || 10);
@@ -1826,7 +1827,8 @@ exports.uploadFeed = async (req, res) => {
       postType: postType || "public",
       challengeId,
       mentions: mentionIds,
-      link
+      link,
+      hashtags: uniqueCategories
     });
 
     // Send notifications for mentioned users
