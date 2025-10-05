@@ -1833,7 +1833,7 @@ exports.uploadFeed = async (req, res) => {
       challengeId,
       mentions: mentionIds,
       link,
-      hashtags: uniqueCategories
+      hashtags
     });
 
     // Send notifications for mentioned users
