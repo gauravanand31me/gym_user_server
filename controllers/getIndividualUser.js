@@ -568,12 +568,34 @@ exports.uploadReel = async (req, res) => {
   let mentionIds = [];
 
 
+
+
   try {
     // Step 1: Insert Reel immediately with processing = true
     const parsedChallengeId =
       challengeId && challengeId !== 'undefined' && challengeId !== 'null'
         ? challengeId
         : null;
+
+
+        const hashtagRegex = /#\w+/g;
+        const hashtags = description.match(hashtagRegex) || [];
+        const uniqueCategories = new Set(hashtags);
+    
+        if (mode !== "challenge") {
+          for (const categoryName of uniqueCategories) {
+            const [category, created] = await Category.findOrCreate({
+              where: { name: categoryName },
+              defaults: { name: categoryName, numberOfPosts: 1, isChallenge: false },
+            });
+        
+            if (!created) {
+              await category.increment('numberOfPosts');
+            }
+          }
+      }
+
+
 
 
     if (mentions) {
@@ -618,7 +640,7 @@ exports.uploadReel = async (req, res) => {
       challengeId: parsedChallengeId,
       randomCode,
       mentions: mentionIds,
-      hashtags: hashTags ? hashTags.split(',') : [],
+      hashtags,
     });
 
     // Immediately respond to client so they don’t wait for ffmpeg
