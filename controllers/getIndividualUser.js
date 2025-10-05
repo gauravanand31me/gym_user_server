@@ -617,7 +617,8 @@ exports.uploadReel = async (req, res) => {
       postType: postType || 'public',
       challengeId: parsedChallengeId,
       randomCode,
-      mentions: mentionIds
+      mentions: mentionIds,
+      hashtags: hashTags ? hashTags.split(',') : [],
     });
 
     // Immediately respond to client so they don’t wait for ffmpeg
