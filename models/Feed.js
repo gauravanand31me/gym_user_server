@@ -119,6 +119,10 @@ const Feed = sequelize.define('Feed', {
     allowNull: true,
     defaultValue: ""
   },
+  hashtags: {
+    type: DataTypes.ARRAY(DataTypes.STRING),
+    allowNull: true,
+  },
   mentions: {
     type: DataTypes.ARRAY(DataTypes.STRING),
     defaultValue: [],
