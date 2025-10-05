@@ -558,13 +558,15 @@ exports.uploadReel = async (req, res) => {
     return res.status(400).json({ success: false, message: 'Video file is required.' });
   }
 
-  const { title, description, postType, hashTags, link, mode, challengeId } = req.body;
+  const { title, description, postType, hashTags, link, mode, challengeId, mentions } = req.body;
   const userId = req.user.id;
 
   const uploadedFilePath = req.file.path;
   const compressedFilePath = path.join(__dirname, '../temp', `compressed-${Date.now()}.mp4`);
   const rawThumbnailJpg = path.join(__dirname, '../temp', `thumbnail-${Date.now()}.jpg`);
   const finalThumbnailWebp = rawThumbnailJpg.replace(/\.jpg$/, '.webp');
+  let mentionIds = [];
+
 
   try {
     // Step 1: Insert Reel immediately with processing = true
@@ -572,6 +574,18 @@ exports.uploadReel = async (req, res) => {
       challengeId && challengeId !== 'undefined' && challengeId !== 'null'
         ? challengeId
         : null;
+
+
+    if (mentions) {
+      try {
+        mentionIds = JSON.parse(mentions);
+        if (!Array.isArray(mentionIds)) {
+          return res.status(400).json({ success: false, message: "Invalid input: mentions must be an array." });
+        }
+      } catch (error) {
+        return res.status(400).json({ success: false, message: "Invalid mentions format." });
+      }
+    }
 
     const createdReel = await Reel.create({
       userId,
@@ -602,7 +616,8 @@ exports.uploadReel = async (req, res) => {
       timestamp: new Date(),
       postType: postType || 'public',
       challengeId: parsedChallengeId,
-      randomCode
+      randomCode,
+      mentions: mentionIds
     });
 
     // Immediately respond to client so they don’t wait for ffmpeg
