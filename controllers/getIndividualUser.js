@@ -1707,7 +1707,7 @@ exports.getMyFeed = async (req, res) => {
     }
 
     if (tags) {
-      query += ` AND f."hashtags" ? (:tags)::varchar`;
+      query += ` AND (:tags) = ANY(f."hashtags")`;
       replacements.tags = tags;
     }
 
