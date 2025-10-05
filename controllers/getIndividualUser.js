@@ -1590,7 +1590,6 @@ exports.getMyFeed = async (req, res) => {
   const mode = req.query.mode;
   const tags = req.query.tags;
 
-  console.log("Tags received", tags);
   try {
     const limit = parseInt(req.query.limit || 10);
     const offset = parseInt(req.query.offset || 0);
@@ -1708,7 +1707,7 @@ exports.getMyFeed = async (req, res) => {
     }
 
     if (tags) {
-      query += ` AND f."hashtags" ? :tags`;
+      query += ` AND f."hashtags" ? (:tags)::varchar`;
       replacements.tags = tags;
     }
 
