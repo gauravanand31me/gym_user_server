@@ -1730,7 +1730,10 @@ exports.getMyFeed = async (req, res) => {
     }
 
     if (tags) {
-      query += ` AND (:tags) = ANY(f."hashtags")`;
+      query += ` AND EXISTS (
+        SELECT 1 FROM unnest(f."hashtags") AS tag
+        WHERE LOWER(tag) LIKE LOWER('%' || :tags || '%')
+      )`;
       replacements.tags = tags;
     }
 
