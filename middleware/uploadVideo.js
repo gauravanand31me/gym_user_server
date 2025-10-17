@@ -1,6 +1,8 @@
 const multer = require('multer');
-const multerS3 = require('multer-s3');
 const { S3Client } = require('@aws-sdk/client-s3');
+const { Upload } = require('@aws-sdk/lib-storage');
+const path = require('path');
+const fs = require('fs');
 
 const s3Client = new S3Client({
   region: process.env.AWS_REGION,
@@ -10,18 +12,28 @@ const s3Client = new S3Client({
   },
 });
 
-const uploadVideo = multer({
-  storage: multerS3({
-    s3: s3Client,
-    bucket: process.env.AWS_S3_BUCKET_NAME,
-    contentType: multerS3.AUTO_CONTENT_TYPE,
-    // ✅ Remove ACL or set it to undefined
-    acl: undefined,
-    key: (req, file, cb) => {
-      const filename = `reels/${Date.now()}-${file.originalname}`;
-      cb(null, filename);
-    },
-  }),
-});
+// Use Multer memory storage to get the buffer
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 
-module.exports = uploadVideo;
+async function uploadToS3(file) {
+  const key = `reels/${Date.now()}-${path.basename(file.originalname)}`;
+
+  const uploadParams = {
+    Bucket: process.env.AWS_S3_BUCKET_NAME,
+    Key: key,
+    Body: file.buffer,
+    ContentType: file.mimetype,
+  };
+
+  const parallelUpload = new Upload({
+    client: s3Client,
+    params: uploadParams,
+  });
+
+  await parallelUpload.done();
+
+  return `https://${process.env.CLOUDFRONT_URL}/${key}`;
+}
+
+module.exports = { upload, uploadToS3 };
