@@ -3,8 +3,8 @@ const path = require('path');
 const ffmpeg = require('fluent-ffmpeg');
 const ffmpegPath = require('ffmpeg-static');
 const sharp = require('sharp');
-const Reel = require('../models/Reel');
-const Feed = require('../models/Feed');
+const Reel = require('./models/Reel');
+const Feed = require('./models/Feed');
 const { s3Client, PutObjectCommand } = require('./s3Client');
 
 ffmpeg.setFfmpegPath(ffmpegPath);
