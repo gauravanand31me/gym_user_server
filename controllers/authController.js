@@ -86,7 +86,6 @@ exports.verifyOTP = async (req, res) => {
     // Create a JWT token with the user_id
     const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: '20d' });
 
-    console.log("expoPushToken", expoPushToken);
 
     const receivedToken = expoPushToken || "NA";
 
