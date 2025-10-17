@@ -558,7 +558,7 @@ exports.uploadReel = async (req, res) => {
     return res.status(400).json({ success: false, message: 'Video file is required.' });
   }
 
-  const { title, description, postType, hashTags, link, mode, challengeId, mentions } = req.body;
+  const { title, description, postType, link, mode, challengeId, mentions } = req.body;
   const userId = req.user.id;
 
   const uploadedFilePath = req.file.path;
@@ -617,7 +617,7 @@ exports.uploadReel = async (req, res) => {
       description: description || null,
       postType: postType || 'public',
       isPublic: postType === 'public',
-      hashtags: hashTags ? hashTags.split(',') : [],
+      hashtags,
       link,
       challengeId: parsedChallengeId,
       timestamp: new Date(),
