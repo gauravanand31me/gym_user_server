@@ -1,6 +1,8 @@
 require('dotenv').config(); // Load environment variables from .env file
+const cluster = require("node:cluster");
+const process = require("node:process");
+const numCPUs = require('node:os').availableParallelism();
 
-console.log('Loaded environment variables:', process.env.DB_FITZOO_HOST); // Log all env variables
 const express = require('express');
 const sequelize = require('./config/db');
 const bodyParser = require('body-parser');
@@ -15,6 +17,9 @@ const notificationRoutes = require('./routes/notification');
 const ratingRoutes = require('./routes/rating');
 const cors = require("cors");
 const checkUserAgent = require('./checkUserAgent');
+
+console.log("Number of CIOS", numCPUs);
+
 
 const app = express();
 // app.use(bodyParser.json({ type: 'application/json' }));
@@ -40,8 +45,26 @@ app.use('/user/api/notifications', notificationRoutes);
 app.use('/user/api/rating', ratingRoutes);
 const PORT = process.env.PORT || 5000;
 
-sequelize.sync().then(() => {
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
-}).catch(err => console.log('Error: ' + err));
+
+
+
+if (cluster.isPrimary) {
+  console.log(`Primary ${process.pid} is running`);
+  for (let i = 0; i < numCPUs; i++) {
+    cluster.fork();
+  }
+
+  cluster.on("exit", function (worker, code, signal) {
+    console.log(`worker with process ${worker.id} is died`);
+  })
+  
+} else {
+  sequelize.sync().then(() => {
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  }).catch(err => console.log('Error: ' + err));
+  console.log(`Worker ${process.pid} is running`);
+}
+
+
