@@ -7,8 +7,8 @@ const router = express.Router();
 
 
 
-router.get('/get', fetchGyms)
-router.get('/get/:gymId', fetchIndividualGyms)
+router.get('/get', authMiddleware, fetchGyms)
+router.get('/get/:gymId',  fetchIndividualGyms)
 router.put('/store', authMiddleware, storePushToken)
 
 module.exports = router;
