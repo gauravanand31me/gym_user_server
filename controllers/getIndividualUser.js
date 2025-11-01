@@ -1193,7 +1193,7 @@ LIMIT 1;
 
 exports.getUserReels = async (req, res) => {
   const loggedInUserId = req.user.id;
-  const { user_id, reel_id, category } = req.query;
+  const { user_id, reel_id, category, challenge_id } = req.query;
 
   try {
     const limit = parseInt(req.query.limit || 10);
@@ -1267,7 +1267,17 @@ exports.getUserReels = async (req, res) => {
       if (excludedUserIds.length) replacements.excludedUserIds = excludedUserIds;
     }
 
-    // === Case 3: Feed for logged-in user ===
+    // === 🆕 Case 3: Challenge reels ===
+    else if (challenge_id) {
+      whereConditions = `
+        WHERE r."challengeId" = :challengeId
+        ${blockCondition}
+      `;
+      replacements.challengeId = challenge_id;
+      if (excludedUserIds.length) replacements.excludedUserIds = excludedUserIds;
+    }
+
+    // === Case 4: Feed for logged-in user ===
     else {
       const followings = await Follow.findAll({
         where: { followerId: loggedInUserId },
@@ -1293,7 +1303,6 @@ exports.getUserReels = async (req, res) => {
 
       friendIds.add(loggedInUserId);
       const friendIdArray = Array.from(friendIds);
-
       const idsArray = [loggedInUserId, ...followingIds];
 
       whereConditions = `
@@ -1333,7 +1342,7 @@ exports.getUserReels = async (req, res) => {
 
     const result = reels.map(reel => ({
       ...reel,
-      canDelete: reel.userId === loggedInUserId  || loggedInUserId === process.env.ADMIN_UUID,
+      canDelete: reel.userId === loggedInUserId || loggedInUserId === process.env.ADMIN_UUID,
       canReport: reel.userId !== loggedInUserId,
     }));
 
@@ -1344,6 +1353,7 @@ exports.getUserReels = async (req, res) => {
     return res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 };
+
 
 
 
