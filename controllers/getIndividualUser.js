@@ -569,7 +569,7 @@ exports.uploadReel = async (req, res) => {
     return res.status(400).json({ success: false, message: 'Video file is required.' });
   }
 
-  const { title, description, postType, link, mode, challengeId, mentions } = req.body;
+  const { title, description, postType, link, mode, challengeId, mentions, gymId } = req.body;
   const userId = req.user.id;
 
   const uploadedFilePath = req.file.path;
@@ -652,6 +652,7 @@ exports.uploadReel = async (req, res) => {
       randomCode,
       mentions: mentionIds,
       hashtags,
+      gymId
     });
 
     // Immediately respond to client so they don’t wait for ffmpeg
