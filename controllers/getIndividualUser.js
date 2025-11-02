@@ -27,6 +27,7 @@ const { sendPushNotification } = require('../config/pushNotification');
 const FeedReports = require('../models/FeedReports');
 const Block = require('../models/Block');
 const Category = require('../models/Category');
+const ChallengePayment = require('../models/ChallengePayment');
 
 const s3Client = new S3Client({
   region: process.env.AWS_REGION,
@@ -436,6 +437,16 @@ exports.deleteReel = async (req, res) => {
     if (reel.userId !== userId && userId !== process.env.ADMIN_UUID?.trim()) {
       return res.status(403).json({ success: false, message: 'You are not authorized to delete this reel.' });
     }
+
+    if (reel.challengeId) {
+      await ChallengePayment.destroy({
+        where: {
+          challengeId: reelId ,
+          userId,
+        },
+      });
+    }
+    
 
     // Step 3: Extract S3 Key from video URL
     const videoUrl = reel.videoUrl;
