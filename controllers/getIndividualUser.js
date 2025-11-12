@@ -639,7 +639,7 @@ exports.uploadReel = async (req, res) => {
 
     const randomCode = generateRandomCode();
 
-    const feed = await Feed.create({
+    let feedJson = {
       id: createdReel.id,
       userId,
       activityType: (mode === "challenge") ? "challenge" : 'aiPromo',
@@ -652,7 +652,13 @@ exports.uploadReel = async (req, res) => {
       randomCode,
       mentions: mentionIds,
       hashtags
-    });
+    };
+
+    if (gymId) {
+      feedJson["gymId"] = gymId;
+    }
+
+    const feed = await Feed.create(feedJson);
 
     // Immediately respond to client so they don’t wait for ffmpeg
     res.status(201).json({ success: true, reel: createdReel, feed: feed, message: "Video is processing" });
