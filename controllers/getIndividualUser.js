@@ -652,7 +652,7 @@ exports.uploadReel = async (req, res) => {
       randomCode,
       mentions: mentionIds,
       hashtags,
-      gymId
+      gymId: gymId || null
     });
 
     // Immediately respond to client so they don’t wait for ffmpeg
