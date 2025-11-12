@@ -1347,6 +1347,7 @@ exports.getUserReels = async (req, res) => {
     // === Final query ===
     query += `
       ${whereConditions}
+      AND r.processing != true
       ORDER BY r."timestamp" DESC
       LIMIT :limit OFFSET :offset
     `;
