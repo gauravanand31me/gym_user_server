@@ -651,8 +651,7 @@ exports.uploadReel = async (req, res) => {
       challengeId: parsedChallengeId,
       randomCode,
       mentions: mentionIds,
-      hashtags,
-      gymId: gymId || null
+      hashtags
     });
 
     // Immediately respond to client so they don’t wait for ffmpeg
