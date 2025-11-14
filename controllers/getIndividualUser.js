@@ -654,6 +654,7 @@ exports.uploadReel = async (req, res) => {
       hashtags
     };
 
+    console.log("Gym Id", gymId);
     if (gymId) {
       feedJson["gymId"] = gymId;
     }
