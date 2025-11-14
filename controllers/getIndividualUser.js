@@ -645,7 +645,7 @@ exports.uploadReel = async (req, res) => {
       activityType: (mode === "challenge") ? "challenge" : 'aiPromo',
       title: title || 'AI Promotional Video 🤖',
       description: description || null,
-      imageUrl: (mode === "challenge") ? `https://${process.env.CLOUDFRONT_URL}/reels/thumbnails/upload_progress.png` : `https://${process.env.CLOUDFRONT_URL}/reels/upload_progress.mp4`,
+      imageUrl: `https://${process.env.CLOUDFRONT_URL}/reels/upload_progress.mp4`,
       timestamp: new Date(),
       postType: postType || 'public',
       challengeId: parsedChallengeId,
@@ -707,7 +707,7 @@ exports.uploadReel = async (req, res) => {
         });
 
         await feed.update({
-          imageUrl: (mode === "challenge") ? thumbnailUrl : videoUrl,
+          imageUrl: videoUrl,
         });
 
         console.log(`✅ Processing complete for Reel ${createdReel.id}`);
