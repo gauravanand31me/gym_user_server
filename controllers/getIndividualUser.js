@@ -1171,6 +1171,7 @@ exports.getFeedById = async (req, res) => {
       SELECT
   f.*,
   u.full_name AS "user.full_name",
+  r."thumbnailUrl" AS "thumbnailUrl",
   u."profile_pic" AS "user.profilePic",
   u.id AS "user.id",
   ru.full_name AS "relatedUser.full_name",
@@ -1185,6 +1186,7 @@ FROM "Feeds" f
 LEFT JOIN "Users" u ON u.id = f."userId"
 LEFT JOIN "Users" ru ON ru.id = f."relatedUserId"
 LEFT JOIN "Gyms" g ON g.id = f."gymId"
+LEFT JOIN "Reels" r ON r.id = f.id
 LEFT JOIN "PostReactions" pr ON pr."postId" = f.id AND pr."userId" = :userId
 WHERE f.id = :id
 LIMIT 1;
