@@ -81,6 +81,14 @@ const User = sequelize.define('User', {
         type: DataTypes.INTEGER,
         defaultValue: 0,
     },
+    gym_id: {
+        type: DataTypes.STRING,
+        allowNull: true,
+    },
+    gym_name: {
+        type: DataTypes.STRING,
+        allowNull: true,
+    },
     register_date: {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW,
