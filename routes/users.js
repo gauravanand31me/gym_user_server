@@ -17,6 +17,7 @@ router.post('/uploadProfileImage', authMiddleware, upload.single('profileImage')
 router.post('/uploadImage', authMiddleware, upload.single('image'), uploadPostImage);
 router.get('/getImage/:userId', authMiddleware, getUserImage);
 router.put('/update-fullname', authMiddleware, updateFullName);
+router.put('/update-gym', authMiddleware, updateGymDetails);
 router.put('/update-bio', authMiddleware, updateBio);
 router.put('/delete-profileimage', authMiddleware, deleteProfileImage);
 router.delete('/deleteaccount', authMiddleware, deleteProfile);
