@@ -99,7 +99,7 @@ exports.fetchGyms = async (req, res) => {
       FROM "Gyms"
       LEFT JOIN "Subscriptions" ON "Gyms".id = "Subscriptions"."gymId"
       LEFT JOIN "GymImages" ON "Gyms".id = "GymImages"."gymId"
-      WHERE (:searchText IS NULL OR REGEXP_REPLACE("Gyms".name, '\s+', '', 'g') ILIKE '%' || REGEXP_REPLACE(:searchText, '\s+', '', 'g') || '%')
+      WHERE (:searchText IS NULL OR :searchText = '' OR LOWER(TRANSLATE(TRIM("Gyms".name), ' ', '')) LIKE '%' || LOWER(TRANSLATE(TRIM(:searchText), ' ', '')) || '%')
       AND "Gyms".verified=true
       GROUP BY "Gyms".id
       ORDER BY distance ASC
