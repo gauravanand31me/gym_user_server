@@ -97,6 +97,14 @@ const User = sequelize.define('User', {
         type: DataTypes.STRING,
         allowNull: true,
     },
+    profile_status: {
+        type: DataTypes.STRING,
+        allowNull: true,
+    },
+    visiblity: {
+        type: DataTypes.STRING,
+        allowNull: true,
+    },
     register_date: {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW,
