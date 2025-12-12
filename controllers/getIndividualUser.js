@@ -1048,6 +1048,30 @@ exports.updateBio = async (req, res) => {
   }
 };
 
+
+exports.updateStatus = async (req, res) => {
+  const userId = req.user.id; // Assumes user is authenticated and user ID is available in req.user
+  const { status } = req.body;
+
+  try {
+    // Check if full_name is provided
+    if (!status || status.trim() === "") {
+      return res.status(400).json({ message: 'Status is required' });
+    }
+
+    // Update the user's full name in the database
+    await User.update(
+      { profile_status: status },
+      { where: { id: userId } }
+    );
+
+    res.status(200).json({ message: 'Status updated successfully', status });
+  } catch (error) {
+    console.error('Error updating Status:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 exports.updateFullName = async (req, res) => {
   const userId = req.user.id; // Assumes user is authenticated and user ID is available in req.user
   const { full_name } = req.body;
