@@ -1089,9 +1089,9 @@ exports.updateVisibility = async (req, res) => {
       { visiblity: visibility },
       { where: { id: userId } }
     );
-    
 
-    res.status(200).json({ message: 'Visibility updated successfully', status });
+
+    res.status(200).json({ message: 'Visibility updated successfully', visibility });
   } catch (error) {
     console.error('Error updating Visibility:', error);
     res.status(500).json({ message: 'Server error' });
