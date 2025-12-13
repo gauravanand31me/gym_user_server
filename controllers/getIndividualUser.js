@@ -1072,6 +1072,32 @@ exports.updateStatus = async (req, res) => {
   }
 };
 
+
+
+exports.updateVisibility = async (req, res) => {
+  const userId = req.user.id; // Assumes user is authenticated and user ID is available in req.user
+  const { visibility } = req.body;
+
+  try {
+    // Check if full_name is provided
+    if (!visibility || visibility.trim() === "") {
+      return res.status(400).json({ message: 'Visibility is required' });
+    }
+
+    // Update the user's full name in the database
+    await User.update(
+      { visiblity: visibility },
+      { where: { id: userId } }
+    );
+    
+
+    res.status(200).json({ message: 'Visibility updated successfully', status });
+  } catch (error) {
+    console.error('Error updating Visibility:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 exports.updateFullName = async (req, res) => {
   const userId = req.user.id; // Assumes user is authenticated and user ID is available in req.user
   const { full_name } = req.body;
