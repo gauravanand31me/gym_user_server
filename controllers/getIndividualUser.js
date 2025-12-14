@@ -1200,7 +1200,7 @@ exports.updateUserLink = async (req, res) => {
 
     // Update the user's full name in the database
     await User.update(
-      { links },
+      { link: links },
       { where: { id: userId } }
     );
 
