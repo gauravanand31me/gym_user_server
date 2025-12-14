@@ -1165,6 +1165,52 @@ exports.updateUserTrainner = async (req, res) => {
   }
 };
 
+
+
+exports.updateUserGender = async (req, res) => {
+  const userId = req.user.id; // Assumes user is authenticated and user ID is available in req.user
+  const { gender } = req.body;
+
+  try {
+    // Check if full_name is provided
+    
+
+    // Update the user's full name in the database
+    await User.update(
+      { gender },
+      { where: { id: userId } }
+    );
+
+    res.status(200).json({ message: 'Gender updated successfully', gender });
+  } catch (error) {
+    console.error('Error updating gender:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+
+
+exports.updateUserLink = async (req, res) => {
+  const userId = req.user.id; // Assumes user is authenticated and user ID is available in req.user
+  const { links } = req.body;
+
+  try {
+    // Check if full_name is provided
+    
+
+    // Update the user's full name in the database
+    await User.update(
+      { links },
+      { where: { id: userId } }
+    );
+
+    res.status(200).json({ message: 'Links updated successfully', links });
+  } catch (error) {
+    console.error('Error updating links:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 exports.deleteProfileImage = async (req, res) => {
   const userId = req.user.id; // Assumes user is authenticated and user ID is available in req.user
   try {
