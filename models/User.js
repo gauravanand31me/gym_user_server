@@ -105,6 +105,14 @@ const User = sequelize.define('User', {
         type: DataTypes.STRING,
         allowNull: true,
     },
+    gender: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
+    link: {
+        type: DataTypes.ARRAY(DataTypes.STRING),
+        allowNull: true
+    },
     register_date: {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW,
