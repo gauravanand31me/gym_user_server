@@ -1211,6 +1211,31 @@ exports.updateUserLink = async (req, res) => {
   }
 };
 
+
+
+exports.updateBody = async (req, res) => {
+  const userId = req.user.id; // Assumes user is authenticated and user ID is available in req.user
+  const { email, height, weight, muscle_mass } = req.body;
+
+  try {
+    // Update the user's body-related fields in the database
+    const [updatedRows] = await User.update(
+      { email, height, weight, muscle_mass },
+      { where: { id: userId } }
+    );
+
+    if (updatedRows === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.status(200).json({ message: 'Body stats updated successfully' });
+  } catch (error) {
+    console.error('Error updating body stats:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+
 exports.deleteProfileImage = async (req, res) => {
   const userId = req.user.id; // Assumes user is authenticated and user ID is available in req.user
   try {
