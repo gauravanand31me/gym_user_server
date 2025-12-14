@@ -109,10 +109,6 @@ const User = sequelize.define('User', {
         type: DataTypes.STRING,
         allowNull: true
     },
-    email: {
-        type: DataTypes.STRING,
-        allowNull: true
-    },
     height: {
         type: DataTypes.STRING,
         allowNull: true
