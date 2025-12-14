@@ -109,6 +109,22 @@ const User = sequelize.define('User', {
         type: DataTypes.STRING,
         allowNull: true
     },
+    email: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
+    height: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
+    weight: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
+    muscle_mass: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
     link: {
         type: DataTypes.ARRAY(DataTypes.STRING),
         allowNull: true
