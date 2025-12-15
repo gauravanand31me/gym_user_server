@@ -1220,7 +1220,7 @@ exports.updateBody = async (req, res) => {
   try {
     // Update the user's body-related fields in the database
     const [updatedRows] = await User.update(
-      { email, height, weight, muscle_mass },
+      { height, weight, muscle_mass },
       { where: { id: userId } }
     );
 
