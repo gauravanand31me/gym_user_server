@@ -2125,6 +2125,7 @@ exports.uploadFeed = async (req, res) => {
     const userId = req.user.id;
     let activityType = "questionPrompt";
 
+    console.log("Request body received", req.body)
     let mentionIds = [];
     const hashtagRegex = /#\w+/g;
     const hashtags = answer.match(hashtagRegex) || [];
