@@ -212,42 +212,52 @@ exports.deleteComment = async (req, res) => {
 
 
 
-
 exports.getCommentsByPost = async (req, res) => {
-  const { postId } = req.params;
-  const { parentId } = req.query; // optional query param
+  const { postId } = req.params
+  const { parentId, limit, offset } = req.query // optional query params
 
   if (!postId) {
-    return res.status(400).json({ message: 'postId is required.' });
+    return res.status(400).json({ message: "postId is required." })
   }
 
   try {
     const whereClause = {
       postId,
       parentId: parentId || null, // null for top-level comments
-    };
+    }
 
-    const comments = await PostComment.findAll({
+    const queryOptions = {
       where: whereClause,
-      order: [['createdAt', 'DESC']],
+      order: [["createdAt", "DESC"]],
       include: [
         {
           model: User,
-          attributes: ['id', 'full_name', 'profile_pic'],
+          attributes: ["id", "full_name", "profile_pic"],
         },
       ],
-    });
+      ...(limit && { limit: Number.parseInt(limit) }), // Apply limit if provided
+      ...(offset && { offset: Number.parseInt(offset) }), // Apply offset if provided
+    }
+
+    const comments = await PostComment.findAll(queryOptions)
+
+    const totalCount = await PostComment.count({ where: whereClause })
 
     const enhancedComments = comments.map((comment) => {
-      const commentJson = comment.toJSON();
-      commentJson.canDelete = comment.userId === req.user.id;
-      return commentJson;
-    });
+      const commentJson = comment.toJSON()
+      commentJson.canDelete = comment.userId === req.user.id
+      return commentJson
+    })
 
-    return res.status(200).json({ comments: enhancedComments });
+    return res.status(200).json({
+      comments: enhancedComments,
+      hasMore: offset ? Number.parseInt(offset) + comments.length < totalCount : comments.length < totalCount,
+      total: totalCount,
+    })
   } catch (error) {
-    console.error('Error fetching comments:', error);
-    return res.status(500).json({ message: 'Failed to fetch comments.' });
+    console.error("Error fetching comments:", error)
+    return res.status(500).json({ message: "Failed to fetch comments." })
   }
-};
+}
+
 
