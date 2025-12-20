@@ -1053,54 +1053,55 @@ exports.updateBio = async (req, res) => {
 exports.getMessageByChatId = async (req, res) => {
   try {
     const { chatId } = req.params;
-
-    console.log("chatId", chatId);
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 30;
+    const page = parseInt(req.query.page || 1);
+    const limit = parseInt(req.query.limit || 30);
     const offset = (page - 1) * limit;
 
-    if (!chatId) {
-      return res.status(400).json({
-        success: false,
-        message: "chatId is required",
-      });
-    }
+    console.log("chatId", chatId);
 
-    const { count, rows: messages } = await Message.findAndCountAll({
-      where: {
-        chat_id: chatId,
-        is_deleted: false,
-      },
-      include: [
-        {
-          model: User,
-          as: "sender",
-          attributes: ["id", "username", "full_name", "profile_pic"],
-        },
-        {
-          model: User,
-          as: "receiver",
-          attributes: ["id", "username", "full_name", "profile_pic"],
-        },
-      ],
-      order: [["created_at", "ASC"]],
-      limit,
-      offset,
+    const messagesQuery = `
+      SELECT 
+        m.id,
+        m.chat_id,
+        m.sender_id,
+        m.receiver_id,
+        m.text,
+        m.created_at,
+        u.full_name AS sender_name,
+        u.profile_pic AS sender_profile_pic
+      FROM messages m
+      LEFT JOIN users u ON u.id = m.sender_id
+      WHERE m.chat_id = :chatId
+      ORDER BY m.created_at ASC
+      LIMIT :limit OFFSET :offset
+    `;
+
+    const countQuery = `
+      SELECT COUNT(*) AS total
+      FROM messages
+      WHERE chat_id = :chatId
+    `;
+
+    const [messages] = await sequelize.query(messagesQuery, {
+      replacements: { chatId, limit, offset },
+      type: sequelize.QueryTypes.SELECT,
+    });
+
+    const [countResult] = await sequelize.query(countQuery, {
+      replacements: { chatId },
+      type: sequelize.QueryTypes.SELECT,
     });
 
     return res.status(200).json({
-      success: true,
-      chatId,
+      status: true,
       page,
-      limit,
-      totalMessages: count,
-      totalPages: Math.ceil(count / limit),
-      messages,
+      total: parseInt(countResult.total),
+      results: messages,
     });
   } catch (error) {
     console.error("❌ getMessageByChatId error:", error);
     return res.status(500).json({
-      success: false,
+      status: false,
       message: "Failed to fetch messages",
     });
   }
