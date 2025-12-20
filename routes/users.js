@@ -2,7 +2,7 @@ const express = require('express');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const { getNearbyUsers } = require('../controllers/getNearbyUsers');
 const upload = require('../middleware/upload');
-const { getIndividualUser, updateStatus, searchUsersByUsernameOrLocation, updateBody, updateUserLink, updateUserGender, updateVisibility, uploadProfileImage,uploadPostImage,updateBio,  getUserImage, updateFullName, deleteProfileImage, deleteProfile, getTopUsersByWorkoutTime, getUserFeed, uploadFeed, getMyFeed, deletePost, getFeedById, uploadReel, getUserReels, deleteReel, streamReelVideo, updateFeedVisibility, incrementViewCount, followUser, getFollowedUser, unfollowUser, resetFollowsAndFollowingCount, getAllCategory, reportFeed, blockUser, isBlockedByUser, mentionFriendsInChallenge, saveChallengeForUser, getChallengeStats, getAllHashTag, updateGymDetails, updateUserTrainner} = require('../controllers/getIndividualUser');
+const { getIndividualUser, updateStatus, getMessageByChatId, searchUsersByUsernameOrLocation, updateBody, updateUserLink, updateUserGender, updateVisibility, uploadProfileImage,uploadPostImage,updateBio,  getUserImage, updateFullName, deleteProfileImage, deleteProfile, getTopUsersByWorkoutTime, getUserFeed, uploadFeed, getMyFeed, deletePost, getFeedById, uploadReel, getUserReels, deleteReel, streamReelVideo, updateFeedVisibility, incrementViewCount, followUser, getFollowedUser, unfollowUser, resetFollowsAndFollowingCount, getAllCategory, reportFeed, blockUser, isBlockedByUser, mentionFriendsInChallenge, saveChallengeForUser, getChallengeStats, getAllHashTag, updateGymDetails, updateUserTrainner} = require('../controllers/getIndividualUser');
 const { reactToPost, getPostReactions } = require('../controllers/PostReaction');
 const { createComment, deleteComment, getCommentsByPost } = require('../controllers/createComment');
 const uploadVideo = require('../middleware/uploadVideo');
@@ -28,6 +28,7 @@ router.put('/update-visibility', authMiddleware, updateVisibility);
 router.put('/delete-profileimage', authMiddleware, deleteProfileImage);
 router.delete('/deleteaccount', authMiddleware, deleteProfile);
 router.get('/leaderboard',  getTopUsersByWorkoutTime);
+router.get('/message/:chatId',  authMiddleware,  getMessageByChatId);
 router.get('/feed',  authMiddleware,  getUserFeed);
 router.get('/feed/:id', authMiddleware, getFeedById);
 router.delete('/feed/:postId', authMiddleware, deletePost);
@@ -58,4 +59,6 @@ router.put('/tag',  authMiddleware,  mentionFriendsInChallenge);
 router.put('/save',  authMiddleware,  saveChallengeForUser);
 router.get('/stats',  authMiddleware,  getChallengeStats);
 router.get('/push',  sendPushNotificationToAll);
+
+
 module.exports = router;
