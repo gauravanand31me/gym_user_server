@@ -18,6 +18,7 @@ const checkUserAgent = require("./checkUserAgent")
 
 // 🔥 SOCKET.IO
 const { Server } = require("socket.io")
+const Message = require("./models/Message")
 
 const app = express()
 
@@ -69,7 +70,7 @@ io.on("connection", (socket) => {
   })
 
   // Receive & broadcast message
-  socket.on("send_message", (data) => {
+  socket.on("send_message",  (data) => {
     /*
       data = {
         id,
@@ -86,6 +87,16 @@ io.on("connection", (socket) => {
     // Send message to all users in room
     io.to(data.chatId).emit("receive_message", data)
 
+
+    Message.create({
+      chat_id: data.chatId,
+      sender_id: data.senderId,
+      receiver_id: data.receiverId,
+      text: data.text,
+      message_type: "text",
+    });
+
+    console.log("Inserted in Database...")
     // 🔥 OPTIONAL (later)
     // Save message to DB here
   })
