@@ -49,9 +49,9 @@ const server = http.createServer(app)
 
 // 🔥 INIT SOCKET.IO
 const io = new Server(server, {
+  path: "/user/api/socket.io",
   cors: {
-    origin: "*", // restrict later in prod
-    methods: ["GET", "POST"],
+    origin: "*",
   },
 })
 
