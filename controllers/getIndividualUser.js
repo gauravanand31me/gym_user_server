@@ -1049,6 +1049,62 @@ exports.updateBio = async (req, res) => {
 };
 
 
+exports.getMessageByChatId = async (req, res) => {
+  try {
+    const { chatId } = req.params;
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 30;
+    const offset = (page - 1) * limit;
+
+    if (!chatId) {
+      return res.status(400).json({
+        success: false,
+        message: "chatId is required",
+      });
+    }
+
+    const { count, rows: messages } = await Message.findAndCountAll({
+      where: {
+        chat_id: chatId,
+        is_deleted: false,
+      },
+      include: [
+        {
+          model: User,
+          as: "sender",
+          attributes: ["id", "username", "full_name", "profile_pic"],
+        },
+        {
+          model: User,
+          as: "receiver",
+          attributes: ["id", "username", "full_name", "profile_pic"],
+        },
+      ],
+      order: [["created_at", "ASC"]],
+      limit,
+      offset,
+    });
+
+    return res.status(200).json({
+      success: true,
+      chatId,
+      page,
+      limit,
+      totalMessages: count,
+      totalPages: Math.ceil(count / limit),
+      messages,
+    });
+  } catch (error) {
+    console.error("❌ getMessageByChatId error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch messages",
+    });
+  }
+};
+
+
 exports.updateStatus = async (req, res) => {
   const userId = req.user.id; // Assumes user is authenticated and user ID is available in req.user
   const { status } = req.body;
