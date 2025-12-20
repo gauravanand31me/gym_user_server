@@ -28,6 +28,7 @@ const FeedReports = require('../models/FeedReports');
 const Block = require('../models/Block');
 const Category = require('../models/Category');
 const ChallengePayment = require('../models/ChallengePayment');
+const Message = require('../models/Message');
 
 const s3Client = new S3Client({
   region: process.env.AWS_REGION,
