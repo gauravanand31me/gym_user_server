@@ -1105,7 +1105,7 @@ exports.getMyChats = async (req, res) => {
             THEN m.sender_id || '_' || m.receiver_id
           ELSE m.receiver_id || '_' || m.sender_id
         END AS chat_id
-      FROM "Message" m
+      FROM "Messages" m
       JOIN "Users" other_user
         ON other_user.id =
           CASE
