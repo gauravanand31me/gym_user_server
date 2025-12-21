@@ -1094,27 +1094,32 @@ exports.getMyChats = async (req, res) => {
     const userId = req.user.id
 
     const query = `
-      SELECT DISTINCT ON (other_user.id)
-        other_user.id AS user_id,
-        other_user.full_name,
-        other_user.profile_pic,
-        m.text AS last_message,
-        m.is_read AS is_read,
-        m.created_at AS last_message_time,
-        CASE
-          WHEN m.sender_id < m.receiver_id
-            THEN m.sender_id || '_' || m.receiver_id
-          ELSE m.receiver_id || '_' || m.sender_id
-        END AS chat_id
-      FROM "Messages" m
-      JOIN "Users" other_user
-        ON other_user.id =
-          CASE
-            WHEN m.sender_id = :userId THEN m.receiver_id
-            ELSE m.sender_id
-          END
-      WHERE m.sender_id = :userId OR m.receiver_id = :userId
-      ORDER BY other_user.id, m.created_at DESC
+      SELECT *
+FROM (
+  SELECT DISTINCT ON (other_user.id)
+    other_user.id AS user_id,
+    other_user.full_name,
+    other_user.profile_pic,
+    m.text AS last_message,
+    m.is_read,
+    m.created_at AS last_message_time,
+    CASE
+      WHEN m.sender_id < m.receiver_id
+        THEN m.sender_id || '_' || m.receiver_id
+      ELSE m.receiver_id || '_' || m.sender_id
+    END AS chat_id
+  FROM "Messages" m
+  JOIN "Users" other_user
+    ON other_user.id =
+      CASE
+        WHEN m.sender_id = :userId THEN m.receiver_id
+        ELSE m.sender_id
+      END
+  WHERE m.sender_id = :userId
+     OR m.receiver_id = :userId
+  ORDER BY other_user.id, m.created_at DESC
+) chats
+ORDER BY chats.last_message_time DESC;
     `
 
     const chats = await sequelize.query(query, {
