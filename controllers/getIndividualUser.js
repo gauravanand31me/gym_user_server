@@ -1177,6 +1177,60 @@ ORDER BY chats.last_message_time DESC;
 }
 
 
+exports.getUnreadChatCount = async (req, res) => {
+  try {
+    const userId = req.user.id
+
+    const query = `
+      SELECT COUNT(*)::int AS unread_count
+      FROM (
+        SELECT DISTINCT ON (
+          CASE
+            WHEN m.sender_id < m.receiver_id
+              THEN m.sender_id || '_' || m.receiver_id
+            ELSE m.receiver_id || '_' || m.sender_id
+          END
+        )
+          m.id,
+          m.is_read,
+          m.sender_id,
+          m.receiver_id,
+          m.created_at
+        FROM "Messages" m
+        WHERE m.sender_id = :userId
+           OR m.receiver_id = :userId
+        ORDER BY
+          CASE
+            WHEN m.sender_id < m.receiver_id
+              THEN m.sender_id || '_' || m.receiver_id
+            ELSE m.receiver_id || '_' || m.sender_id
+          END,
+          m.created_at DESC
+      ) last_messages
+      WHERE last_messages.receiver_id = :userId
+        AND last_messages.is_read = false
+    `
+
+    const [result] = await sequelize.query(query, {
+      replacements: { userId },
+      type: sequelize.QueryTypes.SELECT,
+    })
+
+    return res.status(200).json({
+      status: true,
+      unreadCount: result.unread_count,
+    })
+  } catch (error) {
+    console.error("❌ getUnreadChatCount error:", error)
+    return res.status(500).json({
+      status: false,
+      message: "Failed to fetch unread count",
+    })
+  }
+}
+
+
+
 exports.updateStatus = async (req, res) => {
   const userId = req.user.id; // Assumes user is authenticated and user ID is available in req.user
   const { status } = req.body;
