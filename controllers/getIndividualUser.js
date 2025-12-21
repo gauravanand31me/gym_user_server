@@ -2012,7 +2012,7 @@ exports.getAllHashTag = async (req, res) => {
         r2."videoUrl" AS "videoUrl",
         r2."thumbnailUrl" AS "thumbnailUrl",
         r2."hashtags" AS "reelTags",
-        r2."challengeId" AS "challengeId"
+        f."challengeId" AS "challengeId"
       FROM "Feeds" f
       LEFT JOIN "Users" u ON f."userId" = u.id
       LEFT JOIN "Gyms" g ON f."gymId" = g.id
@@ -2166,7 +2166,7 @@ exports.getMyFeed = async (req, res) => {
         r2."videoUrl" AS "videoUrl",
         r2."thumbnailUrl" AS "thumbnailUrl",
         r2."hashtags" AS "reelTags",
-        r2."challengeId" AS "challengeId"
+        f."challengeId" AS "challengeId"
       FROM "Feeds" f
       LEFT JOIN "Users" u ON f."userId" = u.id
       LEFT JOIN "Gyms" g ON f."gymId" = g.id
