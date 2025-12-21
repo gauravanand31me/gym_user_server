@@ -19,6 +19,8 @@ const checkUserAgent = require("./checkUserAgent")
 // 🔥 SOCKET.IO
 const { Server } = require("socket.io")
 const Message = require("./models/Message")
+const PushNotification = require("./models/PushNotification")
+const { sendPushNotification } = require("./config/pushNotification")
 
 const app = express()
 
@@ -70,7 +72,7 @@ io.on("connection", (socket) => {
   })
 
   // Receive & broadcast message
-  socket.on("send_message",  (data) => {
+  socket.on("send_message",  async (data) => {
     /*
       data = {
         id,
@@ -96,6 +98,20 @@ io.on("connection", (socket) => {
       message_type: "text",
     });
 
+
+    const notificationData = await PushNotification.findOne({
+        where: { userId: data.receiverId }
+    });
+
+    const notificationTitle = {
+                title: "New message",
+                body: `${data.text}`, // Notification message
+      }
+    
+    if (notificationData?.expoPushToken) {
+      await sendPushNotification(notificationData?.expoPushToken, notificationTitle);
+    }
+    
     console.log("Inserted in Database...")
     // 🔥 OPTIONAL (later)
     // Save message to DB here
