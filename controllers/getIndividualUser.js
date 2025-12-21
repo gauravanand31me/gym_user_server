@@ -1094,32 +1094,26 @@ exports.getMyChats = async (req, res) => {
     const userId = req.user.id
 
     const query = `
-      SELECT DISTINCT ON (m.chat_id)
-        u.id AS user_id,
-        u.full_name,
-        u.profile_pic,
+      SELECT DISTINCT ON (other_user.id)
+        other_user.id AS user_id,
+        other_user.full_name,
+        other_user.profile_pic,
         m.text AS last_message,
         m.created_at AS last_message_time,
-        m.chat_id
-      FROM (
-        SELECT
-          msg.*,
+        CASE
+          WHEN m.sender_id < m.receiver_id
+            THEN m.sender_id || '_' || m.receiver_id
+          ELSE m.receiver_id || '_' || m.sender_id
+        END AS chat_id
+      FROM "Messages" m
+      JOIN "Users" other_user
+        ON other_user.id =
           CASE
-            WHEN msg.sender_id < msg.receiver_id
-              THEN msg.sender_id || '_' || msg.receiver_id
-            ELSE msg.receiver_id || '_' || msg.sender_id
-          END AS chat_id,
-          CASE
-            WHEN msg.sender_id = :userId THEN msg.receiver_id
-            ELSE msg.sender_id
-          END AS other_user_id
-        FROM "Messages" msg
-        WHERE msg.sender_id = :userId
-           OR msg.receiver_id = :userId
-      ) m
-      JOIN "Users" u ON u.id = m.other_user_id
-      WHERE u.id <> :userId
-      ORDER BY m.chat_id, m.created_at DESC
+            WHEN m.sender_id = :userId THEN m.receiver_id
+            ELSE m.sender_id
+          END
+      WHERE m.sender_id = :userId OR m.receiver_id = :userId
+      ORDER BY other_user.id, m.created_at DESC
     `
 
     const chats = await sequelize.query(query, {
@@ -1139,8 +1133,6 @@ exports.getMyChats = async (req, res) => {
     })
   }
 }
-
-
 
 
 exports.updateStatus = async (req, res) => {
