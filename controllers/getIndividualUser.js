@@ -811,6 +811,42 @@ exports.updateFeedVisibility = async (req, res) => {
 };
 
 
+exports.updateRead = async (req, res) => {
+  try {
+    const userId = req.user.id
+    const { chatId } = req.body
+
+    if (!chatId) {
+      return res.status(400).json({
+        status: false,
+        message: "chatId is required",
+      })
+    }
+
+    const [updatedCount] = await Message.update(
+      { is_read: true },
+      {
+        where: {
+          chat_id: chatId,
+          receiver_id: userId,   // mark only messages received by me
+          is_read: false,
+        },
+      }
+    )
+
+    return res.status(200).json({
+      status: true,
+      updatedCount,
+      message: "Messages marked as read",
+    })
+  } catch (error) {
+    console.error("❌ updateRead error:", error)
+    return res.status(500).json({
+      status: false,
+      message: "Failed to update messages",
+    })
+  }
+}
 
 
 
