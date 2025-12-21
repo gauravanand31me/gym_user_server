@@ -1099,6 +1099,7 @@ exports.getMyChats = async (req, res) => {
         other_user.full_name,
         other_user.profile_pic,
         m.text AS last_message,
+        m.is_read AS is_read,
         m.created_at AS last_message_time,
         CASE
           WHEN m.sender_id < m.receiver_id
