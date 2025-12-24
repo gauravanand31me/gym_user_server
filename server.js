@@ -108,7 +108,7 @@ io.on("connection", (socket) => {
           status: data.request,
         }, { transaction: t });
   
-        console.log("🆕 MessageRequest created:", status);
+        console.log("🆕 MessageRequest created:", data.request);
       } else {
         console.log("⚠️ MessageRequest already exists — skipping insert");
       }
