@@ -89,6 +89,7 @@ io.on("connection", (socket) => {
     // Send message to all users in room
     io.to(data.chatId).emit("receive_message", data)
 
+    console.log("Chat Id received from server", data.chatId);
 
     Message.create({
       chat_id: data.chatId,
