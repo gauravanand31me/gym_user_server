@@ -1124,6 +1124,29 @@ exports.getMessageByChatId = async (req, res) => {
 }
 
 
+exports.deleteAllMessages = async (req, res) => {
+  try {
+    const deletedCount = await Message.destroy({
+      where: {},          // no filter → deletes all rows
+      truncate: false     // set true if you want to reset auto-increment
+    })
+
+    return res.status(200).json({
+      status: true,
+      deleted: deletedCount,
+      message: "All messages deleted successfully",
+    })
+  } catch (error) {
+    console.error("❌ deleteAllMessages error:", error)
+    return res.status(500).json({
+      status: false,
+      message: "Failed to delete messages",
+    })
+  }
+}
+
+
+
 
 exports.getMyChats = async (req, res) => {
   try {
