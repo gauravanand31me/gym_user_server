@@ -1179,6 +1179,7 @@ exports.getMessageRequestStatus = async (req, res) => {
     return res.status(200).json({
       status: true,
       chatId,
+      receiver_id,
       requestStatus: request.status,
     });
   } catch (error) {
