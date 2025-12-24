@@ -97,7 +97,10 @@ io.on("connection", (socket) => {
       receiver_id: data.receiverId,
       text: data.text,
       message_type: "text",
+      request: data.request
     });
+
+
 
 
     const notificationData = await PushNotification.findOne({
