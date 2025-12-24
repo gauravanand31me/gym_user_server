@@ -1132,6 +1132,12 @@ exports.deleteAllMessages = async (req, res) => {
       truncate: false     // set true if you want to reset auto-increment
     })
 
+
+    MessageRequest.destroy({
+      where: {},       // no filter → deletes all rows
+      truncate: false  // set true if you want to reset auto-increment
+    })
+
     return res.status(200).json({
       status: true,
       deleted: deletedCount,

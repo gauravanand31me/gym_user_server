@@ -100,14 +100,12 @@ io.on("connection", (socket) => {
   
       // 3️⃣ If NOT exists → insert one
       if (!requestRecord) {
-        const status =
-          data.request_status ||   // optional from client
-          (data.request ? "pending" : "auto"); // default rules
+        
   
         requestRecord = await MessageRequest.create({
           chat_id: data.chatId,
           receiver_id: data.receiverId,
-          status
+          status: data.request,
         }, { transaction: t });
   
         console.log("🆕 MessageRequest created:", status);
