@@ -228,7 +228,7 @@ exports.getCommentsByPost = async (req, res) => {
 
     const queryOptions = {
       where: whereClause,
-      order: [["createdAt", "DESC"]],
+      order: [["createdAt", "ASC"]],
       include: [
         {
           model: User,
