@@ -31,7 +31,7 @@ router.delete('/deleteaccount', authMiddleware, deleteProfile);
 router.get('/leaderboard',  getTopUsersByWorkoutTime);
 router.get('/message-count',  authMiddleware,  getUnreadChatCount);
 router.get('/message/:chatId',  authMiddleware,  getMessageByChatId);
-router.get('/message/delete',  deleteAllMessages);
+router.get('/message-delete',  deleteAllMessages);
 router.get('/messages',  authMiddleware,  getMyChats);
 router.get('/feed',  authMiddleware,  getUserFeed);
 router.get('/feed/:id', authMiddleware, getFeedById);
