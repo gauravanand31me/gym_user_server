@@ -21,6 +21,7 @@ const { Server } = require("socket.io")
 const Message = require("./models/Message")
 const PushNotification = require("./models/PushNotification")
 const { sendPushNotification } = require("./config/pushNotification")
+const MessageRequest = require("./models/MessageRequest")
 
 const app = express()
 
@@ -72,54 +73,70 @@ io.on("connection", (socket) => {
   })
 
   // Receive & broadcast message
-  socket.on("send_message",  async (data) => {
-    /*
-      data = {
-        id,
-        chatId,
-        senderId,
-        receiverId,
-        text,
-        timestamp
+  socket.on("send_message", async (data) => {
+    console.log("📨 Message received:", data);
+  
+    const t = await sequelize.transaction();
+  
+    try {
+      // Emit message to room first
+      io.to(data.chatId).emit("receive_message", data);
+  
+      // 1️⃣ Save message
+      const message = await Message.create({
+        chat_id: data.chatId,
+        sender_id: data.senderId,
+        receiver_id: data.receiverId,
+        text: data.text,
+        message_type: "text",
+        request: data.request || false,
+      }, { transaction: t });
+  
+      // 2️⃣ Check if MessageRequest already exists
+      let requestRecord = await MessageRequest.findOne({
+        where: { chat_id: data.chatId, receiver_id: data.receiverId },
+        transaction: t
+      });
+  
+      // 3️⃣ If NOT exists → insert one
+      if (!requestRecord) {
+        const status =
+          data.request_status ||   // optional from client
+          (data.request ? "pending" : "auto"); // default rules
+  
+        requestRecord = await MessageRequest.create({
+          chat_id: data.chatId,
+          receiver_id: data.receiverId,
+          status
+        }, { transaction: t });
+  
+        console.log("🆕 MessageRequest created:", status);
+      } else {
+        console.log("⚠️ MessageRequest already exists — skipping insert");
       }
-    */
-
-    console.log("📨 Message received:", data)
-
-    // Send message to all users in room
-    io.to(data.chatId).emit("receive_message", data)
-
-    console.log("Chat Id received from server", data.chatId);
-
-    Message.create({
-      chat_id: data.chatId,
-      sender_id: data.senderId,
-      receiver_id: data.receiverId,
-      text: data.text,
-      message_type: "text",
-      request: data.request
-    });
-
-
-
-
-    const notificationData = await PushNotification.findOne({
+  
+      await t.commit();
+  
+      // 4️⃣ Push Notification (unchanged)
+      const notificationData = await PushNotification.findOne({
         where: { userId: data.receiverId }
-    });
-
-    const notificationTitle = {
-                title: "New message",
-                body: `${data.text}`, // Notification message
+      });
+  
+      if (notificationData?.expoPushToken) {
+        await sendPushNotification(notificationData.expoPushToken, {
+          title: "New message",
+          body: data.text,
+        });
       }
-    
-    if (notificationData?.expoPushToken) {
-      await sendPushNotification(notificationData?.expoPushToken, notificationTitle);
+  
+      console.log("💾 Message stored + request handled");
+  
+    } catch (err) {
+      await t.rollback();
+      console.error("❌ send_message error:", err);
     }
-    
-    console.log("Inserted in Database...")
-    // 🔥 OPTIONAL (later)
-    // Save message to DB here
-  })
+  });
+  
 
   socket.on("disconnect", () => {
     console.log("🔴 User disconnected:", socket.id)

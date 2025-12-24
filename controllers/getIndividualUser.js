@@ -29,6 +29,7 @@ const Block = require('../models/Block');
 const Category = require('../models/Category');
 const ChallengePayment = require('../models/ChallengePayment');
 const Message = require('../models/Message');
+const MessageRequest = require('../models/MessageRequest');
 
 const s3Client = new S3Client({
   region: process.env.AWS_REGION,
@@ -1144,6 +1145,92 @@ exports.deleteAllMessages = async (req, res) => {
     })
   }
 }
+
+
+
+exports.getMessageRequestStatus = async (req, res) => {
+  try {
+    const { chatId } = req.params;
+
+    if (!chatId) {
+      return res.status(400).json({
+        status: false,
+        message: "chatId is required",
+      });
+    }
+
+    const request = await MessageRequest.findOne({
+      where: { chat_id: chatId },
+    });
+
+    if (!request) {
+      return res.status(404).json({
+        status: false,
+        message: "No message request found for this chat",
+      });
+    }
+
+    return res.status(200).json({
+      status: true,
+      chatId,
+      requestStatus: request.status,
+    });
+  } catch (error) {
+    console.error("❌ getMessageRequestStatus error:", error);
+    return res.status(500).json({
+      status: false,
+      message: "Failed to fetch message request status",
+    });
+  }
+};
+
+
+
+exports.updateMessageRequestStatus = async (req, res) => {
+  try {
+    const { chatId } = req.params;
+    const { status } = req.body;
+
+    if (!chatId) {
+      return res.status(400).json({
+        status: false,
+        message: "chatId is required",
+      });
+    }
+
+    if (!["pending", "auto", "declined"].includes(status)) {
+      return res.status(400).json({
+        status: false,
+        message: "Invalid status value",
+      });
+    }
+
+    const [updatedCount] = await MessageRequest.update(
+      { status },
+      { where: { chat_id: chatId } }
+    );
+
+    if (updatedCount === 0) {
+      return res.status(404).json({
+        status: false,
+        message: "No message request found for this chatId",
+      });
+    }
+
+    return res.status(200).json({
+      status: true,
+      chatId,
+      newStatus: status,
+      message: "Message request status updated successfully",
+    });
+  } catch (error) {
+    console.error("❌ updateMessageRequestStatus error:", error);
+    return res.status(500).json({
+      status: false,
+      message: "Failed to update message request status",
+    });
+  }
+};
 
 
 
