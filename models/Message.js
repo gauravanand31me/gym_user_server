@@ -40,6 +40,11 @@ const Message = sequelize.define(
       allowNull: true,
     },
 
+    request: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+
     is_read: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,
