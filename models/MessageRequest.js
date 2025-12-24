@@ -1,5 +1,6 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../config/db");
+const { v4: uuidv4 } = require('uuid');
 
 const MessageRequest = sequelize.define(
   "MessageRequest",
@@ -7,7 +8,7 @@ const MessageRequest = sequelize.define(
     id: {
       type: DataTypes.UUID,
       primaryKey: true,
-      defaultValue: DataTypes.UUIDV4,
+      defaultValue: uuidv4(),
     },
 
     chat_id: {
