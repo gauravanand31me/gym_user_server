@@ -94,7 +94,7 @@ io.on("connection", (socket) => {
   
       // 2️⃣ Check if MessageRequest already exists
       let requestRecord = await MessageRequest.findOne({
-        where: { chat_id: data.chatId, receiver_id: data.receiverId },
+        where: { chat_id: data.chatId },
         transaction: t
       });
   
