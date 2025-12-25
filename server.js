@@ -105,6 +105,7 @@ io.on("connection", (socket) => {
         
   
         requestRecord = await MessageRequest.create({
+          id: uuidv4(),
           chat_id: data.chatId,
           receiver_id: data.receiverId,
           status: data.request,
