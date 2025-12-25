@@ -829,7 +829,6 @@ exports.updateRead = async (req, res) => {
       {
         where: {
           chat_id: chatId,
-          receiver_id: userId,   // mark only messages received by me
           is_read: false,
         },
       }
