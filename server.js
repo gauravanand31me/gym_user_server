@@ -3,6 +3,7 @@ require("dotenv").config()
 const express = require("express")
 const http = require("http")
 const cors = require("cors")
+const { v4: uuidv4 } = require('uuid'); // For generating UUIDs
 const sequelize = require("./config/db")
 
 const authRoutes = require("./routes/auth")
@@ -84,6 +85,7 @@ io.on("connection", (socket) => {
   
       // 1️⃣ Save message
       const message = await Message.create({
+        id: uuidv4(),
         chat_id: data.chatId,
         sender_id: data.senderId,
         receiver_id: data.receiverId,
