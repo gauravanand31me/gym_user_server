@@ -830,6 +830,7 @@ exports.updateRead = async (req, res) => {
         where: {
           chat_id: chatId,
           is_read: false,
+          receiver_id: userId
         },
       }
     )
