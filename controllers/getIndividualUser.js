@@ -1254,6 +1254,7 @@ FROM (
     other_user.full_name,
     other_user.profile_pic,
     m.text AS last_message,
+    m.sender_id AS sender_id,
     m.is_read,
     m.created_at AS last_message_time,
     CASE
