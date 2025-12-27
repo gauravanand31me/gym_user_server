@@ -295,6 +295,9 @@ exports.blockUser = async (req, res) => {
     const { toUserId, isBlocked } = req.body;
     const fromUserId = req.user.id;
 
+    const currentChatId = [toUserId, fromUserId].sort().join("_")
+
+
     if (!toUserId || typeof isBlocked !== 'boolean') {
       return res.status(400).json({ message: 'toUserId and isBlocked (boolean) are required' });
     }
@@ -322,6 +325,15 @@ exports.blockUser = async (req, res) => {
         blockingId: toUserId
       });
 
+      const request = await MessageRequest.findOne({
+        where: { chat_id: currentChatId }
+      });
+
+
+      if (request) {
+        await request.destroy();
+      }
+      
       return res.status(201).json({
         message: 'User blocked successfully',
         block: newBlock
