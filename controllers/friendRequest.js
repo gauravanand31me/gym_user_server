@@ -192,7 +192,7 @@ exports.getFriendRequests = async (req, res) => {
   try {
     // Fetch accepted requests with pagination
     const acceptedRequests = await sequelize.query(
-      `SELECT fr.*, u.id as "fromUserId", u.full_name, u.profile_pic 
+      `SELECT fr.*, u.id as "fromUserId", u.full_name, u.profile_pic , u.username
        FROM "FriendRequests" fr
        JOIN "Users" u ON fr."fromUserId" = u.id
        WHERE fr."toUserId" = :userId AND fr.status = :type
@@ -221,7 +221,7 @@ exports.getFollowers = async (req, res) => {
 
   try {
     const followers = await sequelize.query(
-      `SELECT f."followerId", u.full_name, u.profile_pic
+      `SELECT f."followerId", u.full_name, u.profile_pic, u.username
        FROM "Follows" f
        JOIN "Users" u ON f."followerId" = u.id
        WHERE f."followingId" = :userId
