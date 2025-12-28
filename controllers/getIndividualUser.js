@@ -330,7 +330,8 @@ exports.blockUser = async (req, res) => {
       });
       
       if (request) {
-        await request.update({ status: "pending" });
+        // await request.update({ status: "pending" });
+        await request.destroy();
       }
       
       return res.status(201).json({
