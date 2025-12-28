@@ -22,7 +22,8 @@ const { Server } = require("socket.io")
 const Message = require("./models/Message")
 const PushNotification = require("./models/PushNotification")
 const { sendPushNotification } = require("./config/pushNotification")
-const MessageRequest = require("./models/MessageRequest")
+const MessageRequest = require("./models/MessageRequest");
+const User = require("./models/User");
 
 const app = express()
 
@@ -124,9 +125,31 @@ io.on("connection", (socket) => {
       });
   
       if (notificationData?.expoPushToken) {
+        // Get sender info
+        const sender = await User.findOne({
+          where: { id: data.senderId },
+          attributes: ["full_name", "profile_pic"],
+        });
+      
+        const senderName = sender?.full_name || "New message";
+        const senderPic = sender?.profile_pic || null;
+      
         await sendPushNotification(notificationData.expoPushToken, {
-          title: "New message",
+          title: senderName,
           body: data.text,
+      
+          // Large preview image (Android; iOS w/ extension)
+          image: senderPic,
+      
+          // Small icon (Android only — optional)
+          icon: senderPic,
+      
+          // Also pass to app UI if you want
+          data: {
+            senderId: data.senderId,
+            full_name: senderName,
+            profile_pic: senderPic,
+          },
         });
       }
   
