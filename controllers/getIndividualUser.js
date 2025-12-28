@@ -328,10 +328,9 @@ exports.blockUser = async (req, res) => {
       const request = await MessageRequest.findOne({
         where: { chat_id: currentChatId }
       });
-
-
+      
       if (request) {
-        await request.destroy();
+        await request.update({ status: "pending" });
       }
       
       return res.status(201).json({
