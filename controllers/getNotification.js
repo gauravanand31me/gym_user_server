@@ -54,7 +54,7 @@ exports.getNotifications = async (req, res) => {
         const unreadCount = unreadCountResult[0].unreadcount || 0;
 
         // Return the fetched results and unread count
-       
+
         res.status(200).json({ notifications, unreadCount });
 
     } catch (error) {
@@ -65,14 +65,17 @@ exports.getNotifications = async (req, res) => {
 
 exports.markNotificationsAsRead = async (req, res) => {
     const userId = req.user.id; // Get the logged-in user ID from the request
+    const id = req.body.id;
 
     try {
         // Update the status of all notifications to 'read' for the current user
         const updateQuery = `
-            UPDATE "Notification" 
-            SET "status" = 'read' 
-            WHERE "userId" = :userId AND "status" = 'unread'
-        `;
+    UPDATE "Notification"
+    SET "status" = 'read'
+    WHERE "userId" = :userId
+      AND "id" = :id
+      AND "status" = 'unread'
+`;
 
         // Execute the query
         const result = await sequelize.query(updateQuery, {
@@ -98,20 +101,20 @@ exports.markNotificationsAsRead = async (req, res) => {
 
 exports.deleteOldNotifications = async () => {
     try {
-      const daysAgo = new Date();
-      daysAgo.setDate(daysAgo.getDate() - 30); // Get date 7 days ago
-  
-      const deletedNotifications = await Notification.destroy({
-        where: {
-          createdAt: {
-            [Op.lt]: daysAgo, // Deletes notifications older than 7 days
-          },
-        },
-      });
-  
-      console.log(`${deletedNotifications} notifications older than 30 days have been deleted.`);
+        const daysAgo = new Date();
+        daysAgo.setDate(daysAgo.getDate() - 30); // Get date 7 days ago
+
+        const deletedNotifications = await Notification.destroy({
+            where: {
+                createdAt: {
+                    [Op.lt]: daysAgo, // Deletes notifications older than 7 days
+                },
+            },
+        });
+
+        console.log(`${deletedNotifications} notifications older than 30 days have been deleted.`);
     } catch (error) {
-      console.error('Error deleting old notifications:', error);
+        console.error('Error deleting old notifications:', error);
     }
 };
 
