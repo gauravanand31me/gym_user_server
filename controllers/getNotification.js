@@ -79,7 +79,7 @@ exports.markNotificationsAsRead = async (req, res) => {
 
         // Execute the query
         const result = await sequelize.query(updateQuery, {
-            replacements: { userId: userId },
+            replacements: { userId: userId, id: id},
             type: sequelize.QueryTypes.UPDATE,
         });
 
