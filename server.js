@@ -77,13 +77,13 @@ io.on("connection", (socket) => {
   // Receive & broadcast message
   socket.on("send_message", async (data) => {
     console.log("📨 Message received:", data);
-  
+
     const t = await sequelize.transaction();
-  
+
     try {
       // Emit message to room first
       io.to(data.chatId).emit("receive_message", data);
-  
+
       // 1️⃣ Save message
       const message = await Message.create({
         id: uuidv4(),
@@ -94,56 +94,82 @@ io.on("connection", (socket) => {
         message_type: "text",
         request: data.request || false,
       }, { transaction: t });
-  
+
+
       // 2️⃣ Check if MessageRequest already exists
       let requestRecord = await MessageRequest.findOne({
         where: { chat_id: data.chatId },
         transaction: t
       });
-  
+
       // 3️⃣ If NOT exists → insert one
       if (!requestRecord) {
-        
-  
+
+
         requestRecord = await MessageRequest.create({
           id: uuidv4(),
           chat_id: data.chatId,
           receiver_id: data.receiverId,
           status: data.request,
         }, { transaction: t });
-  
+
         console.log("🆕 MessageRequest created:", data.request);
       } else {
         console.log("⚠️ MessageRequest already exists — skipping insert");
       }
-  
+
+
+      // count messages for this chat
+      const count = await Message.count({
+        where: { chat_id: data.chatId },
+        transaction: t
+      });
+
+      if (count > 30) {
+        // get oldest 30 messages
+        const oldMessages = await Message.findAll({
+          where: { chat_id: data.chatId },
+          order: [["createdAt", "ASC"]],
+          limit: 30,
+          attributes: ["id"],
+          transaction: t
+        });
+
+        await Message.destroy({
+          where: {
+            id: oldMessages.map(m => m.id)
+          },
+          transaction: t
+        });
+      }
+
       await t.commit();
-  
+
       // 4️⃣ Push Notification (unchanged)
       const notificationData = await PushNotification.findOne({
         where: { userId: data.receiverId }
       });
-  
+
       if (notificationData?.expoPushToken) {
         // Get sender info
         const sender = await User.findOne({
           where: { id: data.senderId },
           attributes: ["full_name", "profile_pic"],
         });
-      
+
         const senderName = sender?.full_name || "New message";
         const senderPic = sender?.profile_pic || null;
-      
+
         await sendPushNotification(notificationData.expoPushToken, {
           title: senderName,
           body: data.text,
-      
+
           // Large preview image (Android; iOS w/ extension)
           image: senderPic,
-      
+
           // Small icon (Android only — optional)
           icon: senderPic,
-      
+
           // Also pass to app UI if you want
           data: {
             senderId: data.senderId,
@@ -152,15 +178,15 @@ io.on("connection", (socket) => {
           },
         });
       }
-  
+
       console.log("💾 Message stored + request handled");
-  
+
     } catch (err) {
       await t.rollback();
       console.error("❌ send_message error:", err);
     }
   });
-  
+
 
   socket.on("disconnect", () => {
     console.log("🔴 User disconnected:", socket.id)
