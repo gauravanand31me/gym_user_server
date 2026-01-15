@@ -9,6 +9,7 @@ const sequelize = require("../config/db");
 const { v4: uuidv4 } = require('uuid');
 const PushNotification = require('../models/PushNotification');
 const { sendPushNotification } = require('../config/pushNotification');
+const MessageRequest = require('../models/MessageRequest');
 
 exports.sendFriendRequest = async (req, res) => {
     const { userId } = req.body; // ID of the user to send a friend request to
@@ -157,6 +158,22 @@ exports.acceptRequest = async (req, res) => {
             profileImage: fromUser.profile_pic || "https://png.pngtree.com/png-vector/20190223/ourmid/pngtree-profile-glyph-black-icon-png-image_691589.jpg",
             forUserId: req.user.id
           });
+
+        
+        // Accept any pending request in chatId
+        const chatId = [request.fromUserId, request.toUserId]
+          .sort()
+          .join("_");
+        
+        // Update MessageRequest if exists
+        await MessageRequest.update(
+          { status: 'auto' }, // or true / 1 depending on your schema
+          {
+            where: {
+              chat_id: chatId
+            }
+          }
+        );
 
 
         const notificationData = await PushNotification.findOne({
