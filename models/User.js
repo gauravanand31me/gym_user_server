@@ -105,6 +105,14 @@ const User = sequelize.define('User', {
         type: DataTypes.STRING,
         allowNull: true,
     },
+    is_trainer: {
+        type: DataTypes.STRING,
+        allowNull: true,
+    },
+    spec: {
+        type: DataTypes.STRING,
+        allowNull: true,
+    },
     gender: {
         type: DataTypes.STRING,
         allowNull: true
