@@ -1433,6 +1433,22 @@ exports.updateFullName = async (req, res) => {
   }
 };
 
+exports.updateTrainer = async (req, res) => {
+  const userId = req.user.id;
+
+  const {is_trainer, spec} = req.body;
+
+  try {
+    await User.update(
+      { is_trainer, spec },
+      { where: { id: userId } }
+    );
+    res.status(200).json({ message: 'User successfully set as trainer', is_trainer });
+  } catch (e) {
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
 
 exports.updateGymDetails = async (req, res) => {
   const userId = req.user.id; // Assumes user is authenticated and user ID is available in req.user
