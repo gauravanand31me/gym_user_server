@@ -292,6 +292,20 @@ exports.rejectRequest = async (req, res) => {
       
 
       // Decrement friend counts for both users
+      // Accept any pending request in chatId
+      const chatId = [request.fromUserId, request.toUserId]
+      .sort()
+      .join("_");
+    
+    // Update MessageRequest if exists
+    await MessageRequest.update(
+      { status: 'pending' }, // or true / 1 depending on your schema
+      {
+        where: {
+          chat_id: chatId
+        }
+      }
+    );
       
 
       return res.status(200).json({ message: "Friend request rejected." });
