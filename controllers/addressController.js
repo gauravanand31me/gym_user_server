@@ -12,21 +12,43 @@ const getUserId = (req) => {
 
 // Register a new user
 exports.addAddress = async (req, res) => {
-    const userId = getUserId(req);
+    try {
+        const userId = getUserId(req);
 
-    const newAddress = await UserAddress.create({
-        user_id: userId,
-        lat: req.body.lat,
-        long: req.body.long,
-        address_line_1: req.body.address_line_1,
-        address_line_2: req.body.address_line_2,
-        city: req.body.city,
-        state: req.body.state,
-        pincode: req.body.pincode,
-    });
+        const addressData = {
+            lat: req.body.lat,
+            long: req.body.long,
+            address_line_1: req.body.address_line_1,
+            address_line_2: req.body.address_line_2,
+            city: req.body.city,
+            state: req.body.state,
+            pincode: req.body.pincode,
+        };
 
-    res.status(201).json(newAddress);
-}
+        const existingAddress = await UserAddress.findOne({
+            where: { user_id: userId }
+        });
+
+        let result;
+
+        if (existingAddress) {
+            // Update
+            result = await existingAddress.update(addressData);
+        } else {
+            // Insert
+            result = await UserAddress.create({
+                user_id: userId,
+                ...addressData
+            });
+        }
+
+        return res.status(201).json(result);
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: "Failed to add/update address" });
+    }
+};
+
 
 
 
