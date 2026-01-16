@@ -71,43 +71,58 @@ exports.getAddress = async (req, res) => {
         }
     
         const query = `
-          SELECT *
-          FROM (
-            SELECT
-              "Users".id AS "userId",
-              "Users".full_name,
-              "Users".username,
-              "Users".profile_pic,
-              "Users".spec,
-              "Users".gender,
-              "Users".is_trainer,
-              "Users".gym_name,
-    
-              "UserAddresses".lat,
-              "UserAddresses".long,
-              "UserAddresses".city,
-              "UserAddresses".state,
-              "UserAddresses".pincode,
-    
-              (
-                6371 * acos(
-                  cos(radians(:userLat))
-                  * cos(radians("UserAddresses".lat))
-                  * cos(radians("UserAddresses".long) - radians(:userLong))
-                  + sin(radians(:userLat))
-                  * sin(radians("UserAddresses".lat))
-                )
-              ) AS distance
-    
-            FROM "UserAddresses"
-            INNER JOIN "Users"
-              ON "Users".id = "UserAddresses".user_id
-    
-            WHERE LOWER("Users".is_trainer) IN ('true', 'trainer', 'yes', '1')
-          ) AS trainer_distance
-    
-          WHERE distance <= :radius
-          ORDER BY distance ASC
+          SELECT
+    u.id AS "userId",
+    u.full_name,
+    u.username,
+    u.profile_pic,
+    u.spec,
+    u.gender,
+    u.is_trainer,
+    u.gym_name,
+
+    ua.lat,
+    ua.long,
+    ua.city,
+    ua.state,
+    ua.pincode,
+
+    (
+        6371 * acos(
+            cos(radians(:userLat))
+            * cos(radians(ua.lat))
+            * cos(radians(ua.long) - radians(:userLong))
+            + sin(radians(:userLat))
+            * sin(radians(ua.lat))
+        )
+    ) AS distance,
+
+    COUNT(students.id) AS student_count
+
+FROM "Users" u
+INNER JOIN "UserAddresses" ua ON u.id = ua.user_id
+
+LEFT JOIN "Users" students
+    ON students.t_id = u.id
+   AND students.id != u.id               -- prevent counting self as student (if ever possible)
+
+WHERE LOWER(u.is_trainer) IN ('true', 'trainer', 'yes', '1')
+  AND (
+      6371 * acos(
+          cos(radians(:userLat))
+          * cos(radians(ua.lat))
+          * cos(radians(ua.long) - radians(:userLong))
+          + sin(radians(:userLat))
+          * sin(radians(ua.lat))
+      )
+  ) <= :radius
+
+GROUP BY
+    u.id, ua.lat, ua.long, ua.city, ua.state, ua.pincode,
+    u.full_name, u.username, u.profile_pic, u.spec, u.gender,
+    u.is_trainer, u.gym_name
+
+ORDER BY distance ASC;
         `;
     
         const trainers = await sequelize.query(query, {
