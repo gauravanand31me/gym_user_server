@@ -3,6 +3,7 @@ const router = express.Router();
 const UserAddress = require('../models/UserAddress');
 const { v4: uuidv4 } = require('uuid'); // For generating UUIDs
 const User = require('../models/User');
+const sequelize = require('../config/db');
 
 
 // Middleware to get logged-in user's ID (assuming you have this set up)
