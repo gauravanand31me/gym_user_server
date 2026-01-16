@@ -62,7 +62,7 @@ exports.getAddress = async (req, res) => {
     try {
         const userLat = parseFloat(req.query.lat);
         const userLong = parseFloat(req.query.long);
-        const radius = parseFloat(req.query.radius || 5);
+        const radius = parseFloat(req.query.radius || 5); // KM
     
         if (!userLat || !userLong) {
           return res.status(400).json({
@@ -71,47 +71,41 @@ exports.getAddress = async (req, res) => {
         }
     
         const query = `
-          SELECT
-            "Users".id AS "userId",
-            "Users".full_name,
-            "Users".username,
-            "Users".profile_pic,
-            "Users".spec,
-            "Users".gender,
-            "Users".is_trainer,
+          SELECT *
+          FROM (
+            SELECT
+              "Users".id AS "userId",
+              "Users".full_name,
+              "Users".username,
+              "Users".profile_pic,
+              "Users".spec,
+              "Users".gender,
+              "Users".is_trainer,
     
-            "UserAddresses".lat,
-            "UserAddresses".long,
-            "UserAddresses".city,
-            "UserAddresses".state,
-            "UserAddresses".pincode,
+              "UserAddresses".lat,
+              "UserAddresses".long,
+              "UserAddresses".city,
+              "UserAddresses".state,
+              "UserAddresses".pincode,
     
-            (
-              6371 * acos(
-                cos(radians(:userLat))
-                * cos(radians("UserAddresses".lat))
-                * cos(radians("UserAddresses".long) - radians(:userLong))
-                + sin(radians(:userLat))
-                * sin(radians("UserAddresses".lat))
-              )
-            ) AS distance
+              (
+                6371 * acos(
+                  cos(radians(:userLat))
+                  * cos(radians("UserAddresses".lat))
+                  * cos(radians("UserAddresses".long) - radians(:userLong))
+                  + sin(radians(:userLat))
+                  * sin(radians("UserAddresses".lat))
+                )
+              ) AS distance
     
-          FROM "UserAddresses"
-          INNER JOIN "Users"
-            ON "Users".id = "UserAddresses".user_id
+            FROM "UserAddresses"
+            INNER JOIN "Users"
+              ON "Users".id = "UserAddresses".user_id
     
-          WHERE LOWER("Users".is_trainer) IN ('true', 'trainer', 'yes', '1')
+            WHERE LOWER("Users".is_trainer) IN ('true', 'trainer', 'yes', '1')
+          ) AS trainer_distance
     
-          HAVING (
-            6371 * acos(
-              cos(radians(:userLat))
-              * cos(radians("UserAddresses".lat))
-              * cos(radians("UserAddresses".long) - radians(:userLong))
-              + sin(radians(:userLat))
-              * sin(radians("UserAddresses".lat))
-            )
-          ) <= :radius
-    
+          WHERE distance <= :radius
           ORDER BY distance ASC
         `;
     
