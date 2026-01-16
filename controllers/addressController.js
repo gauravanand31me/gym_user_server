@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const UserAddress = require('../models/UserAddress');
 const { v4: uuidv4 } = require('uuid'); // For generating UUIDs
+const User = require('../models/User');
 
 
 // Middleware to get logged-in user's ID (assuming you have this set up)
@@ -55,7 +56,55 @@ exports.addAddress = async (req, res) => {
 
 // Register a new user
 exports.getAddress = async (req, res) => {
-    const userId = getUserId(req);
-    const addresses = await UserAddress.findAll({ where: { user_id: userId } });
-    res.status(200).json(addresses);
+    try {
+        const userLat = parseFloat(req.query.lat);
+        const userLong = parseFloat(req.query.long);
+        const radius = parseFloat(req.query.radius || 5); // KM
+
+        if (!userLat || !userLong) {
+            return res.status(400).json({ message: "Latitude and Longitude required" });
+        }
+
+        const trainers = await UserAddress.findAll({
+            attributes: {
+                include: [
+                    [
+                        Sequelize.literal(`
+                            6371 * acos(
+                                cos(radians(${userLat}))
+                                * cos(radians(lat))
+                                * cos(radians(long) - radians(${userLong}))
+                                + sin(radians(${userLat}))
+                                * sin(radians(lat))
+                            )
+                        `),
+                        "distance"
+                    ]
+                ]
+            },
+            include: [
+                {
+                    model: User,
+                    attributes: [
+                        "id",
+                        "full_name",
+                        "profile_pic",
+                        "spec",
+                        "is_trainer",
+                        "gender"
+                    ],
+                    where: {
+                        is_trainer: true
+                    }
+                }
+            ],
+            having: Sequelize.literal(`distance <= ${radius}`),
+            order: Sequelize.literal("distance ASC")
+        });
+
+        return res.status(200).json(trainers);
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: "Failed to fetch nearby trainers" });
+    }
 }
