@@ -81,6 +81,7 @@ exports.getAddress = async (req, res) => {
               "Users".spec,
               "Users".gender,
               "Users".is_trainer,
+              "Users".gym_name,
     
               "UserAddresses".lat,
               "UserAddresses".long,
