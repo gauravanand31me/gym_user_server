@@ -59,71 +59,83 @@ exports.addAddress = async (req, res) => {
 
 
 exports.getAddress = async (req, res) => {
-    try {
-        const userLat = parseFloat(req.query.lat);
-        const userLong = parseFloat(req.query.long);
-        const radius = parseFloat(req.query.radius || 5); // KM
-    
-        if (!userLat || !userLong) {
-          return res.status(400).json({
-            message: "Latitude and Longitude are required",
-          });
-        }
-    
-        const query = `
-          SELECT *
-          FROM (
-            SELECT
-              "Users".id AS "userId",
-              "Users".full_name,
-              "Users".username,
-              "Users".profile_pic,
-              "Users".spec,
-              "Users".gender,
-              "Users".is_trainer,
-              "Users".gym_name,
-    
-              "UserAddresses".lat,
-              "UserAddresses".long,
-              "UserAddresses".city,
-              "UserAddresses".state,
-              "UserAddresses".pincode,
-    
-              (
-                6371 * acos(
-                  cos(radians(:userLat))
-                  * cos(radians("UserAddresses".lat))
-                  * cos(radians("UserAddresses".long) - radians(:userLong))
-                  + sin(radians(:userLat))
-                  * sin(radians("UserAddresses".lat))
-                )
-              ) AS distance
-    
-            FROM "UserAddresses"
-            INNER JOIN "Users"
-              ON "Users".id = "UserAddresses".user_id
-    
-            WHERE LOWER("Users".is_trainer) IN ('true', 'trainer', 'yes', '1')
-          ) AS trainer_distance
-    
-          WHERE distance <= :radius
-          ORDER BY distance ASC
-        `;
-    
-        const trainers = await sequelize.query(query, {
-          replacements: {
-            userLat,
-            userLong,
-            radius,
-          },
-          type: sequelize.QueryTypes.SELECT,
-        });
-    
-        return res.status(200).json(trainers);
-      } catch (error) {
-        console.error("Nearby trainers error:", error);
-        return res.status(500).json({
-          message: "Failed to fetch nearby trainers",
-        });
-      }
-  };
+  try {
+    const userLat = parseFloat(req.query.lat);
+    const userLong = parseFloat(req.query.long);
+    const radius = parseFloat(req.query.radius || 5); // KM
+
+    // pagination
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const offset = parseInt(req.query.offset, 10) || 0;
+
+    if (Number.isNaN(userLat) || Number.isNaN(userLong)) {
+      return res.status(400).json({
+        message: "Latitude and Longitude are required",
+      });
+    }
+
+    const query = `
+      SELECT *
+      FROM (
+        SELECT
+          "Users".id AS "userId",
+          "Users".full_name,
+          "Users".username,
+          "Users".profile_pic,
+          "Users".spec,
+          "Users".gender,
+          "Users".is_trainer,
+          "Users".gym_name,
+
+          "UserAddresses".lat,
+          "UserAddresses".long,
+          "UserAddresses".city,
+          "UserAddresses".state,
+          "UserAddresses".pincode,
+
+          (
+            6371 * acos(
+              cos(radians(:userLat))
+              * cos(radians("UserAddresses".lat))
+              * cos(radians("UserAddresses".long) - radians(:userLong))
+              + sin(radians(:userLat))
+              * sin(radians("UserAddresses".lat))
+            )
+          ) AS distance
+
+        FROM "UserAddresses"
+        INNER JOIN "Users"
+          ON "Users".id = "UserAddresses".user_id
+
+        WHERE LOWER("Users".is_trainer) IN ('true', 'trainer', 'yes', '1')
+      ) AS trainer_distance
+
+      WHERE distance <= :radius
+      ORDER BY distance ASC
+      LIMIT :limit OFFSET :offset
+    `;
+
+    const trainers = await sequelize.query(query, {
+      replacements: {
+        userLat,
+        userLong,
+        radius,
+        limit,
+        offset,
+      },
+      type: sequelize.QueryTypes.SELECT,
+    });
+
+    return res.status(200).json({
+      limit,
+      offset,
+      count: trainers.length,
+      data: trainers,
+    });
+  } catch (error) {
+    console.error("Nearby trainers error:", error);
+    return res.status(500).json({
+      message: "Failed to fetch nearby trainers",
+    });
+  }
+};
