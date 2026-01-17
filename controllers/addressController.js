@@ -60,18 +60,21 @@ exports.addAddress = async (req, res) => {
 
 exports.getAddress = async (req, res) => {
   try {
-    const userLat = parseFloat(req.query.lat);
-    const userLong = parseFloat(req.query.long);
-    const radius = parseFloat(req.query.radius || 5); // KM
+    const userLat = parseFloat(req.query.lat)
+    const userLong = parseFloat(req.query.long)
+    const radius = parseFloat(req.query.radius || 5) // KM
 
     // pagination
-    const limit = parseInt(req.query.limit, 10) || 10;
-    const offset = parseInt(req.query.offset, 10) || 0;
+    const limit = parseInt(req.query.limit, 10) || 10
+    const offset = parseInt(req.query.offset, 10) || 0
+
+    // search
+    const search = req.query.search?.trim() || ""
 
     if (Number.isNaN(userLat) || Number.isNaN(userLong)) {
       return res.status(400).json({
         message: "Latitude and Longitude are required",
-      });
+      })
     }
 
     const query = `
@@ -108,12 +111,18 @@ exports.getAddress = async (req, res) => {
           ON "Users".id = "UserAddresses".user_id
 
         WHERE LOWER("Users".is_trainer) IN ('true', 'trainer', 'yes', '1')
+
+        AND (
+          :search = ''
+          OR LOWER("Users".full_name) LIKE LOWER(:searchLike)
+          OR LOWER("Users".username) LIKE LOWER(:searchLike)
+        )
       ) AS trainer_distance
 
       WHERE distance <= :radius
       ORDER BY distance ASC
       LIMIT :limit OFFSET :offset
-    `;
+    `
 
     const trainers = await sequelize.query(query, {
       replacements: {
@@ -122,20 +131,23 @@ exports.getAddress = async (req, res) => {
         radius,
         limit,
         offset,
+        search,
+        searchLike: `%${search}%`,
       },
       type: sequelize.QueryTypes.SELECT,
-    });
+    })
 
     return res.status(200).json({
       limit,
       offset,
       count: trainers.length,
       data: trainers,
-    });
+    })
   } catch (error) {
-    console.error("Nearby trainers error:", error);
+    console.error("Nearby trainers error:", error)
     return res.status(500).json({
       message: "Failed to fetch nearby trainers",
-    });
+    })
   }
-};
+}
+
