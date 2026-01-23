@@ -1138,30 +1138,45 @@ exports.getMessageByChatId = async (req, res) => {
 
 
 exports.deleteAllMessages = async (req, res) => {
-  try {
-    const deletedCount = await Message.destroy({
-      where: {},          // no filter → deletes all rows
-      truncate: false     // set true if you want to reset auto-increment
-    })
-
-
-    MessageRequest.destroy({
-      where: {},       // no filter → deletes all rows
-      truncate: false  // set true if you want to reset auto-increment
-    })
-
-    return res.status(200).json({
-      status: true,
-      deleted: deletedCount,
-      message: "All messages deleted successfully",
-    })
-  } catch (error) {
-    console.error("❌ deleteAllMessages error:", error)
-    return res.status(500).json({
-      status: false,
-      message: "Failed to delete messages",
-    })
-  }
+  exports.updateDefaultProfilePics = async (req, res) => {
+    try {
+      // Commented out the original delete logic (no longer needed)
+      // const deletedCount = await Message.destroy({
+      //   where: {},          // no filter → deletes all rows
+      //   truncate: false     // set true if you want to reset auto-increment
+      // });
+      // 
+      // MessageRequest.destroy({
+      //   where: {},       // no filter → deletes all rows
+      //   truncate: false  // set true if you want to reset auto-increment
+      // });
+  
+      const oldProfilePic = 'https://d3tfjww6nofv30.cloudfront.net/a4c48204-30be-406c-a4a3-29708fd69aac/1749495872427_profileImage.jpg';
+      const newProfilePic = 'https://png.pngtree.com/png-vector/20190223/ourmid/pngtree-profile-line-black-icon-png-image_691065.jpg';
+  
+      // Update all users who have the old default profile pic
+      const [updatedCount] = await User.update(
+        { profile_pic: newProfilePic },
+        {
+          where: {
+            profile_pic: oldProfilePic
+          }
+        }
+      );
+  
+      return res.status(200).json({
+        status: true,
+        updated: updatedCount,
+        message: `Updated ${updatedCount} users with the new default profile picture`,
+      });
+    } catch (error) {
+      console.error("❌ updateDefaultProfilePics error:", error);
+      return res.status(500).json({
+        status: false,
+        message: "Failed to update profile pictures",
+      });
+    }
+  };
 }
 
 
