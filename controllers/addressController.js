@@ -62,7 +62,7 @@ exports.getAddress = async (req, res) => {
   try {
     const userLat = parseFloat(req.query.lat)
     const userLong = parseFloat(req.query.long)
-    const radius = parseFloat(req.query.radius || 5) // KM
+    const radius = parseFloat(req.query.radius || 100) // KM
 
     // pagination
     const limit = parseInt(req.query.limit, 10) || 10
