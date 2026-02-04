@@ -68,15 +68,16 @@ exports.getAddress = async (req, res) => {
     const offset = parseInt(req.query.offset, 10) || 0
     const search = req.query.search?.trim() || ""
 
-    // ✅ specialization parsing
+    // ✅ specialization parsing (NOW DIRECT STRING ARRAY)
     let specializationTitles = []
 
     if (req.query.specialization) {
       try {
         const specializationArray = JSON.parse(req.query.specialization)
+
         if (Array.isArray(specializationArray)) {
           specializationTitles = specializationArray
-            .map(item => item?.title?.toLowerCase())
+            .map(item => item?.toLowerCase())
             .filter(Boolean)
         }
       } catch (e) {
@@ -176,6 +177,7 @@ exports.getAddress = async (req, res) => {
     })
   }
 }
+
 
 
 
