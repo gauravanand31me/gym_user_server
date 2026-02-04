@@ -62,7 +62,7 @@ exports.getAddress = async (req, res) => {
   try {
     const userLat = parseFloat(req.query.lat)
     const userLong = parseFloat(req.query.long)
-    const radius = parseFloat(req.query.radius || 100) // KM
+    const radius = parseFloat(req.query.radius || 1000) // KM
 
     // pagination
     const limit = parseInt(req.query.limit, 10) || 10
@@ -70,6 +70,25 @@ exports.getAddress = async (req, res) => {
 
     // search
     const search = req.query.search?.trim() || ""
+
+    // ✅ specialization parsing
+    let specializationTitles = []
+
+    if (req.query.specialization) {
+      try {
+        const specializationArray = JSON.parse(req.query.specialization)
+
+        if (Array.isArray(specializationArray)) {
+          specializationTitles = specializationArray
+            .map(item => item?.title?.toLowerCase())
+            .filter(Boolean)
+        }
+      } catch (e) {
+        return res.status(400).json({
+          message: "Invalid specialization format",
+        })
+      }
+    }
 
     if (Number.isNaN(userLat) || Number.isNaN(userLong)) {
       return res.status(400).json({
@@ -117,6 +136,11 @@ exports.getAddress = async (req, res) => {
           OR LOWER("Users".full_name) LIKE LOWER(:searchLike)
           OR LOWER("Users".username) LIKE LOWER(:searchLike)
         )
+
+        AND (
+          :hasSpecialization = false
+          OR LOWER("Users".spec) IN (:specializations)
+        )
       ) AS trainer_distance
 
       WHERE distance <= :radius
@@ -133,6 +157,8 @@ exports.getAddress = async (req, res) => {
         offset,
         search,
         searchLike: `%${search}%`,
+        hasSpecialization: specializationTitles.length > 0,
+        specializations: specializationTitles,
       },
       type: sequelize.QueryTypes.SELECT,
     })
@@ -150,4 +176,5 @@ exports.getAddress = async (req, res) => {
     })
   }
 }
+
 
