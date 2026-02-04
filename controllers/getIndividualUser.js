@@ -2542,6 +2542,10 @@ exports.uploadFeed = async (req, res) => {
       });
     }
 
+    if (mode === "story") {
+      activityType = "general"
+    }
+
     const feed = await Feed.create({
       userId,
       activityType,
