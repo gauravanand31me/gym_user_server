@@ -62,13 +62,10 @@ exports.getAddress = async (req, res) => {
   try {
     const userLat = parseFloat(req.query.lat)
     const userLong = parseFloat(req.query.long)
-    const radius = parseFloat(req.query.radius || 1000) // KM
+    const radius = parseFloat(req.query.radius || 1000)
 
-    // pagination
     const limit = parseInt(req.query.limit, 10) || 10
     const offset = parseInt(req.query.offset, 10) || 0
-
-    // search
     const search = req.query.search?.trim() || ""
 
     // ✅ specialization parsing
@@ -77,7 +74,6 @@ exports.getAddress = async (req, res) => {
     if (req.query.specialization) {
       try {
         const specializationArray = JSON.parse(req.query.specialization)
-
         if (Array.isArray(specializationArray)) {
           specializationTitles = specializationArray
             .map(item => item?.title?.toLowerCase())
@@ -94,6 +90,14 @@ exports.getAddress = async (req, res) => {
       return res.status(400).json({
         message: "Latitude and Longitude are required",
       })
+    }
+
+    // ✅ Build specialization filter dynamically
+    let specializationFilter = ""
+    if (specializationTitles.length > 0) {
+      specializationFilter = `
+        AND LOWER("Users".spec) IN (:specializations)
+      `
     }
 
     const query = `
@@ -129,7 +133,7 @@ exports.getAddress = async (req, res) => {
         INNER JOIN "Users"
           ON "Users".id = "UserAddresses".user_id
 
-        WHERE LOWER("Users".is_trainer) IN ('true', 'trainer', 'yes', '1')
+        WHERE LOWER("Users".is_trainer) IN ('true','trainer','yes','1')
 
         AND (
           :search = ''
@@ -137,10 +141,7 @@ exports.getAddress = async (req, res) => {
           OR LOWER("Users".username) LIKE LOWER(:searchLike)
         )
 
-        AND (
-          :hasSpecialization = false
-          OR LOWER("Users".spec) IN (:specializations)
-        )
+        ${specializationFilter}
       ) AS trainer_distance
 
       WHERE distance <= :radius
@@ -157,7 +158,6 @@ exports.getAddress = async (req, res) => {
         offset,
         search,
         searchLike: `%${search}%`,
-        hasSpecialization: specializationTitles.length > 0,
         specializations: specializationTitles,
       },
       type: sequelize.QueryTypes.SELECT,
@@ -176,5 +176,6 @@ exports.getAddress = async (req, res) => {
     })
   }
 }
+
 
 
