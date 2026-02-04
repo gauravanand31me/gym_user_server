@@ -4,6 +4,7 @@ const Notification = require("../models/Notification");
 const BuddyRequest = require("../models/BuddyRequest");
 const Booking = require("../models/Booking");
 const BookingRating = require("../models/BookingRating");
+const Feed = require("../models/Feed");
 
 exports.getNotifications = async (req, res) => {
     const userId = req.user.id; // Get the logged-in user ID from the request
@@ -95,6 +96,35 @@ exports.markNotificationsAsRead = async (req, res) => {
         res.status(500).json({ message: 'Server error.' });
     }
 };
+
+
+
+
+
+
+exports.deleteExpiredStories = async () => {
+  try {
+
+    /** 🔥 Get time 24 hours ago */
+    const hoursAgo = new Date();
+    hoursAgo.setHours(hoursAgo.getHours() - 24);
+
+    /** ✅ Delete ONLY STORIES older than 24h */
+    const deletedStories = await Feed.destroy({
+      where: {
+        activityType: "general", // 👈 change if your story type is different
+        timestamp: {
+          [Op.lt]: hoursAgo,
+        },
+      },
+    });
+
+    console.log(`🗑 ${deletedStories} stories older than 24h deleted.`);
+  } catch (error) {
+    console.error("Error deleting expired stories:", error);
+  }
+};
+
 
 
 

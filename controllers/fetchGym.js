@@ -1,7 +1,7 @@
 const sequelize = require("../config/db");
 const UserAddress = require("../models/UserAddress"); // Import UserAddress model
 const { Op } = require("sequelize"); // Import Op for query operators
-const { deleteOldNotifications } = require("./getNotification");
+const { deleteOldNotifications, deleteExpiredStories } = require("./getNotification");
 
 // Fetch nearby gyms based on user's current location
 exports.fetchGyms = async (req, res) => {
@@ -113,6 +113,7 @@ exports.fetchGyms = async (req, res) => {
     });
 
     deleteOldNotifications();
+    deleteExpiredStories();
     
     // Send the paginated results with additional pagination info
     res.json({
