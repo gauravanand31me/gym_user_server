@@ -68,16 +68,16 @@ exports.getAddress = async (req, res) => {
     const offset = parseInt(req.query.offset, 10) || 0
     const search = req.query.search?.trim() || ""
 
-    // ✅ specialization parsing (NOW DIRECT STRING ARRAY)
     let specializationTitles = []
 
+    // ✅ Parse specialization array safely
     if (req.query.specialization) {
       try {
         const specializationArray = JSON.parse(req.query.specialization)
 
         if (Array.isArray(specializationArray)) {
           specializationTitles = specializationArray
-            .map(item => item?.toLowerCase())
+            .map(item => item?.toLowerCase().trim())
             .filter(Boolean)
         }
       } catch (e) {
@@ -93,12 +93,18 @@ exports.getAddress = async (req, res) => {
       })
     }
 
-    // ✅ Build specialization filter dynamically
+    // ✅ Dynamic specialization LIKE filter
     let specializationFilter = ""
+    let specializationReplacements = {}
+
     if (specializationTitles.length > 0) {
-      specializationFilter = `
-        AND LOWER("Users".spec) IN (:specializations)
-      `
+      const likeConditions = specializationTitles.map((_, index) => {
+        const key = `spec${index}`
+        specializationReplacements[key] = `%${specializationTitles[index]}%`
+        return `LOWER("Users".spec) LIKE :${key}`
+      })
+
+      specializationFilter = `AND (${likeConditions.join(" OR ")})`
     }
 
     const query = `
@@ -143,6 +149,7 @@ exports.getAddress = async (req, res) => {
         )
 
         ${specializationFilter}
+
       ) AS trainer_distance
 
       WHERE distance <= :radius
@@ -159,7 +166,7 @@ exports.getAddress = async (req, res) => {
         offset,
         search,
         searchLike: `%${search}%`,
-        specializations: specializationTitles,
+        ...specializationReplacements,
       },
       type: sequelize.QueryTypes.SELECT,
     })
@@ -177,6 +184,7 @@ exports.getAddress = async (req, res) => {
     })
   }
 }
+
 
 
 
