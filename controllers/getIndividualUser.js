@@ -2611,9 +2611,7 @@ exports.uploadFeed = async (req, res) => {
       await s3.send(command);
 
       imageUrl = `https://${process.env.CLOUDFRONT_URL}/${fileName}`;
-    } else {
-      imageUrl = `https://${process.env.CLOUDFRONT_URL}/IMG_5602.JPG`;
-    }
+    } 
 
     if (activityType === "challenge" && title) {
       await Category.findOrCreate({
