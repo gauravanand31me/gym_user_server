@@ -141,6 +141,10 @@ const User = sequelize.define('User', {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW,
     },
+    certification: {
+        type: DataTypes.ARRAY(DataTypes.JSON),
+        allowNull: true,
+    },
 });
 
 User.associate = (models) => {

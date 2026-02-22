@@ -1465,6 +1465,86 @@ exports.updateTrainer = async (req, res) => {
 }
 
 
+
+
+
+
+exports.updateCertificate = async (req, res) => {
+  const userId = req.user.id;
+  try {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ message: 'No certificates uploaded' });
+    }
+
+    const descriptions = req.body.descriptions ? 
+      (Array.isArray(req.body.descriptions) ? req.body.descriptions : [req.body.descriptions]) : 
+      new Array(req.files.length).fill('');
+
+    if (descriptions.length !== req.files.length) {
+      return res.status(400).json({ message: 'Number of descriptions must match files' });
+    }
+
+    const certifications = [];
+
+    for (let i = 0; i < req.files.length; i++) {
+      const file = req.files[i];
+      const extension = path.extname(file.originalname).toLowerCase() || '.jpg';
+      const mimeType = `image/${extension === '.jpg' ? 'jpeg' : extension.slice(1)}`;
+      const fileName = `${userId}/certificates/${Date.now()}${extension}`;
+
+      const command = new PutObjectCommand({
+        Bucket: process.env.AWS_S3_BUCKET_NAME,
+        Key: fileName,
+        Body: file.buffer,
+        ContentType: mimeType,
+      });
+
+      await s3.send(command);
+
+      const fileUrl = `https://${process.env.CLOUDFRONT_URL}/${fileName}`;
+
+      certifications.push({
+        route: fileUrl,
+        description: descriptions[i]
+      });
+    }
+
+    await User.update(
+      { certification: certifications },
+      { where: { id: userId } }
+    );
+
+    res.status(200).json({
+      message: 'Certificates updated successfully',
+      certification: certifications
+    });
+  } catch (error) {
+    console.error('Error updating certificates:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+exports.getCertificates = async (req, res) => {
+  const userId = req.params.userId || req.user.id;
+  try {
+    const user = await User.findByPk(userId, {
+      attributes: ['certification']
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.status(200).json({
+      certification: user.certification || []
+    });
+  } catch (error) {
+    console.error('Error fetching certificates:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+
 exports.updateGymDetails = async (req, res) => {
   const userId = req.user.id; // Assumes user is authenticated and user ID is available in req.user
   const { gym_name, gym_id } = req.body;
