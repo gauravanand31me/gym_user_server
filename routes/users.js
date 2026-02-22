@@ -22,7 +22,7 @@ router.put('/update-trainner', authMiddleware, updateUserTrainner);
 router.put('/update-gender', authMiddleware, updateUserGender);
 router.put('/update-link', authMiddleware, updateUserLink);
 router.put('/trainer', authMiddleware, updateTrainer);
-router.put('/certificate', authMiddleware, updateCertificate);
+router.put('/certificate', authMiddleware, upload.array('certificates', 10), updateCertificate);
 router.put('/update-bio', authMiddleware, updateBio);
 router.put('/update-read', authMiddleware, updateRead);
 router.put('/update-body', authMiddleware, updateBody);
