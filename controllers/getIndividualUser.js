@@ -1488,8 +1488,10 @@ exports.updateCertificate = async (req, res) => {
 
     for (let i = 0; i < req.files.length; i++) {
       const file = req.files[i];
+      console.log("File size:", file.size);
+      console.log("Buffer length:", file.buffer?.length);
       const extension = path.extname(file.originalname).toLowerCase() || '.jpg';
-      const mimeType = `image/${extension === '.jpg' ? 'jpeg' : extension.slice(1)}`;
+      const mimeType = file.mimetype;
       const fileName = `${userId}/certificates/${Date.now()}${extension}`;
 
       const command = new PutObjectCommand({
