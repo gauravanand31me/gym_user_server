@@ -1471,41 +1471,80 @@ exports.updateTrainer = async (req, res) => {
 
 exports.updateCertificate = async (req, res) => {
   const userId = req.user.id;
+
   try {
     if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ message: 'No certificates uploaded' });
+      return res.status(400).json({ message: "No certificates uploaded" });
     }
 
-    const descriptions = req.body.descriptions ? 
-      (Array.isArray(req.body.descriptions) ? req.body.descriptions : [req.body.descriptions]) : 
-      new Array(req.files.length).fill('');
+    const descriptions = req.body.descriptions
+      ? Array.isArray(req.body.descriptions)
+        ? req.body.descriptions
+        : [req.body.descriptions]
+      : new Array(req.files.length).fill("");
 
     if (descriptions.length !== req.files.length) {
-      return res.status(400).json({ message: 'Number of descriptions must match files' });
+      return res
+        .status(400)
+        .json({ message: "Number of descriptions must match files" });
     }
 
     const certifications = [];
 
     for (let i = 0; i < req.files.length; i++) {
       const file = req.files[i];
-      const extension = path.extname(file.originalname).toLowerCase() || '.jpg';
-      const mimeType = `image/${extension === '.jpg' ? 'jpeg' : extension.slice(1)}`;
-      const fileName = `${userId}/certificates/${Date.now()}${extension}`;
+      const extension = path.extname(file.originalname).toLowerCase();
+
+      const outputFileName = `${userId}/certificates/${Date.now()}.png`;
+      let pngBuffer;
+
+      // IMAGE → PNG
+      if ([".jpg", ".jpeg", ".png", ".webp"].includes(extension)) {
+        pngBuffer = await sharp(file.buffer).png().toBuffer();
+      }
+
+      // PDF → PNG
+      else if (extension === ".pdf") {
+        const tempPdfPath = path.join(os.tmpdir(), `${Date.now()}.pdf`);
+        const tempPngPath = path.join(os.tmpdir(), `${Date.now()}.png`);
+
+        fs.writeFileSync(tempPdfPath, file.buffer);
+
+        await new Promise((resolve, reject) => {
+          exec(
+            `pdftoppm -png -f 1 -singlefile ${tempPdfPath} ${tempPngPath.replace(
+              ".png",
+              ""
+            )}`,
+            (error) => {
+              if (error) reject(error);
+              else resolve();
+            }
+          );
+        });
+
+        pngBuffer = fs.readFileSync(tempPngPath);
+
+        fs.unlinkSync(tempPdfPath);
+        fs.unlinkSync(tempPngPath);
+      } else {
+        return res.status(400).json({ message: "Unsupported file type" });
+      }
 
       const command = new PutObjectCommand({
         Bucket: process.env.AWS_S3_BUCKET_NAME,
-        Key: fileName,
-        Body: file.buffer,
-        ContentType: mimeType,
+        Key: outputFileName,
+        Body: pngBuffer,
+        ContentType: "image/png",
       });
 
       await s3.send(command);
 
-      const fileUrl = `https://${process.env.CLOUDFRONT_URL}/${fileName}`;
+      const fileUrl = `https://${process.env.CLOUDFRONT_URL}/${outputFileName}`;
 
       certifications.push({
         route: fileUrl,
-        description: descriptions[i]
+        description: descriptions[i],
       });
     }
 
@@ -1515,12 +1554,12 @@ exports.updateCertificate = async (req, res) => {
     );
 
     res.status(200).json({
-      message: 'Certificates updated successfully',
-      certification: certifications
+      message: "Certificates updated successfully",
+      certification: certifications,
     });
   } catch (error) {
-    console.error('Error updating certificates:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error("Error updating certificates:", error);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
