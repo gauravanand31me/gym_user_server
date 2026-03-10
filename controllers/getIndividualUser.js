@@ -1726,26 +1726,50 @@ exports.deleteProfile = async (req, res) => {
 
 exports.getTopUsersByWorkoutTime = async (req, res) => {
   try {
+    const currentUserId = req.user.id;
+
+    // Get IDs of users already followed
+    const following = await Follow.findAll({
+      attributes: ["followingId"],
+      where: {
+        followerId: currentUserId,
+      },
+    });
+
+    const followingIds = following.map(f => f.followingId);
+
+    // Also exclude the current user
+    followingIds.push(currentUserId);
+
     const users = await User.findAll({
-      attributes: ['id', 'full_name', 'profile_pic', 'username', 'total_work_out_time'],
-      order: [['total_work_out_time', 'DESC']],
+      attributes: [
+        "id",
+        "full_name",
+        "profile_pic",
+        "username",
+        "total_work_out_time",
+      ],
+      where: {
+        id: {
+          [Op.notIn]: followingIds,
+        },
+      },
+      order: [["total_work_out_time", "DESC"]],
       limit: 10,
     });
 
-    console.log("Users are", users);
-
     return res.status(200).json({
       success: true,
-      message: "Top 10 users retrieved successfully",
-      data: users
+      message: "Top users retrieved successfully",
+      data: users,
     });
   } catch (error) {
-    console.error('Error fetching top users:', error);
+    console.error("Error fetching top users:", error);
 
     return res.status(500).json({
       success: false,
       message: "Failed to fetch top users",
-      error: error.message
+      error: error.message,
     });
   }
 };
