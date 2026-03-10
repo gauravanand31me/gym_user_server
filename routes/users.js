@@ -30,7 +30,7 @@ router.put('/update-status', authMiddleware, updateStatus);
 router.put('/update-visibility', authMiddleware, updateVisibility);
 router.put('/delete-profileimage', authMiddleware, deleteProfileImage);
 router.delete('/deleteaccount', authMiddleware, deleteProfile);
-router.get('/leaderboard',  getTopUsersByWorkoutTime);
+router.get('/leaderboard', authMiddleware,  getTopUsersByWorkoutTime);
 router.get('/message-count',  authMiddleware,  getUnreadChatCount);
 router.get('/message/:chatId',  authMiddleware,  getMessageByChatId);
 router.get('/message-delete',  deleteAllMessages);
