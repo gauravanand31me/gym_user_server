@@ -1,0 +1,45 @@
+name: Node.js CI
+
+on:
+  push:
+    branches:
+      - '**' # Run on all branches
+  pull_request:
+    branches:
+      - '**' # Run on all branches
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0 # Ensure full history is fetched
+
+    - name: Clear old builds
+      run: |
+        if [ -d "node_modules" ]; then
+          rm -rf node_modules
+        fi
+        if [ -f "package-lock.json" ]; then
+          rm package-lock.json
+        fi
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Run tests
+      env:
+        DB_FITZOO_DATABASE: your_database_name
+        DB_FITZOO_USERNAME: your_database_user
+        DB_FITZOO_PASSWORD: your_database_password
+        DB_FITZOO_HOST: your_database_host
+        DB_FITZOO_DIALECT: postgres
+      run: npm test

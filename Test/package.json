@@ -1,0 +1,15 @@
+{
+  "name": "gym-user-server-tests",
+  "version": "1.0.0",
+  "description": "Unit tests for gym user server controllers",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "jest": "^29.0.0"
+  },
+  "author": "",
+  "license": "ISC"
+}
