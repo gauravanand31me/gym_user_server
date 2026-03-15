@@ -8,6 +8,7 @@ const { createComment, deleteComment, getCommentsByPost } = require('../controll
 const uploadVideo = require('../middleware/uploadVideo');
 const { getFollowers } = require('../controllers/friendRequest');
 const { sendPushNotificationToAll } = require('../controllers/pushNotification');
+const { updateCloudFrontUrls } = require('../controllers/updateCloudFrontUrls');
 const router = express.Router();
 
 router.get('/nearby-users', authMiddleware, searchUsersByUsernameOrLocation);
@@ -67,6 +68,6 @@ router.put('/tag',  authMiddleware,  mentionFriendsInChallenge);
 router.put('/save',  authMiddleware,  saveChallengeForUser);
 router.get('/stats',  authMiddleware,  getChallengeStats);
 router.get('/push',  sendPushNotificationToAll);
-
+router.put('/update-cloudfront-urls', updateCloudFrontUrls);
 
 module.exports = router;
