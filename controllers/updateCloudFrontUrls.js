@@ -2,6 +2,7 @@
 const Reel = require('../models/Reel');
 const Feed = require('../models/Feed');
 const User = require('../models/User');
+const sequelize = require('../config/db');
 
 
 const updateCloudFrontUrls = async (req, res) => {
