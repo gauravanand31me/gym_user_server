@@ -1,4 +1,8 @@
-const { Feed, Reels, User, Certificate } = require('../models');
+
+const Reel = require('../models/Reel');
+const Feed = require('../models/Feed');
+const User = require('../models/User');
+
 
 const updateCloudFrontUrls = async (req, res) => {
     try {
@@ -29,11 +33,6 @@ const updateCloudFrontUrls = async (req, res) => {
         );
 
         // Update Certificate model for certificates
-        await Certificate.update(
-            { certificateUrl: sequelize.fn('REPLACE', sequelize.col('certificateUrl'), oldUrl, newUrl) },
-            { where: { certificateUrl: { [sequelize.Op.like]: `${oldUrl}%` } } }
-        );
-
         res.status(200).json({ message: 'CloudFront URLs updated successfully' });
     } catch (error) {
         console.error(error);
