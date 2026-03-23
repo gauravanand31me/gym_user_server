@@ -7,6 +7,8 @@ const { Op, Sequelize } = require('sequelize');
 
 const updateCloudFrontUrls = async (req, res) => {
     try {
+
+        
         const oldUrl = 'https://d1ggj6jmm6y2ok.cloudfront.net';
         const newUrl = 'https://d59q7mzjlaq7y.cloudfront.net';
 
