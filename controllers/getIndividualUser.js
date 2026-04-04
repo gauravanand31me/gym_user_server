@@ -662,7 +662,8 @@ exports.uploadReel = async (req, res) => {
       hashtags
     };
 
-    if (gymId) {
+    
+    if (gymId !== null && gymId !== undefined && gymId !== "null" && gymId !== "" && gymId !== "undefined") {
       feedJson["gymId"] = gymId;
     }
 
