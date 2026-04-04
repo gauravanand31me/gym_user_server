@@ -2593,7 +2593,7 @@ exports.uploadFeed = async (req, res) => {
         .webp({ quality: 80 })
         .toBuffer();
 
-      const fileName = `${userId}/${Date.now()}_feedImage.webp`;
+      const fileName = `feed/${userId}/${Date.now()}_feedImage.webp`;
 
       const command = new PutObjectCommand({
         Bucket: process.env.AWS_S3_BUCKET_NAME,
