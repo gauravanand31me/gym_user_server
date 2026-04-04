@@ -42,31 +42,7 @@ const s3Client = new S3Client({
 ffmpeg.setFfmpegPath(ffmpegPath);
 
 
-const generateThumbnail = async (videoBuffer, thumbnailPath) => {
-  const tempPath = path.join(os.tmpdir(), `video_${Date.now()}.mp4`);
 
-  try {
-    // Buffer ko temp file mein daal do
-    await fs.writeFile(tempPath, videoBuffer);
-
-    await new Promise((resolve, reject) => {
-      ffmpeg(tempPath)
-        .on('end', resolve)
-        .on('error', reject)
-        .screenshots({
-          timestamps: ['1'],
-          filename: path.basename(thumbnailPath),
-          folder: path.dirname(thumbnailPath),
-          size: '640x?'
-        });
-    });
-
-    console.log('✅ Thumbnail ban gaya');
-  } finally {
-    // Temp file delete kar do (important)
-    await fs.unlink(tempPath).catch(() => {});
-  }
-};
 
 
 
@@ -660,34 +636,6 @@ exports.uploadReel = async (req, res) => {
         }));
 
         console.log("☁️ Raw video uploaded:", rawVideoKey);
-
-        // 2️⃣ Generate thumbnail
-        await generateThumbnail(req.file.buffer, rawThumbnailJpg);
-
-        await sharp(rawThumbnailJpg)
-          .webp({ quality: 90 })
-          .toFile(finalThumbnailWebp);
-
-        fs.unlinkSync(rawThumbnailJpg);
-
-        // 3️⃣ Upload thumbnail
-        await s3Client.send(new PutObjectCommand({
-          Bucket: process.env.AWS_S3_BUCKET_NAME,
-          Key: thumbnailKey,
-          Body: fs.createReadStream(finalThumbnailWebp),
-          ContentType: 'image/webp',
-          CacheControl: 'public, max-age=31536000',
-        }));
-
-        const thumbnailUrl = `https://${process.env.CLOUDFRONT_URL}/${thumbnailKey}`;
-
-        // 4️⃣ Update ONLY thumbnail (video will be updated by Lambda)
-        console.log(`🔄 Updating thumbnail for Reel ${thumbnailUrl}...`);
-        await createdReel.update({
-          thumbnailUrl,
-        });
-
-        console.log(`✅ Thumbnail uploaded for Reel ${createdReel.id}`);
 
       } catch (err) {
         console.error(`❌ Background failed for Reel ${createdReel.id}:`, err);
