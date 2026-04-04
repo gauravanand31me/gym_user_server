@@ -42,65 +42,31 @@ const s3Client = new S3Client({
 ffmpeg.setFfmpegPath(ffmpegPath);
 
 
-const compressVideo = (inputPath, outputPath) => {
-  return new Promise((resolve, reject) => {
-    const command = ffmpeg(inputPath)
-      .inputOption('-hwaccel auto')
-      .outputOptions([
-        '-vf', 'fps=30,scale=1280:-2,format=yuv420p',
-        '-pix_fmt', 'yuv420p',
-        '-vsync', 'vfr',
-        '-c:v', 'libx264',
-        '-profile:v', 'baseline',
-        '-level', '3.1',
-        '-c:a', 'aac',
-        '-b:a', '128k',
-        '-ar', '44100',
-        '-crf', '28',
-        '-preset', 'veryfast',
-        '-movflags', '+faststart',
-        '-f', 'mp4',
-      ])
-      .on('start', cmd => {
-        console.log('🎬 ffmpeg started:', cmd);
-      })
-      .on('stderr', stderrLine => {
-        console.log('⚙️ ffmpeg stderr:', stderrLine);
-      })
-      .on('end', () => {
-        console.log('✅ Video compression complete');
-        resolve(outputPath);
-      })
-      .on('error', (err, stdout, stderr) => {
-        console.error('❌ ffmpeg failed:', err.message);
-        console.error('stdout:', stdout);
-        console.error('stderr:', stderr);
-        reject(err);
-      });
+const generateThumbnail = async (videoBuffer, thumbnailPath) => {
+  const tempPath = path.join(os.tmpdir(), `video_${Date.now()}.mp4`);
 
-    try {
-      command.save(outputPath);
-    } catch (err) {
-      console.error('💥 Synchronous ffmpeg crash:', err.message);
-      reject(err);
-    }
-  });
+  try {
+    // Buffer ko temp file mein daal do
+    await fs.writeFile(tempPath, videoBuffer);
+
+    await new Promise((resolve, reject) => {
+      ffmpeg(tempPath)
+        .on('end', resolve)
+        .on('error', reject)
+        .screenshots({
+          timestamps: ['1'],
+          filename: path.basename(thumbnailPath),
+          folder: path.dirname(thumbnailPath),
+          size: '640x?'
+        });
+    });
+
+    console.log('✅ Thumbnail ban gaya');
+  } finally {
+    // Temp file delete kar do (important)
+    await fs.unlink(tempPath).catch(() => {});
+  }
 };
-
-
-
-const generateThumbnail = (inputPath, thumbnailPath) =>
-  new Promise((resolve, reject) => {
-    ffmpeg(inputPath)
-      .on('end', () => resolve(thumbnailPath))
-      .on('error', reject)
-      .screenshots({
-        timestamps: ['1'],
-        filename: path.basename(thumbnailPath),
-        folder: path.dirname(thumbnailPath),
-        size: '640x?',
-      });
-  });
 
 
 
@@ -696,7 +662,7 @@ exports.uploadReel = async (req, res) => {
         console.log("☁️ Raw video uploaded:", rawVideoKey);
 
         // 2️⃣ Generate thumbnail
-        await generateThumbnail(uploadedFilePath, rawThumbnailJpg);
+        await generateThumbnail(req.file.buffer, rawThumbnailJpg);
 
         await sharp(rawThumbnailJpg)
           .webp({ quality: 90 })
@@ -716,6 +682,7 @@ exports.uploadReel = async (req, res) => {
         const thumbnailUrl = `https://${process.env.CLOUDFRONT_URL}/${thumbnailKey}`;
 
         // 4️⃣ Update ONLY thumbnail (video will be updated by Lambda)
+        console.log(`🔄 Updating thumbnail for Reel ${thumbnailUrl}...`);
         await createdReel.update({
           thumbnailUrl,
         });
@@ -744,7 +711,7 @@ exports.uploadReel = async (req, res) => {
 
 exports.updateProcessedVideo = async (req, res) => {
   try {
-    const { videoId, videoUrl, thumbnailUrl } = req.body;
+    const { videoId, videoUrl } = req.body;
 
     if (!videoId || !videoUrl) {
       return res.status(400).json({
@@ -765,7 +732,6 @@ exports.updateProcessedVideo = async (req, res) => {
     // ✅ Update Reel
     await reel.update({
       videoUrl,
-      thumbnailUrl,
       processing: false,
     });
 
