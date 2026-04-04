@@ -42,31 +42,7 @@ const s3Client = new S3Client({
 ffmpeg.setFfmpegPath(ffmpegPath);
 
 
-const generateThumbnail = async (videoBuffer, thumbnailPath) => {
-  const tempPath = path.join(os.tmpdir(), `video_${Date.now()}.mp4`);
 
-  try {
-    // Buffer ko temp file mein daal do
-    await fs.writeFile(tempPath, videoBuffer);
-
-    await new Promise((resolve, reject) => {
-      ffmpeg(tempPath)
-        .on('end', resolve)
-        .on('error', reject)
-        .screenshots({
-          timestamps: ['1'],
-          filename: path.basename(thumbnailPath),
-          folder: path.dirname(thumbnailPath),
-          size: '640x?'
-        });
-    });
-
-    console.log('✅ Thumbnail ban gaya');
-  } finally {
-    // Temp file delete kar do (important)
-    await fs.unlink(tempPath).catch(() => {});
-  }
-};
 
 
 
