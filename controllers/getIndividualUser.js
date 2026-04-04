@@ -576,6 +576,8 @@ function generateRandomCode(length = 6) {
 
 
 
+
+
 exports.uploadReel = async (req, res) => {
   console.log('🤖 Reel upload started');
 
@@ -586,42 +588,36 @@ exports.uploadReel = async (req, res) => {
   const { title, description, postType, link, mode, challengeId, mentions, gymId } = req.body;
   const userId = req.user.id;
 
-  const uploadedFilePath = req.file.path;
-  const compressedFilePath = path.join(__dirname, '../temp', `compressed-${Date.now()}.mp4`);
+  const uploadedFilePath = req.file.path; // used ONLY for thumbnail
   const rawThumbnailJpg = path.join(__dirname, '../temp', `thumbnail-${Date.now()}.jpg`);
   const finalThumbnailWebp = rawThumbnailJpg.replace(/\.jpg$/, '.webp');
+
+  const videoBuffer = req.file.buffer; // 🔥 NEW
   let mentionIds = [];
 
-
-
-
   try {
-    // Step 1: Insert Reel immediately with processing = true
+    // ===== EXISTING LOGIC (UNCHANGED) =====
     const parsedChallengeId =
       challengeId && challengeId !== 'undefined' && challengeId !== 'null'
         ? challengeId
         : null;
 
+    const hashtagRegex = /#\w+/g;
+    const hashtags = description.match(hashtagRegex) || [];
+    const uniqueCategories = new Set(hashtags);
 
-        const hashtagRegex = /#\w+/g;
-        const hashtags = description.match(hashtagRegex) || [];
-        const uniqueCategories = new Set(hashtags);
-    
-        if (mode !== "challenge") {
-          for (const categoryName of uniqueCategories) {
-            const [category, created] = await Category.findOrCreate({
-              where: { name: categoryName },
-              defaults: { name: categoryName, numberOfPosts: 1, isChallenge: false },
-            });
-        
-            if (!created) {
-              await category.increment('numberOfPosts');
-            }
-          }
+    if (mode !== "challenge") {
+      for (const categoryName of uniqueCategories) {
+        const [category, created] = await Category.findOrCreate({
+          where: { name: categoryName },
+          defaults: { name: categoryName, numberOfPosts: 1, isChallenge: false },
+        });
+
+        if (!created) {
+          await category.increment('numberOfPosts');
+        }
       }
-
-
-
+    }
 
     if (mentions) {
       try {
@@ -636,7 +632,7 @@ exports.uploadReel = async (req, res) => {
 
     const createdReel = await Reel.create({
       userId,
-      videoUrl: `https://${process.env.CLOUDFRONT_URL}/reels/upload_in_progress.mp4`, // not ready yet
+      videoUrl: `https://${process.env.CLOUDFRONT_URL}/reels/upload_in_progress.mp4`,
       thumbnailUrl: `https://${process.env.CLOUDFRONT_URL}/reels/thumbnails/upload_progress.png`,
       title: title || null,
       description: description || null,
@@ -646,10 +642,8 @@ exports.uploadReel = async (req, res) => {
       link,
       challengeId: parsedChallengeId,
       timestamp: new Date(),
-      processing: true, // mark as processing
+      processing: true,
     });
-
-
 
     const randomCode = generateRandomCode();
 
@@ -668,70 +662,70 @@ exports.uploadReel = async (req, res) => {
       hashtags
     };
 
-    console.log("Gym Id", gymId);
-    if (gymId !== null && gymId !== undefined && gymId !== "null" && gymId !== "" && gymId !== "undefined") {
-        feedJson["gymId"] = gymId;
+    if (gymId) {
+      feedJson["gymId"] = gymId;
     }
 
     const feed = await Feed.create(feedJson);
 
-    // Immediately respond to client so they don’t wait for ffmpeg
-    res.status(201).json({ success: true, reel: createdReel, feed: feed, message: "Video is processing" });
+    // ✅ Respond immediately
+    res.status(201).json({
+      success: true,
+      reel: createdReel,
+      feed,
+      message: "Video is processing"
+    });
 
-    // Step 2: Process in background
+    // ===== BACKGROUND TASK =====
     (async () => {
       try {
-        await Promise.all([
-          compressVideo(uploadedFilePath, compressedFilePath),
-          generateThumbnail(uploadedFilePath, rawThumbnailJpg),
-        ]);
+        const videoKey = createdReel.id;
+
+        const rawVideoKey = `raw/${videoKey}.mp4`; // 🔥 for Lambda
+        const thumbnailKey = `reels/thumbnails/${videoKey}-thumbnail.webp`;
+
+        // 1️⃣ Upload RAW VIDEO (NO COMPRESSION HERE)
+        await s3Client.send(new PutObjectCommand({
+          Bucket: process.env.AWS_S3_BUCKET_NAME,
+          Key: rawVideoKey,
+          Body: videoBuffer,
+          ContentType: 'video/mp4',
+        }));
+
+        console.log("☁️ Raw video uploaded:", rawVideoKey);
+
+        // 2️⃣ Generate thumbnail
+        await generateThumbnail(uploadedFilePath, rawThumbnailJpg);
 
         await sharp(rawThumbnailJpg)
           .webp({ quality: 90 })
           .toFile(finalThumbnailWebp);
+
         fs.unlinkSync(rawThumbnailJpg);
 
-        const thumbnailKey = `reels/thumbnails/${Date.now()}-thumbnail.webp`;
-        const s3Key = `reels/${Date.now()}-compressed.mp4`;
-
-        await Promise.all([
-          s3Client.send(new PutObjectCommand({
-            Bucket: process.env.AWS_S3_BUCKET_NAME,
-            Key: thumbnailKey,
-            Body: fs.createReadStream(finalThumbnailWebp),
-            ContentType: 'image/webp',
-            CacheControl: 'public, max-age=31536000',
-          })),
-          s3Client.send(new PutObjectCommand({
-            Bucket: process.env.AWS_S3_BUCKET_NAME,
-            Key: s3Key,
-            Body: fs.createReadStream(compressedFilePath),
-            ContentType: 'video/mp4',
-            CacheControl: 'public, max-age=31536000',
-          })),
-        ]);
+        // 3️⃣ Upload thumbnail
+        await s3Client.send(new PutObjectCommand({
+          Bucket: process.env.AWS_S3_BUCKET_NAME,
+          Key: thumbnailKey,
+          Body: fs.createReadStream(finalThumbnailWebp),
+          ContentType: 'image/webp',
+          CacheControl: 'public, max-age=31536000',
+        }));
 
         const thumbnailUrl = `https://${process.env.CLOUDFRONT_URL}/${thumbnailKey}`;
-        const videoUrl = `https://${process.env.CLOUDFRONT_URL}/${s3Key}`;
 
-        // Step 3: Update DB when processing complete
+        // 4️⃣ Update ONLY thumbnail (video will be updated by Lambda)
         await createdReel.update({
-          videoUrl,
           thumbnailUrl,
-          processing: false,
         });
 
-        await feed.update({
-          imageUrl: videoUrl,
-        });
+        console.log(`✅ Thumbnail uploaded for Reel ${createdReel.id}`);
 
-        console.log(`✅ Processing complete for Reel ${createdReel.id}`);
       } catch (err) {
-        console.error(`❌ Processing failed for Reel ${createdReel.id}:`, err);
-        await createdReel.update({ processing: false }); // prevent stuck state
+        console.error(`❌ Background failed for Reel ${createdReel.id}:`, err);
       } finally {
-        [uploadedFilePath, compressedFilePath, rawThumbnailJpg, finalThumbnailWebp].forEach(f => {
-          try { if (fs.existsSync(f)) fs.unlinkSync(f); } catch { }
+        [uploadedFilePath, rawThumbnailJpg, finalThumbnailWebp].forEach(f => {
+          try { if (fs.existsSync(f)) fs.unlinkSync(f); } catch {}
         });
       }
     })();
@@ -741,6 +735,63 @@ exports.uploadReel = async (req, res) => {
     res.status(500).json({ success: false, message: 'Internal Server Error' });
   }
 };
+
+
+
+
+
+
+exports.updateProcessedVideo = async (req, res) => {
+  try {
+    const { videoId, videoUrl } = req.body;
+
+    if (!videoId || !videoUrl) {
+      return res.status(400).json({
+        success: false,
+        message: "videoId and videoUrl are required",
+      });
+    }
+
+    const reel = await Reel.findByPk(videoId);
+
+    if (!reel) {
+      return res.status(404).json({
+        success: false,
+        message: "Reel not found",
+      });
+    }
+
+    // ✅ Update Reel
+    await reel.update({
+      videoUrl,
+      processing: false,
+    });
+
+    // ✅ Update Feed
+    await Feed.update(
+      { imageUrl: videoUrl },
+      { where: { id: videoId } }
+    );
+
+    console.log(`✅ Video updated for Reel ${videoId}`);
+
+    res.json({
+      success: true,
+      message: "Video updated successfully",
+    });
+
+  } catch (err) {
+    console.error("❌ Update video error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+};
+
+
+
+
 
 
 

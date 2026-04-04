@@ -2,7 +2,7 @@ const express = require('express');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const { getNearbyUsers } = require('../controllers/getNearbyUsers');
 const upload = require('../middleware/upload');
-const { getIndividualUser, updateStatus, getMessageByChatId, updateTrainer, searchUsersByUsernameOrLocation, updateRead, updateBody, updateUserLink, updateUserGender, updateVisibility, uploadProfileImage,uploadPostImage,updateBio,  getUserImage, updateFullName, deleteProfileImage, deleteProfile, getTopUsersByWorkoutTime, getUserFeed, uploadFeed, getMyFeed, deletePost, getFeedById, uploadReel, getUserReels, deleteReel, streamReelVideo, updateFeedVisibility, incrementViewCount, followUser, getFollowedUser, unfollowUser, resetFollowsAndFollowingCount, getAllCategory, reportFeed, blockUser, isBlockedByUser, mentionFriendsInChallenge, saveChallengeForUser, getChallengeStats, getAllHashTag, updateGymDetails, updateUserTrainner, getMyChats, getUnreadChatCount, deleteAllMessages, getMessageRequestStatus, updateMessageRequestStatus, updateCertificate} = require('../controllers/getIndividualUser');
+const { getIndividualUser, updateStatus, getMessageByChatId, updateTrainer, searchUsersByUsernameOrLocation, updateRead, updateBody, updateUserLink, updateUserGender, updateVisibility, uploadProfileImage,uploadPostImage,updateBio,  getUserImage, updateFullName, deleteProfileImage, deleteProfile, getTopUsersByWorkoutTime, getUserFeed, uploadFeed, getMyFeed, deletePost, getFeedById, uploadReel, getUserReels, deleteReel, streamReelVideo, updateFeedVisibility, incrementViewCount, followUser, getFollowedUser, unfollowUser, resetFollowsAndFollowingCount, getAllCategory, reportFeed, blockUser, isBlockedByUser, mentionFriendsInChallenge, saveChallengeForUser, getChallengeStats, getAllHashTag, updateGymDetails, updateUserTrainner, getMyChats, getUnreadChatCount, deleteAllMessages, getMessageRequestStatus, updateMessageRequestStatus, updateCertificate, updateProcessedVideo} = require('../controllers/getIndividualUser');
 const { reactToPost, getPostReactions } = require('../controllers/PostReaction');
 const { createComment, deleteComment, getCommentsByPost } = require('../controllers/createComment');
 const uploadVideo = require('../middleware/uploadVideo');
@@ -69,5 +69,6 @@ router.put('/save',  authMiddleware,  saveChallengeForUser);
 router.get('/stats',  authMiddleware,  getChallengeStats);
 router.get('/push',  sendPushNotificationToAll);
 router.put('/update-cloudfront-urls', updateCloudFrontUrls);
+router.put('/update-cloudfront-video', updateProcessedVideo);
 
 module.exports = router;
