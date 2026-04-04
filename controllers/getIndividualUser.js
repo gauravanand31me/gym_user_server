@@ -744,7 +744,7 @@ exports.uploadReel = async (req, res) => {
 
 exports.updateProcessedVideo = async (req, res) => {
   try {
-    const { videoId, videoUrl } = req.body;
+    const { videoId, videoUrl, thumbnailUrl } = req.body;
 
     if (!videoId || !videoUrl) {
       return res.status(400).json({
@@ -765,6 +765,7 @@ exports.updateProcessedVideo = async (req, res) => {
     // ✅ Update Reel
     await reel.update({
       videoUrl,
+      thumbnailUrl,
       processing: false,
     });
 
