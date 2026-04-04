@@ -661,34 +661,6 @@ exports.uploadReel = async (req, res) => {
 
         console.log("☁️ Raw video uploaded:", rawVideoKey);
 
-        // 2️⃣ Generate thumbnail
-        await generateThumbnail(req.file.buffer, rawThumbnailJpg);
-
-        await sharp(rawThumbnailJpg)
-          .webp({ quality: 90 })
-          .toFile(finalThumbnailWebp);
-
-        fs.unlinkSync(rawThumbnailJpg);
-
-        // 3️⃣ Upload thumbnail
-        await s3Client.send(new PutObjectCommand({
-          Bucket: process.env.AWS_S3_BUCKET_NAME,
-          Key: thumbnailKey,
-          Body: fs.createReadStream(finalThumbnailWebp),
-          ContentType: 'image/webp',
-          CacheControl: 'public, max-age=31536000',
-        }));
-
-        const thumbnailUrl = `https://${process.env.CLOUDFRONT_URL}/${thumbnailKey}`;
-
-        // 4️⃣ Update ONLY thumbnail (video will be updated by Lambda)
-        console.log(`🔄 Updating thumbnail for Reel ${thumbnailUrl}...`);
-        await createdReel.update({
-          thumbnailUrl,
-        });
-
-        console.log(`✅ Thumbnail uploaded for Reel ${createdReel.id}`);
-
       } catch (err) {
         console.error(`❌ Background failed for Reel ${createdReel.id}:`, err);
       } finally {
