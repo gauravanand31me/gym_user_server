@@ -2587,24 +2587,20 @@ exports.uploadFeed = async (req, res) => {
     let imageUrl = null;
 
     if (req.file) {
-      const processedImageBuffer = await sharp(req.file.buffer)
-        .rotate()
-        .resize({ width: 1080 })
-        .webp({ quality: 80 })
-        .toBuffer();
+      
 
       const fileName = `feed/${userId}/${Date.now()}_feedImage.webp`;
-
+      const optimizeFilename = `optimized/${userId}/${Date.now()}_feedImage.webp`;
       const command = new PutObjectCommand({
         Bucket: process.env.AWS_S3_BUCKET_NAME,
         Key: fileName,
-        Body: processedImageBuffer,
+        Body: req.file.buffer,
         ContentType: "image/webp",
       });
 
       await s3.send(command);
 
-      imageUrl = `https://${process.env.CLOUDFRONT_URL}/${fileName}`;
+      imageUrl = `https://${process.env.CLOUDFRONT_URL}/${optimizeFilename}`;
     } 
 
     if (activityType === "challenge" && title) {
