@@ -731,6 +731,7 @@ exports.updateProcessedVideo = async (req, res) => {
 
     // ✅ Update Reel
     await reel.update({
+      thumbnailUrl,
       videoUrl,
       processing: false,
     });
