@@ -239,8 +239,7 @@ exports.getTrainerStudents = async (req, res) => {
     const { count, rows: students } = await User.findAndCountAll({
       where: {
         t_id: user_id,           // Students linked to this trainer
-        is_trainer: { [Op.ne]: 'true' } // Optional: exclude trainers if needed
-        // You can remove the is_trainer condition if all t_id users are students
+        
       },
       attributes: [
         'id',
