@@ -199,6 +199,88 @@ exports.unfollowUser = async (req, res) => {
 };
 
 
+
+
+
+
+exports.getTrainerStudents = async (req, res) => {
+  try {
+    const { user_id, page = 1, limit = 3 } = req.query;
+
+    // Validation
+    if (!user_id) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'user_id (trainer ID) is required' 
+      });
+    }
+
+    const pageNumber = parseInt(page, 10);
+    const limitNumber = parseInt(limit, 10);
+
+    if (isNaN(pageNumber) || pageNumber < 1) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Page must be a positive number' 
+      });
+    }
+
+    if (isNaN(limitNumber) || limitNumber < 1) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Limit must be a positive number' 
+      });
+    }
+
+    const offset = (pageNumber - 1) * limitNumber;
+
+    // Find students where trainer's t_id matches the provided user_id
+    // Assuming students have the trainer's ID stored in their `t_id` field
+    const { count, rows: students } = await User.findAndCountAll({
+      where: {
+        t_id: user_id,           // Students linked to this trainer
+        is_trainer: { [Op.ne]: 'true' } // Optional: exclude trainers if needed
+        // You can remove the is_trainer condition if all t_id users are students
+      },
+      attributes: [
+        'id',
+        'full_name',
+        'profile_pic'
+      ],
+      limit: limitNumber,
+      offset: offset,
+      order: [['full_name', 'ASC']] // Optional: sort alphabetically
+    });
+
+    const totalPages = Math.ceil(count / limitNumber);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Trainer students fetched successfully',
+      data: {
+        students,
+        pagination: {
+          totalStudents: count,
+          totalPages,
+          currentPage: pageNumber,
+          limit: limitNumber,
+          hasNextPage: pageNumber < totalPages,
+          hasPrevPage: pageNumber > 1
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Get Trainer Students Error:', error);
+    return res.status(500).json({ 
+      success: false, 
+      message: 'Something went wrong while fetching students',
+      error: error.message 
+    });
+  }
+};
+
+
 exports.isBlockedByUser = async (req, res) => {
   try {
     const targetUserId = req.params.id; // the user who might have blocked you
