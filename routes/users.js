@@ -67,6 +67,7 @@ router.get('/stream-reel/*',  authMiddleware,  streamReelVideo);
 router.put('/tag',  authMiddleware,  mentionFriendsInChallenge);
 router.put('/save',  authMiddleware,  saveChallengeForUser);
 router.get('/stats',  authMiddleware,  getChallengeStats);
+router.get('/student',  authMiddleware,  getTrainerStudents);
 router.get('/push',  sendPushNotificationToAll);
 router.put('/update-cloudfront-urls', updateCloudFrontUrls);
 router.put('/update-cloudfront-video', updateProcessedVideo);
