@@ -1006,6 +1006,7 @@ exports.searchUsersByUsernameOrLocation = async (req, res) => {
 
 exports.uploadProfileImage = async (req, res) => {
   const userId = req.user.id;
+  const type = req.body.type || "profile"; // default to "profile" if not provided
 
   try {
     if (!req.file) {
@@ -1026,10 +1027,19 @@ exports.uploadProfileImage = async (req, res) => {
 
     const fileUrl = `https://${process.env.CLOUDFRONT_URL}/${fileName}`;
 
+    if (type === "profile") {
     await User.update(
       { profile_pic: fileUrl },
       { where: { id: userId } }
     );
+  } else if (type === "cover") {
+    await User.update(
+      { cover_pic: fileUrl },
+      { where: { id: userId } }
+    );
+  }
+    
+    
 
     res.status(200).json({
       message: 'Profile image uploaded successfully',
@@ -1045,6 +1055,7 @@ exports.uploadProfileImage = async (req, res) => {
 
 exports.uploadPostImage = async (req, res) => {
   const userId = req.user.id;
+  const { type } = req.body;
 
   try {
     if (!req.file) {
