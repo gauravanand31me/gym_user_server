@@ -1014,7 +1014,13 @@ exports.uploadProfileImage = async (req, res) => {
     }
 
     const extension = path.extname(req.file.originalname);
-    const fileName = `${userId}/${Date.now()}_profileImage${extension}`;
+    let fileName;
+    if (type === "profile") {
+      fileName = `feed/${userId}/${Date.now()}_profileImage${extension}`;
+    } else {
+      fileName = `cover/${userId}/${Date.now()}_coverImage${extension}`;
+    }
+     
 
     const uploadCommand = new PutObjectCommand({
       Bucket: process.env.AWS_S3_BUCKET_NAME,
