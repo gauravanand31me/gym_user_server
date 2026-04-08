@@ -1027,6 +1027,7 @@ exports.uploadProfileImage = async (req, res) => {
 
     const fileUrl = `https://${process.env.CLOUDFRONT_URL}/${fileName}`;
 
+    console.log("fileUrl received", type, fileUrl);
     if (type === "profile") {
     await User.update(
       { profile_pic: fileUrl },
