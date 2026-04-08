@@ -97,6 +97,10 @@ const User = sequelize.define('User', {
         type: DataTypes.STRING,
         allowNull: true,
     },
+    cover_pic: {
+        type: DataTypes.STRING,
+        allowNull: true,
+    },
     profile_status: {
         type: DataTypes.STRING,
         allowNull: true,
