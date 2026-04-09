@@ -1018,7 +1018,7 @@ exports.uploadProfileImage = async (req, res) => {
     if (type === "profile") {
       fileName = `feed/${userId}/${Date.now()}_profileImage${extension}`;
     } else {
-      fileName = `cover/${userId}/${Date.now()}_coverImage${extension}`;
+      fileName = `cover/${userId}/cover_image/${Date.now()}_coverImage${extension}`;
     }
      
     let optimizedFilename = `optimized/${userId}/${Date.now()}_profileImage${extension}`;
