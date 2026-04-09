@@ -1021,7 +1021,7 @@ exports.uploadProfileImage = async (req, res) => {
       fileName = `cover/${userId}/${Date.now()}_coverImage${extension}`;
     }
      
-
+    let optimizedFilename = `optimized/${userId}/${Date.now()}_profileImage${extension}`;
     const uploadCommand = new PutObjectCommand({
       Bucket: process.env.AWS_S3_BUCKET_NAME,
       Key: fileName,
@@ -1031,7 +1031,7 @@ exports.uploadProfileImage = async (req, res) => {
 
     await s3.send(uploadCommand);
 
-    const fileUrl = `https://${process.env.CLOUDFRONT_URL}/${fileName}`;
+    const fileUrl = `https://${process.env.CLOUDFRONT_URL}/${optimizedFilename}`;
 
     console.log("fileUrl received", type, fileUrl);
     if (type === "profile") {
