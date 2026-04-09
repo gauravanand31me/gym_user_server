@@ -2688,9 +2688,9 @@ exports.uploadFeed = async (req, res) => {
 
     if (req.file) {
       
-
-      const fileName = `feed/${userId}/${Date.now()}_feedImage.webp`;
-      const optimizeFilename = `optimized/${userId}/${Date.now()}_feedImage.webp`;
+      const feedKey = Date.now();
+      const fileName = `feed/${userId}/${feedKey}_feedImage.webp`;
+      const optimizeFilename = `optimized/${userId}/${feedKey}_feedImage.webp`;
       const command = new PutObjectCommand({
         Bucket: process.env.AWS_S3_BUCKET_NAME,
         Key: fileName,
