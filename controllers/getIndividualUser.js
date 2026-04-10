@@ -1539,28 +1539,43 @@ exports.updateTrainer = async (req, res) => {
 
 exports.updateCertificate = async (req, res) => {
   const userId = req.user.id;
+
   try {
+    // Case 1: No files uploaded → Clear all certifications
     if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ message: 'No certificates uploaded' });
+      await User.update(
+        { certification: [] },   // or null, depending on your preference
+        { where: { id: userId } }
+      );
+
+      return res.status(200).json({
+        message: 'All certifications have been removed successfully',
+        certification: []
+      });
     }
 
-    const descriptions = req.body.descriptions ? 
-      (Array.isArray(req.body.descriptions) ? req.body.descriptions : [req.body.descriptions]) : 
-      new Array(req.files.length).fill('');
+    // Case 2: Files are uploaded → Process and update
+    const descriptions = req.body.descriptions 
+      ? (Array.isArray(req.body.descriptions) ? req.body.descriptions : [req.body.descriptions])
+      : new Array(req.files.length).fill('');
 
     if (descriptions.length !== req.files.length) {
-      return res.status(400).json({ message: 'Number of descriptions must match files' });
+      return res.status(400).json({ 
+        message: 'Number of descriptions must match number of files' 
+      });
     }
 
     const certifications = [];
 
     for (let i = 0; i < req.files.length; i++) {
       const file = req.files[i];
+
       console.log("File size:", file.size);
       console.log("Buffer length:", file.buffer?.length);
+
       const extension = path.extname(file.originalname).toLowerCase() || '.jpg';
       const mimeType = file.mimetype;
-      const fileName = `${userId}/certificates/${Date.now()}${extension}`;
+      const fileName = `${userId}/certificates/${Date.now()}-${Math.random().toString(36).substring(2)}${extension}`;
 
       const command = new PutObjectCommand({
         Bucket: process.env.AWS_S3_BUCKET_NAME,
@@ -1575,10 +1590,11 @@ exports.updateCertificate = async (req, res) => {
 
       certifications.push({
         route: fileUrl,
-        description: descriptions[i]
+        description: descriptions[i] || ''
       });
     }
 
+    // Update user with new certifications
     await User.update(
       { certification: certifications },
       { where: { id: userId } }
@@ -1588,6 +1604,7 @@ exports.updateCertificate = async (req, res) => {
       message: 'Certificates updated successfully',
       certification: certifications
     });
+
   } catch (error) {
     console.error('Error updating certificates:', error);
     res.status(500).json({ message: 'Server error' });
