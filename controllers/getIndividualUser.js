@@ -742,6 +742,7 @@ exports.updateProcessedVideo = async (req, res) => {
     const { videoId, videoUrl, thumbnailUrl } = req.body;
 
     console.log(`🔄 Update video request for Reel ${req.body}`);
+    console.log(req.body);
 
     if (!videoId || !videoUrl) {
       return res.status(400).json({
