@@ -209,9 +209,9 @@ exports.getTrainerStudents = async (req, res) => {
 
     // Validation
     if (!user_id) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'user_id (trainer ID) is required' 
+      return res.status(400).json({
+        success: false,
+        message: 'user_id (trainer ID) is required'
       });
     }
 
@@ -219,16 +219,16 @@ exports.getTrainerStudents = async (req, res) => {
     const limitNumber = parseInt(limit, 10);
 
     if (isNaN(pageNumber) || pageNumber < 1) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Page must be a positive number' 
+      return res.status(400).json({
+        success: false,
+        message: 'Page must be a positive number'
       });
     }
 
     if (isNaN(limitNumber) || limitNumber < 1) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Limit must be a positive number' 
+      return res.status(400).json({
+        success: false,
+        message: 'Limit must be a positive number'
       });
     }
 
@@ -239,7 +239,7 @@ exports.getTrainerStudents = async (req, res) => {
     const { count, rows: students } = await User.findAndCountAll({
       where: {
         t_id: user_id,           // Students linked to this trainer
-        
+
       },
       attributes: [
         'id',
@@ -271,10 +271,10 @@ exports.getTrainerStudents = async (req, res) => {
 
   } catch (error) {
     console.error('Get Trainer Students Error:', error);
-    return res.status(500).json({ 
-      success: false, 
+    return res.status(500).json({
+      success: false,
       message: 'Something went wrong while fetching students',
-      error: error.message 
+      error: error.message
     });
   }
 };
@@ -351,12 +351,12 @@ exports.blockUser = async (req, res) => {
       const request = await MessageRequest.findOne({
         where: { chat_id: currentChatId }
       });
-      
+
       if (request) {
         // await request.update({ status: "pending" });
         await request.destroy();
       }
-      
+
       return res.status(201).json({
         message: 'User blocked successfully',
         block: newBlock
@@ -478,12 +478,12 @@ exports.deleteReel = async (req, res) => {
     if (reel.challengeId) {
       await ChallengePayment.destroy({
         where: {
-          challengeId: reelId ,
+          challengeId: reelId,
           userId,
         },
       });
     }
-    
+
 
     // Step 3: Extract S3 Key from video URL
     const videoUrl = reel.videoUrl;
@@ -685,7 +685,7 @@ exports.uploadReel = async (req, res) => {
       hashtags
     };
 
-    
+
     if (gymId !== null && gymId !== undefined && gymId !== "null" && gymId !== "" && gymId !== "undefined") {
       feedJson["gymId"] = gymId;
     }
@@ -721,7 +721,7 @@ exports.uploadReel = async (req, res) => {
         console.error(`❌ Background failed for Reel ${createdReel.id}:`, err);
       } finally {
         [uploadedFilePath, rawThumbnailJpg, finalThumbnailWebp].forEach(f => {
-          try { if (fs.existsSync(f)) fs.unlinkSync(f); } catch {}
+          try { if (fs.existsSync(f)) fs.unlinkSync(f); } catch { }
         });
       }
     })();
@@ -1023,7 +1023,7 @@ exports.uploadProfileImage = async (req, res) => {
     } else {
       fileName = `cover/${userId}/cover_image/${timeFrame}_coverImage${extension}`;
     }
-     
+
     let optimizedFilename = (type === "profile") ? `optimized/${userId}/${timeFrame}_profileImage${extension}` : `optimized/${userId}/cover_image/${timeFrame}_coverImage${extension}`;
     const uploadCommand = new PutObjectCommand({
       Bucket: process.env.AWS_S3_BUCKET_NAME,
@@ -1038,18 +1038,18 @@ exports.uploadProfileImage = async (req, res) => {
 
     console.log("fileUrl received", type, fileUrl);
     if (type === "profile") {
-    await User.update(
-      { profile_pic: fileUrl },
-      { where: { id: userId } }
-    );
-  } else if (type === "cover") {
-    await User.update(
-      { cover_pic: fileUrl },
-      { where: { id: userId } }
-    );
-  }
-    
-    
+      await User.update(
+        { profile_pic: fileUrl },
+        { where: { id: userId } }
+      );
+    } else if (type === "cover") {
+      await User.update(
+        { cover_pic: fileUrl },
+        { where: { id: userId } }
+      );
+    }
+
+
 
     res.status(200).json({
       message: 'Profile image uploaded successfully',
@@ -1220,10 +1220,10 @@ exports.deleteAllMessages = async (req, res) => {
       //   where: {},       // no filter → deletes all rows
       //   truncate: false  // set true if you want to reset auto-increment
       // });
-  
+
       const oldProfilePic = 'https://d3tfjww6nofv30.cloudfront.net/a4c48204-30be-406c-a4a3-29708fd69aac/1749495872427_profileImage.jpg';
       const newProfilePic = 'https://png.pngtree.com/png-vector/20190223/ourmid/pngtree-profile-line-black-icon-png-image_691065.jpg';
-  
+
       // Update all users who have the old default profile pic
       const [updatedCount] = await User.update(
         { profile_pic: newProfilePic },
@@ -1233,7 +1233,7 @@ exports.deleteAllMessages = async (req, res) => {
           }
         }
       );
-  
+
       return res.status(200).json({
         status: true,
         updated: updatedCount,
@@ -1495,6 +1495,79 @@ exports.updateVisibility = async (req, res) => {
   }
 };
 
+
+exports.updateUserName = async (req, res) => {
+  const userId = req.user.id; // authenticated user
+  const { username } = req.body;
+
+  try {
+    /* 1️⃣ Validate input */
+
+    if (!username || username.trim() === "") {
+      return res.status(400).json({
+        message: "Username is required",
+      });
+    }
+
+    const trimmedUsername = username.trim();
+
+    /* 2️⃣ Get current user */
+
+    const currentUser = await User.findOne({
+      where: { id: userId },
+    });
+
+    if (!currentUser) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    /* 3️⃣ Check if same username */
+
+    if (currentUser.username === trimmedUsername) {
+      return res.status(200).json({
+        message: "Username is same as current username",
+        username: trimmedUsername,
+      });
+    }
+
+    /* 4️⃣ Check if username already taken */
+
+    const existingUser = await User.findOne({
+      where: { username: trimmedUsername },
+    });
+
+    if (existingUser) {
+      return res.status(409).json({
+        message: "Username is already taken",
+      });
+    }
+
+    /* 5️⃣ Update username */
+
+    await User.update(
+      { username: trimmedUsername },
+      { where: { id: userId } }
+    );
+
+    return res.status(200).json({
+      message: "Username updated successfully",
+      username: trimmedUsername,
+    });
+
+  } catch (error) {
+    console.error(
+      "Error updating username:",
+      error
+    );
+
+    return res.status(500).json({
+      message: "Server error",
+    });
+  }
+};
+
 exports.updateFullName = async (req, res) => {
   const userId = req.user.id; // Assumes user is authenticated and user ID is available in req.user
   const { full_name } = req.body;
@@ -1521,7 +1594,7 @@ exports.updateFullName = async (req, res) => {
 exports.updateTrainer = async (req, res) => {
   const userId = req.user.id;
 
-  const {is_trainer, spec} = req.body;
+  const { is_trainer, spec } = req.body;
 
   try {
     await User.update(
@@ -1557,13 +1630,13 @@ exports.updateCertificate = async (req, res) => {
     }
 
     // Case 2: Files are uploaded → Process and update
-    const descriptions = req.body.descriptions 
+    const descriptions = req.body.descriptions
       ? (Array.isArray(req.body.descriptions) ? req.body.descriptions : [req.body.descriptions])
       : new Array(req.files.length).fill('');
 
     if (descriptions.length !== req.files.length) {
-      return res.status(400).json({ 
-        message: 'Number of descriptions must match number of files' 
+      return res.status(400).json({
+        message: 'Number of descriptions must match number of files'
       });
     }
 
@@ -1640,7 +1713,7 @@ exports.updateGymDetails = async (req, res) => {
 
   try {
     // Check if full_name is provided
-    
+
 
     // Update the user's full name in the database
     await User.update(
@@ -1662,7 +1735,7 @@ exports.updateUserTrainner = async (req, res) => {
 
   try {
     // Check if full_name is provided
-    
+
 
     // Update the user's full name in the database
     await User.update(
@@ -1685,7 +1758,7 @@ exports.updateUserGender = async (req, res) => {
 
   try {
     // Check if full_name is provided
-    
+
 
     // Update the user's full name in the database
     await User.update(
@@ -1708,7 +1781,7 @@ exports.updateUserLink = async (req, res) => {
 
   try {
     // Check if full_name is provided
-    
+
 
     // Update the user's full name in the database
     await User.update(
@@ -2594,7 +2667,7 @@ exports.getMyFeed = async (req, res) => {
       friendIds: friendIdArray,
       ...(excludedUserIds.length && { excludedUserIds }),
     };
-    
+
     // === Profile mode (specific user_id requested) ===
     if (type !== 'challenge') {
       query += ` AND f."userId" = :userId`;
@@ -2675,13 +2748,13 @@ exports.uploadFeed = async (req, res) => {
           where: { name: categoryName },
           defaults: { name: categoryName, numberOfPosts: 1, isChallenge: false },
         });
-    
+
         if (!created) {
           await category.increment('numberOfPosts');
         }
       }
     }
-    
+
 
 
 
@@ -2706,7 +2779,7 @@ exports.uploadFeed = async (req, res) => {
     let imageUrl = null;
 
     if (req.file) {
-      
+
       const feedKey = Date.now();
       const fileName = `feed/${userId}/${feedKey}_feedImage.webp`;
       const optimizeFilename = `optimized/${userId}/${feedKey}_feedImage.webp`;
@@ -2720,12 +2793,12 @@ exports.uploadFeed = async (req, res) => {
       await s3.send(command);
 
       imageUrl = `https://${process.env.CLOUDFRONT_URL}/${optimizeFilename}`;
-    } 
+    }
 
     if (activityType === "challenge" && title) {
       await Category.findOrCreate({
         where: { name: title.trim() },
-        defaults: { name: title.trim() , isChallenge: true},
+        defaults: { name: title.trim(), isChallenge: true },
       });
     }
 
