@@ -1616,22 +1616,46 @@ exports.updateCertificate = async (req, res) => {
   const userId = req.user.id;
 
   try {
-    // Case 1: No files uploaded → Clear all certifications
-    if (!req.files || req.files.length === 0) {
+
+    /**
+     * CASE 1:
+     * certificates field NOT sent at all
+     * → user is updating other fields
+     * → DO NOTHING
+     */
+    if (req.files === undefined) {
+      return res.status(200).json({
+        message: 'No certificate changes detected'
+      });
+    }
+
+    /**
+     * CASE 2:
+     * certificates field sent but empty
+     * → user wants to remove all certifications
+     */
+    if (req.files.length === 0) {
       await User.update(
-        { certification: [] },   // or null, depending on your preference
+        { certification: [] },
         { where: { id: userId } }
       );
 
       return res.status(200).json({
-        message: 'All certifications have been removed successfully',
+        message: 'All certifications removed successfully',
         certification: []
       });
     }
 
-    // Case 2: Files are uploaded → Process and update
+    /**
+     * CASE 3:
+     * files uploaded
+     * → process normally
+     */
+
     const descriptions = req.body.descriptions
-      ? (Array.isArray(req.body.descriptions) ? req.body.descriptions : [req.body.descriptions])
+      ? (Array.isArray(req.body.descriptions)
+          ? req.body.descriptions
+          : [req.body.descriptions])
       : new Array(req.files.length).fill('');
 
     if (descriptions.length !== req.files.length) {
@@ -1645,23 +1669,25 @@ exports.updateCertificate = async (req, res) => {
     for (let i = 0; i < req.files.length; i++) {
       const file = req.files[i];
 
-      console.log("File size:", file.size);
-      console.log("Buffer length:", file.buffer?.length);
+      const extension =
+        path.extname(file.originalname).toLowerCase() || '.jpg';
 
-      const extension = path.extname(file.originalname).toLowerCase() || '.jpg';
-      const mimeType = file.mimetype;
-      const fileName = `${userId}/certificates/${Date.now()}-${Math.random().toString(36).substring(2)}${extension}`;
+      const fileName =
+        `${userId}/certificates/${Date.now()}-${Math.random()
+          .toString(36)
+          .substring(2)}${extension}`;
 
-      const command = new PutObjectCommand({
-        Bucket: process.env.AWS_S3_BUCKET_NAME,
-        Key: fileName,
-        Body: file.buffer,
-        ContentType: mimeType,
-      });
+      await s3.send(
+        new PutObjectCommand({
+          Bucket: process.env.AWS_S3_BUCKET_NAME,
+          Key: fileName,
+          Body: file.buffer,
+          ContentType: file.mimetype,
+        })
+      );
 
-      await s3.send(command);
-
-      const fileUrl = `https://${process.env.CLOUDFRONT_URL}/${fileName}`;
+      const fileUrl =
+        `https://${process.env.CLOUDFRONT_URL}/${fileName}`;
 
       certifications.push({
         route: fileUrl,
@@ -1669,20 +1695,22 @@ exports.updateCertificate = async (req, res) => {
       });
     }
 
-    // Update user with new certifications
     await User.update(
       { certification: certifications },
       { where: { id: userId } }
     );
 
-    res.status(200).json({
+    return res.status(200).json({
       message: 'Certificates updated successfully',
       certification: certifications
     });
 
   } catch (error) {
     console.error('Error updating certificates:', error);
-    res.status(500).json({ message: 'Server error' });
+
+    return res.status(500).json({
+      message: 'Server error'
+    });
   }
 };
 
