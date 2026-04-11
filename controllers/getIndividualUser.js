@@ -705,8 +705,7 @@ exports.uploadReel = async (req, res) => {
       try {
         const videoKey = createdReel.id;
 
-        const rawVideoKey = `raw/${videoKey}.mp4`; // 🔥 for Lambda
-        const thumbnailKey = `reels/thumbnails/${videoKey}-thumbnail.webp`;
+        const rawVideoKey = `mediainputraw/${videoKey}.mp4`; // 🔥 for Lambda
 
         // 1️⃣ Upload RAW VIDEO (NO COMPRESSION HERE)
         await s3Client.send(new PutObjectCommand({
