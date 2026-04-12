@@ -244,7 +244,8 @@ exports.getTrainerStudents = async (req, res) => {
       attributes: [
         'id',
         'full_name',
-        'profile_pic'
+        'profile_pic',
+        'username'
       ],
       limit: limitNumber,
       offset: offset,
