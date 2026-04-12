@@ -1024,7 +1024,7 @@ exports.uploadProfileImage = async (req, res) => {
       fileName = `cover/${userId}/cover_image/${timeFrame}_coverImage${extension}`;
     }
 
-    let optimizedFilename = (type === "profile") ? `optimized/${userId}/${timeFrame}_profileImage${extension}` : `optimized/${userId}/cover_image/${timeFrame}_coverImage${extension}`;
+    let optimizedFilename =  `optimized/${userId}/${timeFrame}_profileImage${extension}` ;
     const uploadCommand = new PutObjectCommand({
       Bucket: process.env.AWS_S3_BUCKET_NAME,
       Key: fileName,
