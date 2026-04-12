@@ -1497,75 +1497,79 @@ exports.updateVisibility = async (req, res) => {
 
 
 exports.updateUserName = async (req, res) => {
-  const userId = req.user.id; // authenticated user
-  const { username } = req.body;
+  // const userId = req.user.id; // authenticated user
+  // const { username } = req.body;
 
-  try {
-    /* 1️⃣ Validate input */
+  // try {
+  //   /* 1️⃣ Validate input */
 
-    if (!username || username.trim() === "") {
-      return res.status(400).json({
-        message: "Username is required",
-      });
-    }
+  //   if (!username || username.trim() === "") {
+  //     return res.status(400).json({
+  //       message: "Username is required",
+  //     });
+  //   }
 
-    const trimmedUsername = username.trim();
+  //   const trimmedUsername = username.trim();
 
-    /* 2️⃣ Get current user */
+  //   /* 2️⃣ Get current user */
 
-    const currentUser = await User.findOne({
-      where: { id: userId },
-    });
+  //   const currentUser = await User.findOne({
+  //     where: { id: userId },
+  //   });
 
-    if (!currentUser) {
-      return res.status(404).json({
-        message: "User not found",
-      });
-    }
+  //   if (!currentUser) {
+  //     return res.status(404).json({
+  //       message: "User not found",
+  //     });
+  //   }
 
-    /* 3️⃣ Check if same username */
+  //   /* 3️⃣ Check if same username */
 
-    if (currentUser.username === trimmedUsername) {
-      return res.status(200).json({
-        message: "Username is same as current username",
-        username: trimmedUsername,
-      });
-    }
+  //   if (currentUser.username === trimmedUsername) {
+  //     return res.status(200).json({
+  //       message: "Username is same as current username",
+  //       username: trimmedUsername,
+  //     });
+  //   }
 
-    /* 4️⃣ Check if username already taken */
+  //   /* 4️⃣ Check if username already taken */
 
-    const existingUser = await User.findOne({
-      where: { username: trimmedUsername },
-    });
+  //   const existingUser = await User.findOne({
+  //     where: { username: trimmedUsername },
+  //   });
 
-    if (existingUser) {
-      return res.status(409).json({
-        message: "Username is already taken",
-      });
-    }
+  //   if (existingUser) {
+  //     return res.status(409).json({
+  //       message: "Username is already taken",
+  //     });
+  //   }
 
-    /* 5️⃣ Update username */
+  //   /* 5️⃣ Update username */
 
-    await User.update(
-      { username: trimmedUsername },
-      { where: { id: userId } }
-    );
+  //   await User.update(
+  //     { username: trimmedUsername },
+  //     { where: { id: userId } }
+  //   );
 
-    return res.status(200).json({
-      message: "Username updated successfully",
-      username: trimmedUsername,
-    });
+  //   return res.status(200).json({
+  //     message: "Username updated successfully",
+  //     username: trimmedUsername,
+  //   });
 
-  } catch (error) {
-    console.error(
-      "Error updating username:",
-      error
-    );
+  // } catch (error) {
+  //   console.error(
+  //     "Error updating username:",
+  //     error
+  //   );
 
-    return res.status(500).json({
-      message: "Server error",
-    });
-  }
+  //   return res.status(500).json({
+  //     message: "Server error",
+  //   });
+  // }
+
+  return res.status(200).json({
+    message: "Username update is currently disabled for all users. Please contact support if you wish to change your username.",
+  });
 };
 
 exports.updateFullName = async (req, res) => {
