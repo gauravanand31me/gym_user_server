@@ -669,7 +669,20 @@ exports.uploadReel = async (req, res) => {
 
     const randomCode = generateRandomCode();
 
-    let feedJson = { /* ... your existing feedJson ... */ };
+    let feedJson = {
+      id: createdReel.id,
+      userId,
+      activityType: (mode === "challenge") ? "challenge" : 'aiPromo',
+      title: title || 'AI Promotional Video 🤖',
+      description: description || null,
+      imageUrl: `https://${process.env.CLOUDFRONT_URL}/reels/upload_progress.mp4`,
+      timestamp: new Date(),
+      postType: postType || 'public',
+      challengeId: parsedChallengeId,
+      randomCode,
+      mentions: mentionIds,
+      hashtags
+    };
 
     if (gymId !== null && gymId !== undefined && gymId !== "null" && gymId !== "" && gymId !== "undefined") {
       feedJson["gymId"] = gymId;
