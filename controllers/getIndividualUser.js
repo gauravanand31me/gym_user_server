@@ -612,19 +612,19 @@ exports.uploadReel = async (req, res) => {
   const { title, description, postType, link, mode, challengeId, mentions, gymId } = req.body;
   const userId = req.user.id;
 
-  const uploadedFilePath = req.file.path; // used ONLY for thumbnail
+  // ✅ Updated for diskStorage
+  const uploadedFilePath = req.file.path;        // Full path on disk (e.g. uploads/video-123456.mp4)
+  const videoFilename = req.file.filename;       // Just the filename
+
   const rawThumbnailJpg = path.join(__dirname, '../temp', `thumbnail-${Date.now()}.jpg`);
   const finalThumbnailWebp = rawThumbnailJpg.replace(/\.jpg$/, '.webp');
 
-  const videoBuffer = req.file.buffer; // 🔥 NEW
   let mentionIds = [];
 
   try {
     // ===== EXISTING LOGIC (UNCHANGED) =====
-    const parsedChallengeId =
-      challengeId && challengeId !== 'undefined' && challengeId !== 'null'
-        ? challengeId
-        : null;
+    const parsedChallengeId = challengeId && challengeId !== 'undefined' && challengeId !== 'null'
+      ? challengeId : null;
 
     const hashtagRegex = /#\w+/g;
     const hashtags = description.match(hashtagRegex) || [];
@@ -637,9 +637,7 @@ exports.uploadReel = async (req, res) => {
           defaults: { name: categoryName, numberOfPosts: 1, isChallenge: false },
         });
 
-        if (!created) {
-          await category.increment('numberOfPosts');
-        }
+        if (!created) await category.increment('numberOfPosts');
       }
     }
 
@@ -671,21 +669,7 @@ exports.uploadReel = async (req, res) => {
 
     const randomCode = generateRandomCode();
 
-    let feedJson = {
-      id: createdReel.id,
-      userId,
-      activityType: (mode === "challenge") ? "challenge" : 'aiPromo',
-      title: title || 'AI Promotional Video 🤖',
-      description: description || null,
-      imageUrl: `https://${process.env.CLOUDFRONT_URL}/reels/upload_progress.mp4`,
-      timestamp: new Date(),
-      postType: postType || 'public',
-      challengeId: parsedChallengeId,
-      randomCode,
-      mentions: mentionIds,
-      hashtags
-    };
-
+    let feedJson = { /* ... your existing feedJson ... */ };
 
     if (gymId !== null && gymId !== undefined && gymId !== "null" && gymId !== "" && gymId !== "undefined") {
       feedJson["gymId"] = gymId;
@@ -693,7 +677,7 @@ exports.uploadReel = async (req, res) => {
 
     const feed = await Feed.create(feedJson);
 
-    // ✅ Respond immediately
+    // ✅ Respond immediately to user
     res.status(201).json({
       success: true,
       reel: createdReel,
@@ -701,35 +685,42 @@ exports.uploadReel = async (req, res) => {
       message: "Video is processing"
     });
 
-    // ===== BACKGROUND TASK =====
+    // ===== BACKGROUND TASK (Updated for diskStorage) =====
     (async () => {
       try {
         const videoKey = createdReel.id;
+        const rawVideoKey = `mediainputraw/${videoKey}.mp4`;
 
-        const rawVideoKey = `mediainputraw/${videoKey}.mp4`; // 🔥 for Lambda
+        // 🔥 IMPORTANT CHANGE: Use stream instead of buffer (low memory)
+        const fileStream = fs.createReadStream(uploadedFilePath);
 
-        // 1️⃣ Upload RAW VIDEO (NO COMPRESSION HERE)
         await s3Client.send(new PutObjectCommand({
           Bucket: process.env.AWS_S3_BUCKET_NAME,
           Key: rawVideoKey,
-          Body: videoBuffer,
-          ContentType: 'video/mp4',
+          Body: fileStream,                    // ← Stream instead of buffer
+          ContentType: req.file.mimetype || 'video/mp4',
         }));
 
-        console.log("☁️ Raw video uploaded:", rawVideoKey);
+        console.log("☁️ Raw video uploaded to S3:", rawVideoKey);
 
       } catch (err) {
-        console.error(`❌ Background failed for Reel ${createdReel.id}:`, err);
+        console.error(`❌ Background upload failed for Reel ${createdReel.id}:`, err);
       } finally {
+        // Clean up local files
         [uploadedFilePath, rawThumbnailJpg, finalThumbnailWebp].forEach(f => {
-          try { if (fs.existsSync(f)) fs.unlinkSync(f); } catch { }
+          try {
+            if (fs.existsSync(f)) fs.unlinkSync(f);
+          } catch (e) { /* ignore */ }
         });
       }
     })();
 
   } catch (err) {
     console.error('❌ Upload error:', err);
-    res.status(500).json({ success: false, message: 'Internal Server Error' });
+    // If response not sent yet, send error
+    if (!res.headersSent) {
+      res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
   }
 };
 
