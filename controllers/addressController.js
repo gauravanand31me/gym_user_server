@@ -64,7 +64,8 @@ exports.getAddress = async (req, res) => {
     const userLong = parseFloat(req.query.long)
     const radius = parseFloat(req.query.radius) > 50 ? 100000 : parseFloat(req.query.radius)  // Convert km to meters, default to 100km if > 50km
 
-    console.log("Received query params:", radis);
+    console.log("Received query params:", radius, userLat, userLong);
+    
     const limit = parseInt(req.query.limit, 10) || 10
     const offset = parseInt(req.query.offset, 10) || 0
     const search = req.query.search?.trim() || ""
