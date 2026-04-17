@@ -199,6 +199,27 @@ exports.unfollowUser = async (req, res) => {
 };
 
 
+exports.deleteMessages = async (req, res) => {
+  try { 
+    const chatId = req.params.chatId;
+    const userId = req.user.id;
+
+    await Message.destroy({
+      where: {
+        chat_id: chatId,
+        [Op.or]: [
+          { sender_id: userId },
+          { receiver_id: userId }
+        ]
+      }
+    });
+
+    return res.status(200).json({ message: 'Messages deleted successfully' });
+  } catch (error) {
+    console.error('Delete messages error:', error);
+    return res.status(500).json({ message: 'Something went wrong', error: error.message });
+  }
+}
 
 
 
