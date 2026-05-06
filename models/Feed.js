@@ -66,6 +66,13 @@ const Feed = sequelize.define('Feed', {
     type: DataTypes.TEXT,
     allowNull: true
   },
+  
+  images: {                     
+    type: DataTypes.ARRAY(DataTypes.TEXT),
+    allowNull: true,
+    defaultValue: [],
+    comment: 'Array of image URLs for multi-image posts'
+  },
   like_count: {
     type: DataTypes.INTEGER,
     allowNull: true,
