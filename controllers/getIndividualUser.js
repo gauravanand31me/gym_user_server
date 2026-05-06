@@ -2696,7 +2696,7 @@ exports.getMyFeed = async (req, res) => {
     // === Base query ===
     let query = `
       SELECT
-        f."id", f."userId", f."activityType", f."title", f."randomCode", f."awards", f."description", f."gymId", f."mentions", f."link",
+        f."id", f."userId", f."images", f."activityType", f."title", f."randomCode", f."awards", f."description", f."gymId", f."mentions", f."link",
         f."imageUrl", f."like_count", f."comment_count", f."report_count",
         f."postType", f."mentionedUserIds", f."price", f."myBookmarks", f."timestamp", f."createdAt", f."updatedAt",
         u.full_name AS "user.full_name",
@@ -3190,7 +3190,6 @@ exports.getChallengeStats = async (req, res) => {
     return res.status(500).json({ success: false, message: 'Internal Server Error' });
   }
 };
-
 
 
 
