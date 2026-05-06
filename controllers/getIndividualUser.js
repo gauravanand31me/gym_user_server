@@ -2793,8 +2793,7 @@ exports.uploadFeed = async (req, res) => {
     const { title, answer, postType, mode, gymId, challengeId, mentions, link } = req.body;
     const userId = req.user.id;
     let activityType = "questionPrompt";
-
-    console.log("Request body received", req.body)
+    let imageUrls = [];
     let mentionIds = [];
     const hashtagRegex = /#\w+/g;
     const hashtags = answer.match(hashtagRegex) || [];
@@ -2836,11 +2835,33 @@ exports.uploadFeed = async (req, res) => {
 
     let imageUrl = null;
 
-    if (req.file) {
+    if (req.files && req.files.length > 0) {
+      console.log(`Uploading ${req.files.length} images...`);
+
+      for (const file of req.files) {
+        const feedKey = Date.now() + Math.random().toString(36).slice(2);
+        const fileName = `feed/${userId}/${feedKey}_feedImage.webp`;
+        const optimizeFilename = `optimized/${userId}/${feedKey}_feedImage.webp`;
+
+        const command = new PutObjectCommand({
+          Bucket: process.env.AWS_S3_BUCKET_NAME,
+          Key: fileName,
+          Body: file.buffer,
+          ContentType: file.mimetype || "image/webp",
+        });
+
+        await s3.send(command);
+        imageUrls.push(`https://${process.env.CLOUDFRONT_URL}/${optimizeFilename}`);
+      }
+    } 
+    // Priority 2: Backward compatibility - Old single image upload
+    else if (req.file) {
+      console.log("Single image upload (backward compatible)");
 
       const feedKey = Date.now();
       const fileName = `feed/${userId}/${feedKey}_feedImage.webp`;
       const optimizeFilename = `optimized/${userId}/${feedKey}_feedImage.webp`;
+
       const command = new PutObjectCommand({
         Bucket: process.env.AWS_S3_BUCKET_NAME,
         Key: fileName,
@@ -2849,8 +2870,7 @@ exports.uploadFeed = async (req, res) => {
       });
 
       await s3.send(command);
-
-      imageUrl = `https://${process.env.CLOUDFRONT_URL}/${optimizeFilename}`;
+      imageUrls = [`https://${process.env.CLOUDFRONT_URL}/${optimizeFilename}`];
     }
 
     if (activityType === "challenge" && title) {
@@ -2870,7 +2890,8 @@ exports.uploadFeed = async (req, res) => {
       title: title || "",
       gymId,
       description: answer,
-      imageUrl,
+      imageUrl: imageUrls[0] || null,      
+      images: imageUrls,
       timestamp: new Date(),
       postType: postType || "public",
       challengeId: challengeId,
