@@ -45,7 +45,7 @@ router.get('/feed/:id', authMiddleware, getFeedById);
 router.delete('/feed/:postId', authMiddleware, deletePost);
 router.get('/my-feed', authMiddleware, getMyFeed);
 router.get('/hash-feed', authMiddleware, getAllHashTag);
-router.post('/feed/upload',  authMiddleware, upload.single('image'),  uploadFeed);
+router.post('/feed/upload',  authMiddleware, upload.array('images', 10),  uploadFeed);
 router.post('/feed/react', authMiddleware,  reactToPost);
 router.get('/feed/react/:postId', authMiddleware,  getPostReactions);
 router.post('/feed/comment', authMiddleware,  createComment);
