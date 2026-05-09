@@ -13,27 +13,26 @@ const updateCloudFrontUrls = async (req, res) => {
         const newUrl = 'https://d59q7mzjlaq7y.cloudfront.net';
 
         // Update Feed model
-        await Feed.update(
-            { imageUrl: sequelize.fn('REPLACE', sequelize.col('imageUrl'), oldUrl, newUrl) },
-            { where: { imageUrl: { [Op.like]: `${oldUrl}%` } } }
-        );
+        
 
         // Update Reel model
-        await Reel.update(
-            { videoUrl: sequelize.fn('REPLACE', sequelize.col('videoUrl'), oldUrl, newUrl) },
-            { where: { videoUrl: { [Op.like]: `${oldUrl}%` } } }
-        );
+        
 
-        await Reel.update(
-            { thumbnailUrl: sequelize.fn('REPLACE', sequelize.col('thumbnailUrl'), oldUrl, newUrl) },
-            { where: { thumbnailUrl: { [Op.like]: `${oldUrl}%` } } }
-        );
+        
 
         // Update User model for profile pictures
         await User.update(
-            { profilePicUrl: sequelize.fn('REPLACE', sequelize.col('profilePicUrl'), oldUrl, newUrl) },
-            { where: { profilePicUrl: { [Op.like]: `${oldUrl}%` } } }
-        );
+            {
+              profilePicUrl:
+                "https://d59q7mzjlaq7y.cloudfront.net/thumbnails/empty.png",
+            },
+            {
+              where: {
+                profilePicUrl:
+                  "https://d3tfjww6nofv30.cloudfront.net/a4c48204-30be-406c-a4a3-29708fd69aac/1749495872427_profileImage.jpg",
+              },
+            }
+          );
 
         // Update Certificate model for certificates
         res.status(200).json({ message: 'CloudFront URLs updated successfully' });
