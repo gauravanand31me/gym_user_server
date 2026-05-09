@@ -17,18 +17,15 @@ const updateCloudFrontUrls = async (req, res) => {
 
         // Update Reel model
         
-
-        
-
         // Update User model for profile pictures
         await User.update(
             {
-              profilePicUrl:
+              profile_pic:
                 "https://d59q7mzjlaq7y.cloudfront.net/thumbnails/empty.png",
             },
             {
               where: {
-                profilePicUrl:
+                profile_pic:
                   "https://d3tfjww6nofv30.cloudfront.net/a4c48204-30be-406c-a4a3-29708fd69aac/1749495872427_profileImage.jpg",
               },
             }
