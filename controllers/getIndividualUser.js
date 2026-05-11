@@ -2470,76 +2470,34 @@ exports.deletePost = async (req, res) => {
 
 
 exports.getAllHashTag = async (req, res) => {
-  const loggedInUserId = req.user.id;
-  const { type, mode, tags } = req.query;
+  const loggedInUserId = req.user?.id;
+  const type = req.query.type;
+  const mode = req.query.mode;
+  const tags = req.query.tags;
 
   try {
     const limit = parseInt(req.query.limit || 10);
     const offset = parseInt(req.query.offset || 0);
 
-    // ... (keep your existing followings, friends, blocked logic)
-
-    const visibilityConditions = [ /* your existing conditions */ ];
-    const excludeCondition = excludedUserIds.length ? `AND f."userId" NOT IN (:excludedUserIds)` : '';
-
-    const query = `
-      SELECT
-        f.*,
-        u.full_name AS "user.full_name",
-        u.profile_pic AS "user.profile_pic",
-        g.id AS "gym.id",
-        g.name AS "gym.name",
-        r."videoUrl" AS "videoUrl",
-        r."thumbnailUrl" AS "thumbnailUrl",
-        CASE WHEN ur."reactionType" = 'like' THEN true ELSE false END AS "userLiked"
-      FROM "Feeds" f
-      LEFT JOIN "Users" u ON f."userId" = u.id
-      LEFT JOIN "Gyms" g ON f."gymId" = g.id
-      LEFT JOIN "Reels" r ON r.id = f.id
-      LEFT JOIN "PostReactions" ur ON f.id = ur."postId" AND ur."userId" = :loggedInUserId
-      WHERE (${visibilityConditions.join(' OR ')})
-        ${excludeCondition}
-      ORDER BY f."timestamp" DESC
-      LIMIT :limit OFFSET :offset
-    `;
-
-    const feedItems = await sequelize.query(query, {
-      replacements: { /* your replacements */ loggedInUserId, limit, offset, ... },
-      type: sequelize.QueryTypes.SELECT,
-      nest: true,
+    // === Get followings ===
+    const followings = await Follow.findAll({
+      where: { followerId: loggedInUserId },
+      attributes: ['followingId'],
     });
-
-    const result = feedItems.map(feed => ({
-      ...feed,
-      canDelete: feed.userId === loggedInUserId || loggedInUserId === process.env.ADMIN_UUID,
-      canReport: feed.userId !== loggedInUserId,
-      isSaved: feed.myBookmarks?.indexOf(loggedInUserId) > -1
-    }));
-
-    return res.status(200).json({ reels: result });
-
-  } catch (error) {
-    console.error('Error fetching hashtag feed:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
-
-
-exports.getMyFeed = async (req, res) => {
-  const loggedInUserId = req.user.id;
-  const limit = parseInt(req.query.limit || 10);
-  const offset = parseInt(req.query.offset || 0);
-
-  try {
-    // Get followings, friends, and blocked users (same as before)
-    const followings = await Follow.findAll({ where: { followerId: loggedInUserId }, attributes: ['followingId'] });
     const followingIds = followings.map(f => f.followingId);
     const idsArray = [loggedInUserId, ...followingIds];
 
+    // === Get friends ===
     const friends = await FriendRequest.findAll({
-      where: { status: 'accepted', [Op.or]: [{ fromUserId: loggedInUserId }, { toUserId: loggedInUserId }] }
+      where: {
+        status: 'accepted',
+        [Sequelize.Op.or]: [
+          { fromUserId: loggedInUserId },
+          { toUserId: loggedInUserId },
+        ],
+      },
     });
+
     const friendIds = new Set();
     friends.forEach(req => {
       if (req.fromUserId !== loggedInUserId) friendIds.add(req.fromUserId);
@@ -2548,49 +2506,103 @@ exports.getMyFeed = async (req, res) => {
     friendIds.add(loggedInUserId);
     const friendIdArray = Array.from(friendIds);
 
-    const blockedBy = await Block.findAll({ where: { blockingId: loggedInUserId }, attributes: ['blockerId'] });
-    const userBlocked = await Block.findAll({ where: { blockerId: loggedInUserId }, attributes: ['blockingId'] });
-    const excludedUserIds = [...new Set([...blockedBy.map(b => b.blockerId), ...userBlocked.map(b => b.blockingId)])];
+    // === Get blocked users ===
+    const blockedBy = await Block.findAll({
+      where: { blockingId: loggedInUserId },
+      attributes: ['blockerId'],
+    });
+    const blockedByIds = blockedBy.map(b => b.blockerId);
 
+    const userBlocked = await Block.findAll({
+      where: { blockerId: loggedInUserId },
+      attributes: ['blockingId'],
+    });
+    const userBlockedIds = userBlocked.map(b => b.blockingId);
+
+    const excludedUserIds = [...new Set([...blockedByIds, ...userBlockedIds])];
+
+    // === Build visibility conditions ===
     const visibilityConditions = [
       `f."postType" = 'public'`,
-      `(f."userId" = :loggedInUserId)`
+      `(f."userId" = :loggedInUserId)` // always see own posts
     ];
-    if (followingIds.length > 0) visibilityConditions.push(`(f."postType" = 'private' AND f."userId" IN (:ids))`);
-    if (friendIdArray.length > 0) visibilityConditions.push(`(f."postType" = 'onlyme' AND f."userId" IN (:friendIds))`);
+    if (followingIds.length > 0) {
+      visibilityConditions.push(`(f."postType" = 'private' AND f."userId" IN (:ids))`);
+    }
+    if (friendIdArray.length > 0) {
+      visibilityConditions.push(`(f."postType" = 'onlyme' AND f."userId" IN (:friendIds))`);
+    }
 
-    const excludeCondition = excludedUserIds.length ? `AND f."userId" NOT IN (:excludedUserIds)` : '';
+    // === Exclude blocked users ===
+    const excludeCondition = excludedUserIds.length
+      ? `AND f."userId" NOT IN (:excludedUserIds)`
+      : '';
 
-    const query = `
+    // === Base query ===
+    let query = `
       SELECT
-        f.*,
+        f."id", f."userId", f."activityType", f."images", f."title", f."randomCode", f."awards", f."description", f."gymId", f."mentions", f."link",
+        f."imageUrl", f."like_count", f."comment_count", f."report_count",
+        f."postType", f."mentionedUserIds", f."price", f."myBookmarks", f."timestamp", f."createdAt", f."updatedAt",
         u.full_name AS "user.full_name",
         u.profile_pic AS "user.profile_pic",
         g.id AS "gym.id",
         g.name AS "gym.name",
-        r."videoUrl" AS "videoUrl",
-        r."thumbnailUrl" AS "thumbnailUrl",
+        COUNT(r."id") AS "reactionCount",
+        r2."videoUrl" AS "videoUrl",
+        r2."thumbnailUrl" AS "thumbnailUrl",
+        r2."hashtags" AS "reelTags",
+        f."challengeId" AS "challengeId"
         CASE WHEN ur."reactionType" = 'like' THEN true ELSE false END AS "userLiked"
       FROM "Feeds" f
       LEFT JOIN "Users" u ON f."userId" = u.id
       LEFT JOIN "Gyms" g ON f."gymId" = g.id
-      LEFT JOIN "Reels" r ON r.id = f.id
+      LEFT JOIN "PostReactions" r ON f."id" = r."postId"
+      LEFT JOIN "Reels" r2 ON r2."id" = f."id"
       LEFT JOIN "PostReactions" ur ON f.id = ur."postId" AND ur."userId" = :loggedInUserId
       WHERE (${visibilityConditions.join(' OR ')})
-        ${excludeCondition}
+      ${excludeCondition}
+    `;
+
+    const replacements = {
+      limit,
+      offset,
+      loggedInUserId,
+      ids: idsArray,
+      friendIds: friendIdArray,
+      ...(excludedUserIds.length && { excludedUserIds }),
+    };
+
+    // === Extra filters ===
+    if (type) {
+      if (type === "participated") {
+        query += ` AND f."challengeId" IS NOT NULL AND f."userId" = :loggedInUserId`;
+      } else {
+        query += ` AND f."activityType" = :type`;
+        replacements.type = type;
+      }
+    }
+
+    if (mode === 'paid') {
+      query += ` AND f."price" > 0`;
+    }
+
+    if (tags) {
+      query += ` AND EXISTS (
+        SELECT 1 FROM unnest(f."hashtags") AS tag
+        WHERE LOWER(tag) LIKE LOWER('%' || :tags || '%')
+      )`;
+      replacements.tags = tags;
+    }
+
+    query += `
+      GROUP BY f.id, u.id, g.id, r2."id"
       ORDER BY f."timestamp" DESC
       LIMIT :limit OFFSET :offset
     `;
 
     const feedItems = await sequelize.query(query, {
-      replacements: {
-        loggedInUserId,
-        ids: idsArray,
-        friendIds: friendIdArray,
-        limit,
-        offset,
-        ...(excludedUserIds.length && { excludedUserIds })
-      },
+      replacements,
       type: sequelize.QueryTypes.SELECT,
       nest: true,
     });
@@ -2602,10 +2614,174 @@ exports.getMyFeed = async (req, res) => {
       isSaved: feed.myBookmarks?.indexOf(loggedInUserId) > -1
     }));
 
+    console.log("feedItemsWithPermissions", feedItemsWithPermissions);
     return res.status(200).json({ feed: feedItemsWithPermissions });
-
   } catch (error) {
-    console.error('Error fetching my feed:', error);
+    console.error('Error fetching my posts feed:', error);
+    return res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
+};
+
+
+
+
+exports.getMyFeed = async (req, res) => {
+  const loggedInUserId = req.user?.id;
+  const requestedUserId = req.query.user_id || req.user?.id; // optional user profile mode
+  const type = req.query.type;
+  const mode = req.query.mode;
+  const tags = req.query.tags;
+
+  try {
+    const limit = parseInt(req.query.limit || 10);
+    const offset = parseInt(req.query.offset || 0);
+
+    // === Get followings ===
+    const followings = await Follow.findAll({
+      where: { followerId: loggedInUserId },
+      attributes: ['followingId'],
+    });
+    const followingIds = followings.map(f => f.followingId);
+    const idsArray = [loggedInUserId, ...followingIds];
+
+    // === Get friends ===
+    const friends = await FriendRequest.findAll({
+      where: {
+        status: 'accepted',
+        [Sequelize.Op.or]: [
+          { fromUserId: loggedInUserId },
+          { toUserId: loggedInUserId },
+        ],
+      },
+    });
+
+    const friendIds = new Set();
+    friends.forEach(req => {
+      if (req.fromUserId !== loggedInUserId) friendIds.add(req.fromUserId);
+      if (req.toUserId !== loggedInUserId) friendIds.add(req.toUserId);
+    });
+    friendIds.add(loggedInUserId);
+    const friendIdArray = Array.from(friendIds);
+
+    // === Get blocked users ===
+    const blockedBy = await Block.findAll({
+      where: { blockingId: loggedInUserId },
+      attributes: ['blockerId'],
+    });
+    const blockedByIds = blockedBy.map(b => b.blockerId);
+
+    const userBlocked = await Block.findAll({
+      where: { blockerId: loggedInUserId },
+      attributes: ['blockingId'],
+    });
+    const userBlockedIds = userBlocked.map(b => b.blockingId);
+
+    const excludedUserIds = [...new Set([...blockedByIds, ...userBlockedIds])];
+
+    // === Build visibility conditions ===
+    const visibilityConditions = [
+      `f."postType" = 'public'`,
+      `(f."userId" = :loggedInUserId)` // always see own posts
+    ];
+    if (followingIds.length > 0) {
+      visibilityConditions.push(`(f."postType" = 'private' AND f."userId" IN (:ids))`);
+    }
+    if (friendIdArray.length > 0) {
+      visibilityConditions.push(`(f."postType" = 'onlyme' AND f."userId" IN (:friendIds))`);
+    }
+
+    // === Exclude blocked users ===
+    const excludeCondition = excludedUserIds.length
+      ? `AND f."userId" NOT IN (:excludedUserIds)`
+      : '';
+
+    // === Base query ===
+    let query = `
+      SELECT
+        f."id", f."userId", f."images", f."activityType", f."title", f."randomCode", f."awards", f."description", f."gymId", f."mentions", f."link",
+        f."imageUrl", f."like_count", f."comment_count", f."report_count",
+        f."postType", f."mentionedUserIds", f."price", f."myBookmarks", f."timestamp", f."createdAt", f."updatedAt",
+        u.full_name AS "user.full_name",
+        u.profile_pic AS "user.profile_pic",
+        g.id AS "gym.id",
+        g.name AS "gym.name",
+        COUNT(r."id") AS "reactionCount",
+        r2."videoUrl" AS "videoUrl",
+        r2."thumbnailUrl" AS "thumbnailUrl",
+        r2."hashtags" AS "reelTags",
+        f."challengeId" AS "challengeId"
+        CASE WHEN ur."reactionType" = 'like' THEN true ELSE false END AS "userLiked"
+      FROM "Feeds" f
+      LEFT JOIN "Users" u ON f."userId" = u.id
+      LEFT JOIN "Gyms" g ON f."gymId" = g.id
+      LEFT JOIN "PostReactions" r ON f."id" = r."postId"
+      LEFT JOIN "Reels" r2 ON r2."id" = f."id"
+      LEFT JOIN "PostReactions" ur ON f.id = ur."postId" AND ur."userId" = :loggedInUserId
+      WHERE (${visibilityConditions.join(' OR ')})
+      ${excludeCondition}
+    `;
+
+    const replacements = {
+      limit,
+      offset,
+      loggedInUserId,
+      ids: idsArray,
+      friendIds: friendIdArray,
+      ...(excludedUserIds.length && { excludedUserIds }),
+    };
+
+    // === Profile mode (specific user_id requested) ===
+    if (type !== 'challenge') {
+      query += ` AND f."userId" = :userId`;
+      replacements.userId = requestedUserId;
+    }
+
+    // === Extra filters ===
+    if (type) {
+      if (type === "participated") {
+        query += ` AND f."challengeId" IS NOT NULL AND f."userId" = :participatedUserId`;
+        replacements.participatedUserId = requestedUserId;
+      } else {
+        query += ` AND f."activityType" = :type`;
+        replacements.type = type;
+      }
+    }
+
+    if (mode === 'paid') {
+      query += ` AND f."price" > 0`;
+    }
+
+    if (tags) {
+      query += ` AND EXISTS (
+        SELECT 1 FROM unnest(f."hashtags") AS tag
+        WHERE LOWER(tag) LIKE LOWER('%' || :tags || '%')
+      )`;
+      replacements.tags = tags;
+    }
+
+    query += `
+      GROUP BY f.id, u.id, g.id, r2."id"
+      ORDER BY f."timestamp" DESC
+      LIMIT :limit OFFSET :offset
+    `;
+
+    const feedItems = await sequelize.query(query, {
+      replacements,
+      type: sequelize.QueryTypes.SELECT,
+      nest: true,
+    });
+
+    const feedItemsWithPermissions = feedItems.map(feed => ({
+      ...feed,
+      canDelete: feed.userId === loggedInUserId || loggedInUserId === process.env.ADMIN_UUID,
+      canReport: feed.userId !== loggedInUserId,
+      isSaved: feed.myBookmarks?.indexOf(loggedInUserId) > -1
+    }));
+
+    console.log("feedItemsWithPermissions", feedItemsWithPermissions);
+    return res.status(200).json({ feed: feedItemsWithPermissions });
+  } catch (error) {
+    console.error('Error fetching my posts feed:', error);
     return res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 };
