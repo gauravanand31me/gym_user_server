@@ -2552,7 +2552,7 @@ exports.getAllHashTag = async (req, res) => {
         r2."videoUrl" AS "videoUrl",
         r2."thumbnailUrl" AS "thumbnailUrl",
         r2."hashtags" AS "reelTags",
-        f."challengeId" AS "challengeId"
+        f."challengeId" AS "challengeId",
         CASE WHEN ur."reactionType" = 'like' THEN true ELSE false END AS "userLiked"
       FROM "Feeds" f
       LEFT JOIN "Users" u ON f."userId" = u.id
@@ -2709,7 +2709,7 @@ exports.getMyFeed = async (req, res) => {
         r2."videoUrl" AS "videoUrl",
         r2."thumbnailUrl" AS "thumbnailUrl",
         r2."hashtags" AS "reelTags",
-        f."challengeId" AS "challengeId"
+        f."challengeId" AS "challengeId",
         CASE WHEN ur."reactionType" = 'like' THEN true ELSE false END AS "userLiked"
       FROM "Feeds" f
       LEFT JOIN "Users" u ON f."userId" = u.id
