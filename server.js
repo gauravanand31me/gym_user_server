@@ -16,6 +16,8 @@ const buddyRoutes = require("./routes/buddy")
 const notificationRoutes = require("./routes/notification")
 const ratingRoutes = require("./routes/rating")
 const checkUserAgent = require("./checkUserAgent")
+const { performanceMonitor } = require("./middleware/performanceMonitor")
+const reportRoutes = require("./routes/report")
 
 // 🔥 SOCKET.IO
 const { Server } = require("socket.io")
@@ -36,6 +38,7 @@ app.use(express.json({
 app.use(express.urlencoded({ limit: "200mb", extended: true }))
 app.use(cors())
 app.use(checkUserAgent)
+app.use(performanceMonitor)
 
 // REST ROUTES
 app.use("/user/api/auth", authRoutes)
@@ -47,6 +50,7 @@ app.use("/user/api/address", addressRoutes)
 app.use("/user/api/buddy", buddyRoutes)
 app.use("/user/api/notifications", notificationRoutes)
 app.use("/user/api/rating", ratingRoutes)
+app.use("/user/api/report", reportRoutes)
 
 const PORT = process.env.PORT || 5000
 
