@@ -251,6 +251,46 @@ exports.getCalorieLogs = async (req, res) => {
   }
 };
 
+// ─── POST /calorie-snap/create-payment-link ──────────────────────────────────
+
+exports.createPaymentLink = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { plan } = req.body;
+
+    if (!plan || !PLANS[plan]) {
+      return res.status(400).json({ success: false, message: 'plan must be "monthly" or "yearly"' });
+    }
+
+    const { amount } = PLANS[plan];
+
+    const link = await razorpay.paymentLink.create({
+      amount,
+      currency: 'INR',
+      description: `CalorieSnap ${plan} subscription`,
+      receipt: `cs_${shortid.generate()}`,
+      notify: { sms: false, email: false },
+    });
+
+    await CalorieSnapSubscription.create({
+      userId,
+      plan,
+      orderId: link.id,
+      amount,
+      status: 'pending',
+    });
+
+    return res.status(200).json({
+      success:     true,
+      paymentLink: link.short_url,
+      linkId:      link.id,
+    });
+  } catch (err) {
+    console.error('createPaymentLink error:', err);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
 // ─── POST /calorie-snap/create-order ─────────────────────────────────────────
 
 exports.createOrder = async (req, res) => {

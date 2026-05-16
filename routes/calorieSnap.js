@@ -7,6 +7,7 @@ const {
   getCalorieLogs,
   createOrder,
   verifyPayment,
+  createPaymentLink,
 } = require('../controllers/calorieSnapController');
 
 const router = express.Router();
@@ -15,7 +16,8 @@ router.get('/trial-status',   authMiddleware, getTrialStatus);
 router.post('/record-usage',  authMiddleware, recordUsage);
 router.post('/log',           authMiddleware, saveCalorieLog);
 router.get('/logs',           authMiddleware, getCalorieLogs);
-router.post('/create-order',  authMiddleware, createOrder);
+router.post('/create-order',        authMiddleware, createOrder);
+router.post('/create-payment-link', authMiddleware, createPaymentLink);
 router.post('/verify-payment', authMiddleware, verifyPayment);
 
 module.exports = router;
