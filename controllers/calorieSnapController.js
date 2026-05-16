@@ -1,7 +1,23 @@
-const CalorieSnapTrial = require('../models/CalorieSnapTrial');
-const CalorieLog = require('../models/CalorieLog');
+const crypto = require('crypto');
+const Razorpay = require('razorpay');
+const shortid = require('shortid');
+const { Op } = require('sequelize');
 
-const TRIAL_DAYS = 3;
+const CalorieSnapTrial        = require('../models/CalorieSnapTrial');
+const CalorieLog              = require('../models/CalorieLog');
+const CalorieSnapSubscription = require('../models/CalorieSnapSubscription');
+
+const razorpay = new Razorpay({
+  key_id:     process.env.RAZOR_PAY_PAYMENT_KEY,
+  key_secret: process.env.RAZOR_PAY_PAYMENT_SECRET,
+});
+
+const PLANS = {
+  monthly: { amount: 12900,  days: 30  },
+  yearly:  { amount: 120000, days: 365 },
+};
+
+const TRIAL_DAYS  = 3;
 const DAILY_LIMIT = 4;
 const VALID_MEALS = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
 
@@ -9,7 +25,6 @@ function toYMD(d) {
   return d.toISOString().slice(0, 10);
 }
 
-// Parse "5g" → 5, or number → number
 function parseGrams(val) {
   if (typeof val === 'number') return val;
   const m = String(val).match(/[\d.]+/);
@@ -21,20 +36,41 @@ function parseGrams(val) {
 exports.getTrialStatus = async (req, res) => {
   try {
     const userId = req.user.id;
-    const now = new Date();
-    const today = toYMD(now);
+    const now    = new Date();
+    const today  = toYMD(now);
 
+    // 1. Active subscription takes priority — unlimited access
+    const subscription = await CalorieSnapSubscription.findOne({
+      where: {
+        userId,
+        status:    'active',
+        expiresAt: { [Op.gt]: now },
+      },
+    });
+
+    if (subscription) {
+      return res.status(200).json({
+        success:      true,
+        allowed:      true,
+        reason:       'subscribed',
+        daysLeft:     null,
+        requestsLeft: null,
+        isSubscribed: true,
+      });
+    }
+
+    // 2. Check free trial
     const trial = await CalorieSnapTrial.findOne({ where: { userId } });
 
-    // First-ever visit — no record yet
     if (!trial || !trial.firstUseDate) {
       return res.status(200).json({
-        success: true,
-        allowed: true,
-        reason: null,
-        daysLeft: TRIAL_DAYS,
+        success:      true,
+        allowed:      true,
+        reason:       null,
+        daysLeft:     TRIAL_DAYS,
         requestsLeft: DAILY_LIMIT,
-        isNew: true,
+        isNew:        true,
+        isSubscribed: false,
       });
     }
 
@@ -42,34 +78,37 @@ exports.getTrialStatus = async (req, res) => {
 
     if (daysSinceFirst >= TRIAL_DAYS) {
       return res.status(200).json({
-        success: true,
-        allowed: false,
-        reason: 'expired',
-        daysLeft: 0,
+        success:      true,
+        allowed:      false,
+        reason:       'expired',
+        daysLeft:     0,
         requestsLeft: 0,
+        isSubscribed: false,
       });
     }
 
-    const daysLeft = TRIAL_DAYS - daysSinceFirst;
-    const todayEntry = (trial.usageLog || []).find(e => e.date === today);
-    const todayCount = todayEntry ? todayEntry.count : 0;
+    const daysLeft    = TRIAL_DAYS - daysSinceFirst;
+    const todayEntry  = (trial.usageLog || []).find(e => e.date === today);
+    const todayCount  = todayEntry ? todayEntry.count : 0;
 
     if (todayCount >= DAILY_LIMIT) {
       return res.status(200).json({
-        success: true,
-        allowed: false,
-        reason: 'daily_limit',
+        success:      true,
+        allowed:      false,
+        reason:       'daily_limit',
         daysLeft,
         requestsLeft: 0,
+        isSubscribed: false,
       });
     }
 
     return res.status(200).json({
-      success: true,
-      allowed: true,
-      reason: null,
+      success:      true,
+      allowed:      true,
+      reason:       null,
       daysLeft,
       requestsLeft: DAILY_LIMIT - todayCount,
+      isSubscribed: false,
     });
   } catch (err) {
     console.error('getTrialStatus error:', err);
@@ -82,7 +121,7 @@ exports.getTrialStatus = async (req, res) => {
 exports.recordUsage = async (req, res) => {
   try {
     const userId = req.user.id;
-    const today = toYMD(new Date());
+    const today  = toYMD(new Date());
 
     let trial = await CalorieSnapTrial.findOne({ where: { userId } });
 
@@ -90,7 +129,7 @@ exports.recordUsage = async (req, res) => {
       await CalorieSnapTrial.create({
         userId,
         firstUseDate: new Date(),
-        usageLog: [{ date: today, count: 1 }],
+        usageLog:     [{ date: today, count: 1 }],
       });
       return res.status(200).json({ success: true });
     }
@@ -109,7 +148,7 @@ exports.recordUsage = async (req, res) => {
     }
 
     trial.usageLog = log;
-    trial.changed('usageLog', true); // required for Sequelize JSONB mutation detection
+    trial.changed('usageLog', true);
     await trial.save();
 
     return res.status(200).json({ success: true });
@@ -144,8 +183,8 @@ exports.saveCalorieLog = async (req, res) => {
     const log = await CalorieLog.create({
       userId,
       mealLabel,
-      imageUri: imageUri || null,
-      loggedAt: loggedAt ? new Date(loggedAt) : new Date(),
+      imageUri:  imageUri || null,
+      loggedAt:  loggedAt ? new Date(loggedAt) : new Date(),
       items,
       total,
       date: logDate,
@@ -154,10 +193,10 @@ exports.saveCalorieLog = async (req, res) => {
     return res.status(201).json({
       success: true,
       log: {
-        id: String(log.id),
+        id:        String(log.id),
         mealLabel: log.mealLabel,
-        loggedAt: log.loggedAt.toISOString(),
-        total: log.total,
+        loggedAt:  log.loggedAt.toISOString(),
+        total:     log.total,
       },
     });
   } catch (err) {
@@ -171,7 +210,7 @@ exports.saveCalorieLog = async (req, res) => {
 exports.getCalorieLogs = async (req, res) => {
   try {
     const userId = req.user.id;
-    const date = req.query.date || toYMD(new Date());
+    const date   = req.query.date || toYMD(new Date());
 
     const logs = await CalorieLog.findAll({
       where: { userId, date },
@@ -208,6 +247,98 @@ exports.getCalorieLogs = async (req, res) => {
     });
   } catch (err) {
     console.error('getCalorieLogs error:', err);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
+// ─── POST /calorie-snap/create-order ─────────────────────────────────────────
+
+exports.createOrder = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { plan } = req.body;
+
+    if (!plan || !PLANS[plan]) {
+      return res.status(400).json({ success: false, message: 'plan must be "monthly" or "yearly"' });
+    }
+
+    const { amount } = PLANS[plan];
+
+    const order = await razorpay.orders.create({
+      amount,
+      currency:        'INR',
+      receipt:         `cs_${shortid.generate()}`,
+      payment_capture: 1,
+    });
+
+    await CalorieSnapSubscription.create({
+      userId,
+      plan,
+      orderId: order.id,
+      amount,
+      status: 'pending',
+    });
+
+    return res.status(200).json({
+      success:  true,
+      orderId:  order.id,
+      amount,
+      currency: 'INR',
+      keyId:    process.env.RAZOR_PAY_PAYMENT_KEY,
+    });
+  } catch (err) {
+    console.error('createOrder error:', err);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
+// ─── POST /calorie-snap/verify-payment ───────────────────────────────────────
+
+exports.verifyPayment = async (req, res) => {
+  try {
+    const { razorpay_payment_id, razorpay_order_id, razorpay_signature, plan } = req.body;
+
+    if (!razorpay_payment_id || !razorpay_order_id || !razorpay_signature) {
+      return res.status(400).json({ success: false, message: 'Missing payment fields' });
+    }
+
+    // Verify HMAC-SHA256 signature
+    const expectedSig = crypto
+      .createHmac('sha256', process.env.RAZOR_PAY_PAYMENT_SECRET)
+      .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+      .digest('hex');
+
+    if (expectedSig !== razorpay_signature) {
+      return res.status(400).json({ success: false, message: 'Invalid payment signature' });
+    }
+
+    // Find the pending order
+    const subscription = await CalorieSnapSubscription.findOne({
+      where: { orderId: razorpay_order_id, status: 'pending' },
+    });
+
+    if (!subscription) {
+      return res.status(404).json({ success: false, message: 'Order not found or already processed' });
+    }
+
+    // Resolve expiry using the plan on the DB record (not trusting client)
+    const resolvedPlan = subscription.plan;
+    const days         = PLANS[resolvedPlan]?.days ?? 30;
+
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + days);
+
+    subscription.status    = 'active';
+    subscription.paymentId = razorpay_payment_id;
+    subscription.expiresAt = expiresAt;
+    await subscription.save();
+
+    return res.status(200).json({
+      success:   true,
+      expiresAt: expiresAt.toISOString(),
+    });
+  } catch (err) {
+    console.error('verifyPayment error:', err);
     return res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
