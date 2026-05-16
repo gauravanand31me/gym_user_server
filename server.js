@@ -18,6 +18,8 @@ const ratingRoutes = require("./routes/rating")
 const checkUserAgent = require("./checkUserAgent")
 const { performanceMonitor } = require("./middleware/performanceMonitor")
 const reportRoutes = require("./routes/report")
+const searchRoutes = require("./routes/search")
+const calorieSnapRoutes = require("./routes/calorieSnap")
 
 // 🔥 SOCKET.IO
 const { Server } = require("socket.io")
@@ -51,6 +53,8 @@ app.use("/user/api/buddy", buddyRoutes)
 app.use("/user/api/notifications", notificationRoutes)
 app.use("/user/api/rating", ratingRoutes)
 app.use("/user/api/report", reportRoutes)
+app.use("/user/api/search", searchRoutes)
+app.use("/user/api/calorie-snap", calorieSnapRoutes)
 
 const PORT = process.env.PORT || 5000
 

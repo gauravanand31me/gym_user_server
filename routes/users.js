@@ -9,6 +9,7 @@ const uploadVideo = require('../middleware/uploadVideo');
 const { getFollowers } = require('../controllers/friendRequest');
 const { sendPushNotificationToAll } = require('../controllers/pushNotification');
 const { updateCloudFrontUrls } = require('../controllers/updateCloudFrontUrls');
+const { getBodyStats, updateBodyStats } = require('../controllers/bodyStatsController');
 const router = express.Router();
 
 router.get('/nearby-users', authMiddleware, searchUsersByUsernameOrLocation);
@@ -73,5 +74,7 @@ router.get('/student',  authMiddleware,  getTrainerStudents);
 router.get('/push',  sendPushNotificationToAll);
 router.put('/update-cloudfront-urls', updateCloudFrontUrls);
 router.put('/update-cloudfront-video', updateProcessedVideo);
+router.get('/body-stats', authMiddleware, getBodyStats);
+router.put('/body-stats', authMiddleware, updateBodyStats);
 
 module.exports = router;
