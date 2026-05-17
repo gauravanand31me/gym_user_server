@@ -266,10 +266,10 @@ exports.createPaymentLink = async (req, res) => {
 
     const link = await razorpay.paymentLink.create({
       amount,
-      currency: 'INR',
-      description: `CalorieSnap ${plan} subscription`,
-      receipt: `cs_${shortid.generate()}`,
-      notify: { sms: false, email: false },
+      currency:     'INR',
+      description:  `CalorieSnap ${plan} subscription`,
+      reference_id: `cs_${shortid.generate()}`,
+      notify:       { sms: false, email: false },
     });
 
     await CalorieSnapSubscription.create({
