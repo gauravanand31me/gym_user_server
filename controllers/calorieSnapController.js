@@ -1,7 +1,8 @@
-const crypto   = require('crypto');
-const Razorpay = require('razorpay');
-const shortid  = require('shortid');
-const { Op }   = require('sequelize');
+const crypto      = require('crypto');
+const Razorpay    = require('razorpay');
+const shortid     = require('shortid');
+const { Op }      = require('sequelize');
+const { v4: uuidv4 } = require('uuid');
 
 const CalorieSnapTrial        = require('../models/CalorieSnapTrial');
 const CalorieLog              = require('../models/CalorieLog');
@@ -292,16 +293,20 @@ exports.createPaymentLink = async (req, res) => {
 
     const amount = prices[plan];
 
+    // Pre-generate ID so webhook can look it up via notes
+    const subscriptionId = uuidv4();
+
     const link = await razorpay.paymentLink.create({
       amount,
       currency:     'INR',
       description:  `CalorieSnap ${plan} subscription`,
       reference_id: `cs_${shortid.generate()}`,
-      notes:        { userId, plan, type: 'calorie_snap' },
+      notes:        { userId, plan, type: 'calorie_snap', subscriptionId },
       notify:       { sms: false, email: false },
     });
 
     await CalorieSnapSubscription.create({
+      id:      subscriptionId,
       userId,
       plan,
       orderId: link.id,
@@ -338,15 +343,19 @@ exports.createOrder = async (req, res) => {
 
     const amount = prices[plan];
 
+    // Generate our own ID first so we can embed it in notes
+    const subscriptionId = uuidv4();
+
     const order = await razorpay.orders.create({
       amount,
       currency:        'INR',
       receipt:         `cs_${shortid.generate()}`,
       payment_capture: 1,
-      notes: { userId, plan, type: 'calorie_snap' },
+      notes: { userId, plan, type: 'calorie_snap', subscriptionId },
     });
 
     await CalorieSnapSubscription.create({
+      id:      subscriptionId,
       userId,
       plan,
       orderId: order.id,

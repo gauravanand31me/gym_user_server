@@ -594,8 +594,7 @@ exports.razorPayWebhookPost = async (req, res) => {
     receivedSignature === digest
   ) {
     // ── CalorieSnap subscription activation ──────────────────────────────────
-    const { userId, plan } = webhookData.payload.payment.entity.notes;
-    const orderId   = webhookData?.payload?.payment?.entity?.order_id;
+    const { userId, plan, subscriptionId } = webhookData.payload.payment.entity.notes;
     const paymentId = webhookData?.payload?.payment?.entity?.id;
 
     const PLAN_DAYS = { monthly: 30, yearly: 365 };
@@ -605,7 +604,7 @@ exports.razorPayWebhookPost = async (req, res) => {
 
     await CalorieSnapSubscription.update(
       { status: 'active', paymentId, expiresAt },
-      { where: { orderId, status: 'pending' } }
+      { where: { id: subscriptionId } }
     );
 
     // Reset daily trial counts so user starts fresh as a subscriber
