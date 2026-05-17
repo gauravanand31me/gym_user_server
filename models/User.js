@@ -149,6 +149,14 @@ const User = sequelize.define('User', {
         type: DataTypes.ARRAY(DataTypes.JSON),
         allowNull: true,
     },
+    social_provider: {
+        type: DataTypes.STRING(20),
+        allowNull: true,
+    },
+    social_id: {
+        type: DataTypes.STRING(100),
+        allowNull: true,
+    },
 });
 
 User.associate = (models) => {
