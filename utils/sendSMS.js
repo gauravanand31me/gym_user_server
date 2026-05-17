@@ -1,14 +1,15 @@
 const twilio = require('twilio');
 
-const accountSid = 'AC20f75a430ebbe9517dbb5c7df694d4cc';
-const authToken = 'faafe009f5820d619890aecc69c65ba7';
-const client = new twilio(accountSid, authToken);
+const client = new twilio(
+  process.env.TWILIO_ACCOUNT_SID,
+  process.env.TWILIO_AUTH_TOKEN
+);
 
 exports.sendSMS = (to, body) => {
   client.messages.create({
     body,
     to,
-    from: 'your-twilio-phone-number'
+    from: process.env.TWILIO_FROM_NUMBER,
   }).then(message => console.log(message.sid))
     .catch(error => console.error(error));
 };

@@ -40,6 +40,7 @@ function invalidateConfigCache() {
   _configCache      = null;
   _configCacheUntil = 0;
 }
+exports.invalidateConfigCache = invalidateConfigCache;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -68,12 +69,31 @@ exports.getTrialStatus = async (req, res) => {
     });
 
     if (subscription) {
+      // Subscribed users still have a daily scan cap (subscribedDailyLimit)
+      const trial      = await CalorieSnapTrial.findOne({ where: { userId } });
+      const todayEntry = (trial?.usageLog || []).find(e => e.date === today);
+      const todayCount = todayEntry ? todayEntry.count : 0;
+      const limit      = cfg.subscribedDailyLimit;
+
+      if (todayCount >= limit) {
+        return res.status(200).json({
+          success:      true,
+          allowed:      false,
+          reason:       'daily_limit',
+          daysLeft:     null,
+          requestsLeft: 0,
+          isSubscribed: true,
+          plan:         subscription.plan,
+          expiresAt:    subscription.expiresAt.toISOString(),
+        });
+      }
+
       return res.status(200).json({
         success:      true,
         allowed:      true,
         reason:       'subscribed',
         daysLeft:     null,
-        requestsLeft: null,
+        requestsLeft: limit - todayCount,
         isSubscribed: true,
         plan:         subscription.plan,
         expiresAt:    subscription.expiresAt.toISOString(),
@@ -491,12 +511,13 @@ exports.getAppConfig = async (req, res) => {
     return res.status(200).json({
       success: true,
       config: {
-        monthlyPrice:    cfg.monthlyPrice,             // paise
-        yearlyPrice:     cfg.yearlyPrice,              // paise
-        monthlyPriceInr: cfg.monthlyPrice / 100,       // ₹
-        yearlyPriceInr:  cfg.yearlyPrice  / 100,       // ₹
-        trialDays:       cfg.trialDays,
-        dailyLimit:      cfg.dailyLimit,
+        monthlyPrice:         cfg.monthlyPrice,
+        yearlyPrice:          cfg.yearlyPrice,
+        monthlyPriceInr:      cfg.monthlyPrice / 100,
+        yearlyPriceInr:       cfg.yearlyPrice  / 100,
+        trialDays:            cfg.trialDays,
+        dailyLimit:           cfg.dailyLimit,
+        subscribedDailyLimit: cfg.subscribedDailyLimit,
       },
     });
   } catch (err) {
@@ -537,18 +558,26 @@ exports.updateAppConfig = async (req, res) => {
       cfg.dailyLimit = dailyLimit;
     }
 
+    const { subscribedDailyLimit } = req.body;
+    if (subscribedDailyLimit !== undefined) {
+      if (typeof subscribedDailyLimit !== 'number' || subscribedDailyLimit < 1)
+        return res.status(400).json({ success: false, message: 'subscribedDailyLimit must be at least 1' });
+      cfg.subscribedDailyLimit = subscribedDailyLimit;
+    }
+
     await cfg.save();
     invalidateConfigCache();
 
     return res.status(200).json({
       success: true,
       config: {
-        monthlyPrice:    cfg.monthlyPrice,
-        yearlyPrice:     cfg.yearlyPrice,
-        monthlyPriceInr: cfg.monthlyPrice / 100,
-        yearlyPriceInr:  cfg.yearlyPrice  / 100,
-        trialDays:       cfg.trialDays,
-        dailyLimit:      cfg.dailyLimit,
+        monthlyPrice:         cfg.monthlyPrice,
+        yearlyPrice:          cfg.yearlyPrice,
+        monthlyPriceInr:      cfg.monthlyPrice / 100,
+        yearlyPriceInr:       cfg.yearlyPrice  / 100,
+        trialDays:            cfg.trialDays,
+        dailyLimit:           cfg.dailyLimit,
+        subscribedDailyLimit: cfg.subscribedDailyLimit,
       },
     });
   } catch (err) {

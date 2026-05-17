@@ -29,6 +29,11 @@ const CalorieSnapConfig = sequelize.define('CalorieSnapConfig', {
     allowNull:    false,
     defaultValue: 4,
   },
+  subscribedDailyLimit: {
+    type:         DataTypes.INTEGER, // scans per day for paid subscribers
+    allowNull:    false,
+    defaultValue: 6,
+  },
 }, {
   tableName:  'CalorieSnapConfig',
   timestamps: true,
