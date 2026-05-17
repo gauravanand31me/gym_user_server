@@ -8,6 +8,46 @@ const PushNotification = require('../models/PushNotification');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'Test@1992';
 
+// ─── Shared: find-or-create user from social profile ─────────────────────────
+
+async function findOrCreateSocialUser({ provider, socialId, email, fullName, profilePic }) {
+  let user = null;
+
+  if (email) {
+    user = await User.findOne({ where: { email } });
+  }
+  if (!user) {
+    user = await User.findOne({ where: { social_provider: provider, social_id: socialId } });
+  }
+
+  if (!user) {
+    let username = makeUsername(fullName);
+    const collision = await User.findOne({ where: { username } });
+    if (collision) username = makeUsername(fullName);
+
+    user = await User.create({
+      full_name:       fullName,
+      username,
+      email:           email || null,
+      mobile_number:   `social_${uuidv4().replace(/-/g, '').slice(0, 20)}`,
+      password:        uuidv4(),
+      otp:             0,
+      profile_pic:     profilePic || 'https://d59q7mzjlaq7y.cloudfront.net/thumbnails/empty.png',
+      is_verified:     true,
+      social_provider: provider,
+      social_id:       socialId,
+    });
+  } else if (!user.social_id) {
+    await user.update({ social_provider: provider, social_id: socialId });
+  }
+
+  return user;
+}
+
+function issueJwt(userId) {
+  return jwt.sign({ id: userId }, JWT_SECRET, { expiresIn: '20d' });
+}
+
 // ─── Provider verification ────────────────────────────────────────────────────
 
 async function verifyGoogle(accessToken) {
@@ -105,35 +145,8 @@ exports.socialLogin = async (req, res) => {
     user = await User.findOne({ where: { social_provider: provider, social_id: socialId } });
   }
 
-  // ── 3. Create new user if not found ───────────────────────────────────────
-  if (!user) {
-    // Generate a unique username (retry once on collision)
-    let username = makeUsername(fullName);
-    const collision = await User.findOne({ where: { username } });
-    if (collision) username = makeUsername(fullName);
-
-    // Placeholder mobile for social-only accounts (NOT NULL constraint)
-    const placeholderMobile = `social_${uuidv4().replace(/-/g, '').slice(0, 20)}`;
-
-    user = await User.create({
-      full_name:       fullName,
-      username,
-      email:           email || null,
-      mobile_number:   placeholderMobile,
-      password:        uuidv4(), // random, bcrypt setter hashes it
-      otp:             0,
-      profile_pic:     profilePic || 'https://d59q7mzjlaq7y.cloudfront.net/thumbnails/empty.png',
-      is_verified:     true,
-      social_provider: provider,
-      social_id:       socialId,
-    });
-  } else {
-    // Link social account to existing user if not already linked
-    const needsUpdate = user.social_provider !== provider || user.social_id !== socialId;
-    if (needsUpdate) {
-      await user.update({ social_provider: provider, social_id: socialId });
-    }
-  }
+  // ── 3. Find or create user ────────────────────────────────────────────────
+  user = await findOrCreateSocialUser({ provider, socialId, email, fullName, profilePic });
 
   // ── 4. Update push token ───────────────────────────────────────────────────
   if (expoPushToken) {
@@ -147,7 +160,7 @@ exports.socialLogin = async (req, res) => {
   }
 
   // ── 5. Return JWT ──────────────────────────────────────────────────────────
-  const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: '20d' });
+  const token = issueJwt(user.id);
 
   return res.status(200).json({
     status: true,
@@ -160,4 +173,101 @@ exports.socialLogin = async (req, res) => {
       profile_pic: user.profile_pic,
     },
   });
+};
+
+// ─── GET /auth/google/callback ────────────────────────────────────────────────
+
+exports.googleCallback = async (req, res) => {
+  const { code } = req.query;
+  if (!code) return res.redirect('yupluck://auth?error=no_code');
+
+  try {
+    // 1. Exchange authorization code for access token
+    const { data: tokenData } = await axios.post(
+      'https://oauth2.googleapis.com/token',
+      new URLSearchParams({
+        code,
+        client_id:     process.env.GOOGLE_CLIENT_ID,
+        client_secret: process.env.GOOGLE_CLIENT_SECRET,
+        redirect_uri:  process.env.GOOGLE_REDIRECT_URI,
+        grant_type:    'authorization_code',
+      }).toString(),
+      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeout: 8000 }
+    );
+
+    if (!tokenData.access_token) return res.redirect('yupluck://auth?error=token_failed');
+
+    // 2. Get user info from Google
+    const { data: googleUser } = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: `Bearer ${tokenData.access_token}` },
+      timeout: 8000,
+    });
+    // googleUser: { sub, email, name, picture }
+
+    // 3. Find or create user
+    const user = await findOrCreateSocialUser({
+      provider:   'google',
+      socialId:   googleUser.sub,
+      email:      googleUser.email   || null,
+      fullName:   googleUser.name    || 'Google User',
+      profilePic: googleUser.picture || null,
+    });
+
+    // 4. Redirect to app with JWT
+    const token = issueJwt(user.id);
+    return res.redirect(`yupluck://auth?token=${token}`);
+
+  } catch (err) {
+    console.error('googleCallback error:', err.message);
+    return res.redirect('yupluck://auth?error=server_error');
+  }
+};
+
+// ─── GET /auth/facebook/callback ─────────────────────────────────────────────
+
+exports.facebookCallback = async (req, res) => {
+  const { code } = req.query;
+  if (!code) return res.redirect('yupluck://auth?error=no_code');
+
+  try {
+    // 1. Exchange authorization code for access token
+    const { data: tokenData } = await axios.get('https://graph.facebook.com/v18.0/oauth/access_token', {
+      params: {
+        client_id:     process.env.FACEBOOK_APP_ID,
+        client_secret: process.env.FACEBOOK_APP_SECRET,
+        redirect_uri:  process.env.FACEBOOK_REDIRECT_URI,
+        code,
+      },
+      timeout: 8000,
+    });
+
+    if (!tokenData.access_token) return res.redirect('yupluck://auth?error=token_failed');
+
+    // 2. Get user info from Facebook
+    const { data: fbUser } = await axios.get('https://graph.facebook.com/me', {
+      params: {
+        fields:       'id,name,email,picture.type(large)',
+        access_token: tokenData.access_token,
+      },
+      timeout: 8000,
+    });
+    // fbUser: { id, name, email?, picture }
+
+    // 3. Find or create user
+    const user = await findOrCreateSocialUser({
+      provider:   'facebook',
+      socialId:   fbUser.id,
+      email:      fbUser.email                || null,
+      fullName:   fbUser.name                 || 'Facebook User',
+      profilePic: fbUser.picture?.data?.url   || null,
+    });
+
+    // 4. Redirect to app with JWT
+    const token = issueJwt(user.id);
+    return res.redirect(`yupluck://auth?token=${token}`);
+
+  } catch (err) {
+    console.error('facebookCallback error:', err.message);
+    return res.redirect('yupluck://auth?error=server_error');
+  }
 };
