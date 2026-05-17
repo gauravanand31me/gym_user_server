@@ -8,6 +8,7 @@ const CalorieSnapTrial        = require('../models/CalorieSnapTrial');
 const CalorieLog              = require('../models/CalorieLog');
 const CalorieSnapSubscription = require('../models/CalorieSnapSubscription');
 const CalorieSnapConfig       = require('../models/CalorieSnapConfig');
+const User                    = require('../models/User');
 
 const razorpay = new Razorpay({
   key_id:     process.env.RAZOR_PAY_PAYMENT_KEY,
@@ -293,6 +294,8 @@ exports.createPaymentLink = async (req, res) => {
 
     const amount = prices[plan];
 
+    const user = await User.findByPk(userId, { attributes: ['full_name', 'mobile_number'] });
+
     // Pre-generate ID so webhook can look it up via notes
     const subscriptionId = uuidv4();
 
@@ -303,6 +306,19 @@ exports.createPaymentLink = async (req, res) => {
       reference_id: `cs_${shortid.generate()}`,
       notes:        { userId, plan, type: 'calorie_snap', subscriptionId },
       notify:       { sms: false, email: false },
+      customer: {
+        name:    user?.full_name    || '',
+        contact: user?.mobile_number || '',
+      },
+      options: {
+        checkout: {
+          prefill: {
+            contact: user?.mobile_number || '',
+          },
+        },
+      },
+      callback_url:    'yupluck://payment-success',
+      callback_method: 'get',
     });
 
     await CalorieSnapSubscription.create({
