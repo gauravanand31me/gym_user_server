@@ -297,6 +297,7 @@ exports.createPaymentLink = async (req, res) => {
       currency:     'INR',
       description:  `CalorieSnap ${plan} subscription`,
       reference_id: `cs_${shortid.generate()}`,
+      notes:        { userId, plan, type: 'calorie_snap' },
       notify:       { sms: false, email: false },
     });
 
@@ -342,6 +343,7 @@ exports.createOrder = async (req, res) => {
       currency:        'INR',
       receipt:         `cs_${shortid.generate()}`,
       payment_capture: 1,
+      notes: { userId, plan, type: 'calorie_snap' },
     });
 
     await CalorieSnapSubscription.create({

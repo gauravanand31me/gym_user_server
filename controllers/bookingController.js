@@ -13,6 +13,8 @@ const PushNotification = require('../models/PushNotification');
 const Feed = require('../models/Feed');
 const ChallengePayment = require('../models/ChallengePayment');
 const Reel = require('../models/Reel');
+const CalorieSnapSubscription = require('../models/CalorieSnapSubscription');
+const CalorieSnapTrial = require('../models/CalorieSnapTrial');
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZOR_PAY_PAYMENT_KEY,
@@ -587,6 +589,34 @@ exports.razorPayWebhookPost = async (req, res) => {
     } else {
       res.send("Payment Failed");
     }
+  } else if (
+    webhookData?.payload?.payment?.entity?.notes?.type === 'calorie_snap' &&
+    receivedSignature === digest
+  ) {
+    // ── CalorieSnap subscription activation ──────────────────────────────────
+    const { userId, plan } = webhookData.payload.payment.entity.notes;
+    const orderId   = webhookData?.payload?.payment?.entity?.order_id;
+    const paymentId = webhookData?.payload?.payment?.entity?.id;
+
+    const PLAN_DAYS = { monthly: 30, yearly: 365 };
+    const days      = PLAN_DAYS[plan] ?? 30;
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + days);
+
+    await CalorieSnapSubscription.update(
+      { status: 'active', paymentId, expiresAt },
+      { where: { orderId, status: 'pending' } }
+    );
+
+    // Reset daily trial counts so user starts fresh as a subscriber
+    await CalorieSnapTrial.update(
+      { usageLog: [] },
+      { where: { userId } }
+    );
+
+    console.log(`✅ CalorieSnap [${plan}] activated via webhook — user ${userId}, expires ${expiresAt.toISOString()}`);
+    return res.status(200).json({ status: 'ok' });
+
   } else {
     res.send("Payment Failed");
   }
