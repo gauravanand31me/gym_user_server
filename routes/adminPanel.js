@@ -584,12 +584,19 @@ function buildHtml() {
     subscribedDailyLimit: 'Subscriber Daily Limit',
   };
 
-  // Boot
-  (token && Date.now() < expiry) ? showDash() : (clearSess(), showLogin());
-
   // ── Login ──────────────────────────────────────────────────────────────────
 
   document.getElementById('pw').addEventListener('keydown', e => e.key === 'Enter' && doLogin());
+
+  // Boot — runs after all functions are defined
+  window.addEventListener('DOMContentLoaded', () => {
+    if (token && Date.now() < expiry) {
+      showDash();
+    } else {
+      clearSess();
+      showLogin();
+    }
+  });
 
   function togglePw() {
     const i = document.getElementById('pw');
@@ -598,7 +605,7 @@ function buildHtml() {
 
   async function doLogin() {
     const pw = document.getElementById('pw').value.trim();
-    if (!pw) return;
+    if (!pw) { showErr('Please enter your admin password.'); return; }
     const btn = document.getElementById('login-btn');
     btn.disabled = true;
     btn.innerHTML = '<span class="spin"></span>';
