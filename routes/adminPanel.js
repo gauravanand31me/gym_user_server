@@ -870,10 +870,11 @@ function buildHtml() {
       const expired  = expiry && expiry < new Date();
       const statusCls = expired ? 'expired' : sub.status;
 
+      var pic = u.profile_pic || 'https://d59q7mzjlaq7y.cloudfront.net/thumbnails/empty.png';
       const tr = document.createElement('tr');
       tr.innerHTML =
         '<td><div class="user-cell">' +
-          '<img class="avatar" src="' + (u.profile_pic || 'https://d59q7mzjlaq7y.cloudfront.net/thumbnails/empty.png') + '" onerror="this.src=\'https://d59q7mzjlaq7y.cloudfront.net/thumbnails/empty.png\'">' +
+          '<img class="avatar" src="' + pic + '">' +
           '<div><div class="user-name">' + esc(u.full_name) + '</div>' +
           '<div class="user-sub">@' + esc(u.username) + ' · ' + esc(u.mobile) + '</div></div>' +
         '</div></td>' +
