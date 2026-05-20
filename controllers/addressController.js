@@ -112,7 +112,7 @@ exports.getAddress = async (req, res) => {
     const query = `
       SELECT *
       FROM (
-        SELECT
+        SELECT DISTINCT ON ("Users".id)
           "Users".id AS "userId",
           "Users".full_name,
           "Users".username,
@@ -130,11 +130,13 @@ exports.getAddress = async (req, res) => {
 
           (
             6371 * acos(
-              cos(radians(:userLat))
-              * cos(radians("UserAddresses".lat))
-              * cos(radians("UserAddresses".long) - radians(:userLong))
-              + sin(radians(:userLat))
-              * sin(radians("UserAddresses".lat))
+              LEAST(1.0, GREATEST(-1.0,
+                cos(radians(:userLat))
+                * cos(radians("UserAddresses".lat))
+                * cos(radians("UserAddresses".long) - radians(:userLong))
+                + sin(radians(:userLat))
+                * sin(radians("UserAddresses".lat))
+              ))
             )
           ) AS distance
 
@@ -151,6 +153,8 @@ exports.getAddress = async (req, res) => {
         )
 
         ${specializationFilter}
+
+        ORDER BY "Users".id, distance ASC
 
       ) AS trainer_distance
 

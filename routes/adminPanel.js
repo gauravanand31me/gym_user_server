@@ -1,6 +1,9 @@
 const express  = require('express');
 const jwt      = require('jsonwebtoken');
-const CalorieSnapConfig = require('../models/CalorieSnapConfig');
+const { Op }   = require('sequelize');
+const CalorieSnapConfig       = require('../models/CalorieSnapConfig');
+const CalorieSnapSubscription = require('../models/CalorieSnapSubscription');
+const User                    = require('../models/User');
 const { invalidateConfigCache } = require('../controllers/calorieSnapController');
 
 const router = express.Router();
@@ -177,6 +180,85 @@ router.put('/config', adminAuth, async (req, res) => {
   }
 });
 
+// ─── GET /subscribers ────────────────────────────────────────────────────────
+router.get('/subscribers', adminAuth, async (req, res) => {
+  try {
+    const { status = 'all', page = 1, limit = 20 } = req.query;
+    const pageNum  = Math.max(1, parseInt(page));
+    const limitNum = Math.min(100, parseInt(limit) || 20);
+    const offset   = (pageNum - 1) * limitNum;
+
+    const where = {};
+    if (status !== 'all') where.status = status;
+
+    const { count, rows } = await CalorieSnapSubscription.findAndCountAll({
+      where,
+      order:  [['createdAt', 'DESC']],
+      limit:  limitNum,
+      offset,
+    });
+
+    // Attach user info
+    const userIds = [...new Set(rows.map(r => r.userId))];
+    const users   = await User.findAll({
+      where:      { id: userIds },
+      attributes: ['id', 'full_name', 'username', 'email', 'profile_pic', 'mobile_number'],
+    });
+    const userMap = Object.fromEntries(users.map(u => [u.id, u]));
+
+    const data = rows.map(sub => {
+      const u = userMap[sub.userId] || {};
+      return {
+        id:         sub.id,
+        plan:       sub.plan,
+        status:     sub.status,
+        amount:     sub.amount,
+        amountInr:  sub.amount / 100,
+        expiresAt:  sub.expiresAt,
+        createdAt:  sub.createdAt,
+        paymentId:  sub.paymentId,
+        user: {
+          id:          u.id,
+          full_name:   u.full_name,
+          username:    u.username,
+          email:       u.email || '—',
+          mobile:      u.mobile_number?.startsWith('social_') ? '—' : u.mobile_number,
+          profile_pic: u.profile_pic,
+        },
+      };
+    });
+
+    // Summary stats
+    const now = new Date();
+    const [stats] = await CalorieSnapSubscription.findAll({
+      attributes: [
+        [require('sequelize').fn('COUNT', require('sequelize').literal("CASE WHEN status='active' AND \"expiresAt\" > NOW() THEN 1 END")), 'active'],
+        [require('sequelize').fn('COUNT', require('sequelize').literal("CASE WHEN status='pending' THEN 1 END")), 'pending'],
+        [require('sequelize').fn('COUNT', require('sequelize').literal("CASE WHEN status='expired' OR (status='active' AND \"expiresAt\" <= NOW()) THEN 1 END")), 'expired'],
+        [require('sequelize').fn('SUM',   require('sequelize').literal("CASE WHEN status='active' THEN amount ELSE 0 END")), 'totalRevenuePaise'],
+      ],
+      raw: true,
+    });
+
+    return res.json({
+      success: true,
+      total:   count,
+      page:    pageNum,
+      pages:   Math.ceil(count / limitNum),
+      stats: {
+        active:         parseInt(stats.active)  || 0,
+        pending:        parseInt(stats.pending) || 0,
+        expired:        parseInt(stats.expired) || 0,
+        totalRevenueInr: Math.round((parseInt(stats.totalRevenuePaise) || 0) / 100),
+      },
+      data,
+    });
+  } catch (err) {
+    console.error('admin getSubscribers error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to load subscribers' });
+  }
+});
+
 // ─── HTML ─────────────────────────────────────────────────────────────────────
 function buildHtml() {
   return `<!DOCTYPE html>
@@ -224,7 +306,15 @@ function buildHtml() {
     .btn-ghost{background:none;border:1px solid var(--border);color:var(--text);border-radius:8px;font-size:13px;padding:7px 14px;cursor:pointer;transition:border-color .2s}
     .btn-ghost:hover{border-color:var(--muted)}
 
-    main{max-width:820px;margin:0 auto;padding:32px 24px;width:100%}
+    /* ── Tabs ── */
+    .tabs{background:var(--surface);border-bottom:1px solid var(--border);display:flex;padding:0 24px;gap:2px}
+    .tab{background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);font-size:13px;font-weight:500;padding:14px 16px;cursor:pointer;transition:color .2s,border-color .2s;margin-bottom:-1px}
+    .tab:hover{color:var(--text)}
+    .tab.active{color:var(--text);border-bottom-color:var(--accent)}
+    .tab-panel{display:none}
+    .tab-panel.active{display:block}
+
+    main{max-width:900px;margin:0 auto;padding:32px 24px;width:100%}
     .sec-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
     .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:16px}
     .card-title{font-size:14px;font-weight:600;margin-bottom:20px;display:flex;align-items:center;gap:8px}
@@ -244,6 +334,45 @@ function buildHtml() {
     .btn-save{background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:500;padding:11px 28px;cursor:pointer;transition:background .2s,opacity .2s;display:flex;align-items:center;gap:8px}
     .btn-save:hover:not(:disabled){background:var(--accent-h)}
     .btn-save:disabled{opacity:.5;cursor:not-allowed}
+
+    /* ── Stats grid ── */
+    .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+    @media(max-width:640px){.stats-grid{grid-template-columns:repeat(2,1fr)}}
+    .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px}
+    .stat-card .s-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+    .stat-card .s-val{font-size:24px;font-weight:700}
+    .stat-card.green .s-val{color:var(--green)}
+    .stat-card.yellow .s-val{color:var(--yellow)}
+    .stat-card.red .s-val{color:var(--red)}
+    .stat-card.accent .s-val{color:var(--accent-h)}
+
+    /* ── Subscriber table ── */
+    .sub-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:12px;flex-wrap:wrap}
+    .filter-tabs{display:flex;gap:6px}
+    .ftab{background:var(--surface2);border:1px solid var(--border);color:var(--muted);border-radius:6px;font-size:12px;padding:5px 12px;cursor:pointer;transition:all .2s}
+    .ftab.active{background:var(--accent);border-color:var(--accent);color:#fff}
+    .sub-count{font-size:12px;color:var(--muted)}
+    .tbl-wrap{overflow-x:auto}
+    table.sub-tbl{width:100%;border-collapse:collapse;font-size:13px}
+    .sub-tbl th{font-size:10px;color:var(--muted);text-align:left;padding:8px 12px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);white-space:nowrap}
+    .sub-tbl td{padding:12px;border-bottom:1px solid var(--border);vertical-align:middle}
+    .sub-tbl tr:last-child td{border-bottom:none}
+    .sub-tbl tr:hover td{background:rgba(255,255,255,.02)}
+    .user-cell{display:flex;align-items:center;gap:10px}
+    .avatar{width:32px;height:32px;border-radius:50%;object-fit:cover;background:var(--surface2);flex-shrink:0}
+    .user-name{font-weight:500;font-size:13px}
+    .user-sub{font-size:11px;color:var(--muted)}
+    .pill{display:inline-block;font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.3px}
+    .pill.active{background:rgba(34,197,94,.15);color:var(--green)}
+    .pill.pending{background:rgba(245,158,11,.15);color:var(--yellow)}
+    .pill.expired{background:rgba(239,68,68,.15);color:var(--red)}
+    .pill.monthly{background:rgba(99,102,241,.15);color:var(--accent-h)}
+    .pill.yearly{background:rgba(99,102,241,.25);color:var(--accent-h)}
+    .pagination{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:16px}
+    .pg-btn{background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;font-size:13px;padding:6px 14px;cursor:pointer;transition:border-color .2s}
+    .pg-btn:disabled{opacity:.4;cursor:not-allowed}
+    .pg-info{font-size:12px;color:var(--muted)}
+    .empty-state{text-align:center;padding:48px 24px;color:var(--muted);font-size:14px}
 
     /* ── Modal ── */
     .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(4px);z-index:100;align-items:center;justify-content:center;padding:16px}
@@ -270,8 +399,6 @@ function buildHtml() {
     .t.ok{border-color:var(--green)}
     .t.err{border-color:var(--red)}
     @keyframes tIn{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:none}}
-
-    /* ── Spinner ── */
     .spin{width:15px;height:15px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sp .6s linear infinite;display:inline-block}
     @keyframes sp{to{transform:rotate(360deg)}}
   </style>
@@ -298,7 +425,7 @@ function buildHtml() {
 <div id="dashboard">
   <header>
     <div class="h-left">
-      <h1>CalorieSnap Config</h1>
+      <h1>CalorieSnap Admin</h1>
       <span class="badge">Admin</span>
     </div>
     <div class="h-right">
@@ -307,56 +434,117 @@ function buildHtml() {
     </div>
   </header>
 
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('config',this)">⚙️ Config</button>
+    <button class="tab" onclick="switchTab('subscribers',this)">👥 Subscribers</button>
+  </div>
+
   <main>
-    <p class="sec-label">Pricing</p>
-    <div class="card">
-      <div class="card-title">💳 Subscription Prices</div>
-      <div class="grid2">
-        <div class="field">
-          <label>Monthly Price (₹)</label>
-          <div class="f-wrap"><span class="f-prefix">₹</span><input type="number" id="monthlyPrice" min="1" step="1"/></div>
-          <span class="f-hint">Charged per month to subscribers</span>
+    <!-- CONFIG TAB -->
+    <div class="tab-panel active" id="tab-config">
+      <p class="sec-label">Pricing</p>
+      <div class="card">
+        <div class="card-title">💳 Subscription Prices</div>
+        <div class="grid2">
+          <div class="field">
+            <label>Monthly Price (₹)</label>
+            <div class="f-wrap"><span class="f-prefix">₹</span><input type="number" id="monthlyPrice" min="1" step="1"/></div>
+            <span class="f-hint">Charged per month to subscribers</span>
+          </div>
+          <div class="field">
+            <label>Yearly Price (₹)</label>
+            <div class="f-wrap"><span class="f-prefix">₹</span><input type="number" id="yearlyPrice" min="1" step="1"/></div>
+            <span class="f-hint">Charged per year to subscribers</span>
+          </div>
         </div>
-        <div class="field">
-          <label>Yearly Price (₹)</label>
-          <div class="f-wrap"><span class="f-prefix">₹</span><input type="number" id="yearlyPrice" min="1" step="1"/></div>
-          <span class="f-hint">Charged per year to subscribers</span>
+      </div>
+
+      <p class="sec-label" style="margin-top:24px">Trial Settings</p>
+      <div class="card">
+        <div class="card-title">🎯 Free Trial</div>
+        <div class="grid2">
+          <div class="field">
+            <label>Trial Duration (days)</label>
+            <div class="f-wrap"><input type="number" id="trialDays" class="no-pfx" min="0" max="365" step="1"/></div>
+            <span class="f-hint">Set 0 to disable trial entirely</span>
+          </div>
+          <div class="field">
+            <label>Daily Scan Limit — Trial</label>
+            <div class="f-wrap"><input type="number" id="dailyLimit" class="no-pfx" min="1" max="100" step="1"/></div>
+            <span class="f-hint">Max scans per day during trial</span>
+          </div>
         </div>
+      </div>
+
+      <p class="sec-label" style="margin-top:24px">Subscriber Settings</p>
+      <div class="card">
+        <div class="card-title">⭐ Paid Subscribers</div>
+        <div class="grid2">
+          <div class="field">
+            <label>Daily Scan Limit — Subscribers</label>
+            <div class="f-wrap"><input type="number" id="subscribedDailyLimit" class="no-pfx" min="1" max="100" step="1"/></div>
+            <span class="f-hint">Max scans per day for paid users</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <span class="last-upd" id="last-upd"></span>
+        <button class="btn-save" id="save-btn" onclick="openConfirm()">Save Changes</button>
       </div>
     </div>
 
-    <p class="sec-label" style="margin-top:24px">Trial Settings</p>
-    <div class="card">
-      <div class="card-title">🎯 Free Trial</div>
-      <div class="grid2">
-        <div class="field">
-          <label>Trial Duration (days)</label>
-          <div class="f-wrap"><input type="number" id="trialDays" class="no-pfx" min="0" max="365" step="1"/></div>
-          <span class="f-hint">Set 0 to disable trial entirely</span>
+    <!-- SUBSCRIBERS TAB -->
+    <div class="tab-panel" id="tab-subscribers">
+      <div class="stats-grid">
+        <div class="stat-card green">
+          <div class="s-label">Active</div>
+          <div class="s-val" id="st-active">—</div>
         </div>
-        <div class="field">
-          <label>Daily Scan Limit — Trial</label>
-          <div class="f-wrap"><input type="number" id="dailyLimit" class="no-pfx" min="1" max="100" step="1"/></div>
-          <span class="f-hint">Max scans per day during trial</span>
+        <div class="stat-card yellow">
+          <div class="s-label">Pending</div>
+          <div class="s-val" id="st-pending">—</div>
         </div>
-      </div>
-    </div>
-
-    <p class="sec-label" style="margin-top:24px">Subscriber Settings</p>
-    <div class="card">
-      <div class="card-title">⭐ Paid Subscribers</div>
-      <div class="grid2">
-        <div class="field">
-          <label>Daily Scan Limit — Subscribers</label>
-          <div class="f-wrap"><input type="number" id="subscribedDailyLimit" class="no-pfx" min="1" max="100" step="1"/></div>
-          <span class="f-hint">Max scans per day for paid users</span>
+        <div class="stat-card red">
+          <div class="s-label">Expired</div>
+          <div class="s-val" id="st-expired">—</div>
+        </div>
+        <div class="stat-card accent">
+          <div class="s-label">Revenue</div>
+          <div class="s-val" id="st-revenue">—</div>
         </div>
       </div>
-    </div>
 
-    <div class="actions">
-      <span class="last-upd" id="last-upd"></span>
-      <button class="btn-save" id="save-btn" onclick="openConfirm()">Save Changes</button>
+      <div class="card" style="padding:20px">
+        <div class="sub-toolbar">
+          <div class="filter-tabs">
+            <button class="ftab active" onclick="setFilter('all',this)">All</button>
+            <button class="ftab" onclick="setFilter('active',this)">Active</button>
+            <button class="ftab" onclick="setFilter('pending',this)">Pending</button>
+            <button class="ftab" onclick="setFilter('expired',this)">Expired</button>
+          </div>
+          <span class="sub-count" id="sub-count"></span>
+        </div>
+
+        <div class="tbl-wrap">
+          <table class="sub-tbl">
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Plan</th>
+                <th>Status</th>
+                <th>Amount</th>
+                <th>Subscribed</th>
+                <th>Expires</th>
+              </tr>
+            </thead>
+            <tbody id="sub-tbody"></tbody>
+          </table>
+        </div>
+        <div id="sub-empty" class="empty-state" style="display:none">No subscribers found</div>
+
+        <div class="pagination" id="pagination"></div>
+      </div>
     </div>
   </main>
 </div>
@@ -613,6 +801,112 @@ function buildHtml() {
   }
 
   document.addEventListener('keydown', e => e.key === 'Escape' && closeModal());
+
+  // ── Tabs ───────────────────────────────────────────────────────────────────
+
+  function switchTab(name, btn) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + name).classList.add('active');
+    if (name === 'subscribers' && subState.data.length === 0) loadSubscribers();
+  }
+
+  // ── Subscribers ────────────────────────────────────────────────────────────
+
+  const subState = { filter: 'all', page: 1, total: 0, pages: 1, data: [] };
+
+  function setFilter(f, btn) {
+    document.querySelectorAll('.ftab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    subState.filter = f;
+    subState.page   = 1;
+    loadSubscribers();
+  }
+
+  async function loadSubscribers() {
+    try {
+      const r = await fetch('/admin/calorie-snap/subscribers?status=' + subState.filter + '&page=' + subState.page + '&limit=15', {
+        headers: { Authorization: 'Bearer ' + token },
+      });
+      if (r.status === 401) { doLogout(); return; }
+      const d = await r.json();
+      if (!d.success) throw new Error(d.message);
+
+      subState.total = d.total;
+      subState.pages = d.pages;
+      subState.data  = d.data;
+
+      // Stats
+      document.getElementById('st-active').textContent  = d.stats.active;
+      document.getElementById('st-pending').textContent = d.stats.pending;
+      document.getElementById('st-expired').textContent = d.stats.expired;
+      document.getElementById('st-revenue').textContent = '₹' + d.stats.totalRevenueInr.toLocaleString('en-IN');
+      document.getElementById('sub-count').textContent  = d.total + ' total';
+
+      renderTable(d.data);
+      renderPagination();
+    } catch (e) { toast('Failed to load subscribers: ' + e.message, 'err'); }
+  }
+
+  function renderTable(rows) {
+    const tbody = document.getElementById('sub-tbody');
+    const empty = document.getElementById('sub-empty');
+    tbody.innerHTML = '';
+    if (!rows.length) { empty.style.display = 'block'; return; }
+    empty.style.display = 'none';
+
+    rows.forEach(sub => {
+      const u        = sub.user;
+      const expiry   = sub.expiresAt ? new Date(sub.expiresAt) : null;
+      const created  = new Date(sub.createdAt);
+      const expired  = expiry && expiry < new Date();
+      const statusCls = expired ? 'expired' : sub.status;
+
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td><div class="user-cell">' +
+          '<img class="avatar" src="' + (u.profile_pic || 'https://d59q7mzjlaq7y.cloudfront.net/thumbnails/empty.png') + '" onerror="this.src=\'https://d59q7mzjlaq7y.cloudfront.net/thumbnails/empty.png\'">' +
+          '<div><div class="user-name">' + esc(u.full_name) + '</div>' +
+          '<div class="user-sub">@' + esc(u.username) + ' · ' + esc(u.mobile) + '</div></div>' +
+        '</div></td>' +
+        '<td><span class="pill ' + sub.plan + '">' + sub.plan + '</span></td>' +
+        '<td><span class="pill ' + statusCls + '">' + statusCls + '</span></td>' +
+        '<td>₹' + sub.amountInr + '</td>' +
+        '<td>' + fmt(created) + '</td>' +
+        '<td>' + (expiry ? fmt(expiry) : '—') + '</td>';
+      tbody.appendChild(tr);
+    });
+  }
+
+  function renderPagination() {
+    const el = document.getElementById('pagination');
+    el.innerHTML = '';
+    if (subState.pages <= 1) return;
+
+    const prev = document.createElement('button');
+    prev.className = 'pg-btn'; prev.textContent = '← Prev';
+    prev.disabled = subState.page <= 1;
+    prev.onclick = () => { subState.page--; loadSubscribers(); };
+
+    const info = document.createElement('span');
+    info.className = 'pg-info';
+    info.textContent = 'Page ' + subState.page + ' of ' + subState.pages;
+
+    const next = document.createElement('button');
+    next.className = 'pg-btn'; next.textContent = 'Next →';
+    next.disabled = subState.page >= subState.pages;
+    next.onclick = () => { subState.page++; loadSubscribers(); };
+
+    el.appendChild(prev); el.appendChild(info); el.appendChild(next);
+  }
+
+  function fmt(d) {
+    return d.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
+  }
+  function esc(s) {
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
 </script>
 </body>
 </html>`;
