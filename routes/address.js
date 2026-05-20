@@ -2,6 +2,7 @@ const express = require('express');
 const rateLimit = require('express-rate-limit');
 const { addAddress, getAddress } = require('../controllers/addressController');
 const { authMiddleware } = require('../middleware/authMiddleware');
+const { ipKeyGenerator } = require('express-rate-limit');
 
 const router = express.Router();
 
@@ -9,7 +10,7 @@ const router = express.Router();
 const addAddressLimiter = rateLimit({
   windowMs:         10 * 60 * 1000,
   max:              10,
-  keyGenerator:     (req) => req.user?.id || req.ip,
+  keyGenerator:     (req) => req.user?.id || ipKeyGenerator(req),
   skip:             (req) => req.method !== 'POST',
   handler:          (req, res) => res.status(429).json({ message: 'Too many requests. Please wait before updating your address again.' }),
   standardHeaders:  true,
