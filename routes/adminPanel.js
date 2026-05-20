@@ -586,17 +586,17 @@ function buildHtml() {
 
   // ── Login ──────────────────────────────────────────────────────────────────
 
-  document.getElementById('pw').addEventListener('keydown', e => e.key === 'Enter' && doLogin());
-
-  // Boot — runs after all functions are defined
-  window.addEventListener('DOMContentLoaded', () => {
-    if (token && Date.now() < expiry) {
-      showDash();
-    } else {
-      clearSess();
-      showLogin();
-    }
+  document.getElementById('pw').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') doLogin();
   });
+
+  // Boot
+  if (token && Date.now() < expiry) {
+    showDash();
+  } else {
+    clearSess();
+    showLogin();
+  }
 
   function togglePw() {
     const i = document.getElementById('pw');
@@ -630,7 +630,7 @@ function buildHtml() {
         eb.textContent   = d.message;
         if (d.lockedUntil) startLockout(d.lockedUntil);
       }
-    } catch { showErr('Network error — check connection.'); }
+    } catch(e) { showErr('Network error — check connection.'); }
     finally {
       btn.disabled = false;
       btn.innerHTML = 'Login';
@@ -763,7 +763,7 @@ function buildHtml() {
       tbody.insertAdjacentHTML('beforeend',
         '<tr>' +
         '<td class="fname">' + label + '</td>' +
-        '<td class="' + (ch ? 'old' : 'same') + '">' + fmtVal(k, ov ?? 0) + '</td>' +
+        '<td class="' + (ch ? 'old' : 'same') + '">' + fmtVal(k, ov == null ? 0 : ov) + '</td>' +
         '<td class="' + (ch ? 'nw'  : 'same') + '">' + fmtVal(k, nVal)    + '</td>' +
         '</tr>'
       );
