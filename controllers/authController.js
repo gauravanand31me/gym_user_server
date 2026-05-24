@@ -132,16 +132,15 @@ exports.login = async (req, res) => {
 
     if (!user) return res.status(404).json({ status: false, message: "User not found" });
 
-    // Check for the specific mobile number
-    if (identifier === "7985044034") {
-      // Hardcode OTP as 123456
+    // Hardcoded OTP for test/demo numbers
+    const TEST_NUMBERS = ["7985044034", "2125550191"];
+    if (TEST_NUMBERS.includes(identifier)) {
       const otp = "123456";
-      await user.update({ otp, otpExpires: new Date(Date.now() + 3600000) }); // 1 hour expiry
-      
+      await user.update({ otp, otpExpires: new Date(Date.now() + 3600000) });
       return res.status(200).json({
         status: true,
         message: `Test OTP sent successfully ${otp}`,
-        otp: "" // Avoid exposing OTP in response
+        otp: ""
       });
     }
 
