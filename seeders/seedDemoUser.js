@@ -4,7 +4,6 @@ const User = require('../models/User');
 const sequelize = require('../config/db');
 
 const DEMO_USER = {
-  id:             'demo0000-0000-0000-0000-000000000001',
   username:       'demo_user_us',
   email:          'demo@yupluck.com',
   mobile_number:  '+12125550191',   // USA (212) fictional number
