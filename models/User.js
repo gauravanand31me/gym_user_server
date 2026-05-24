@@ -157,6 +157,11 @@ const User = sequelize.define('User', {
         type: DataTypes.STRING(100),
         allowNull: true,
     },
+    country: {
+        type: DataTypes.STRING(5),
+        allowNull: false,
+        defaultValue: 'IN',
+    },
 });
 
 User.associate = (models) => {
