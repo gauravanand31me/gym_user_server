@@ -6,7 +6,7 @@ const sequelize = require('../config/db');
 const DEMO_USER = {
   username:       'demo_user_us',
   email:          'demo@yupluck.com',
-  mobile_number:  '+12125550191',   // USA (212) fictional number
+  mobile_number:  '2125550191',     // USA (212) fictional number, no country code
   password:       bcrypt.hashSync('Demo@1234', 10),
   full_name:      'Demo User',
   is_verified:    true,
@@ -34,7 +34,7 @@ const seed = async () => {
     }
 
     console.log('---');
-    console.log('Mobile : +12125550191');
+    console.log('Mobile : 2125550191');
     console.log('OTP    : 123456');
     console.log('Password: Demo@1234');
     console.log('User ID:', user.id);
