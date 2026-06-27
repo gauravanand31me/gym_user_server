@@ -1072,7 +1072,7 @@ exports.uploadProfileImage = async (req, res) => {
         { where: { id: userId } }
       );
     } else if (type === "cover") {
-      optimizedFilename =  `optimized/${userId}/cover_image/${timeFrame}_profileImage.webp` ;
+      optimizedFilename =  `optimized/${userId}/cover_image/${timeFrame}_coverImage.webp` ;
       fileUrl = `https://${process.env.CLOUDFRONT_URL}/${optimizedFilename}`;
       await User.update(
         { cover_pic: fileUrl },
