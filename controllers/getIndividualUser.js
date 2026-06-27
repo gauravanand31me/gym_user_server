@@ -1060,7 +1060,10 @@ exports.uploadProfileImage = async (req, res) => {
 
     await s3.send(uploadCommand);
 
-    const fileUrl = `https://${process.env.CLOUDFRONT_URL}/${optimizedFilename}`;
+
+    let fileUrl = `https://${process.env.CLOUDFRONT_URL}/${optimizedFilename}`;
+
+   
 
     console.log("fileUrl received", type, fileUrl);
     if (type === "profile") {
@@ -1069,6 +1072,8 @@ exports.uploadProfileImage = async (req, res) => {
         { where: { id: userId } }
       );
     } else if (type === "cover") {
+      optimizedFilename =  `optimized/${userId}/cover_image/${timeFrame}_profileImage.webp` ;
+      fileUrl = `https://${process.env.CLOUDFRONT_URL}/${optimizedFilename}`;
       await User.update(
         { cover_pic: fileUrl },
         { where: { id: userId } }
