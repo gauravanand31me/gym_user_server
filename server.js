@@ -21,6 +21,7 @@ const reportRoutes = require("./routes/report")
 const searchRoutes = require("./routes/search")
 const calorieSnapRoutes = require("./routes/calorieSnap")
 const adminPanelRoutes  = require("./routes/adminPanel")
+const paymentRoutes     = require("./routes/payment")
 
 // 🔥 SOCKET.IO
 const { Server } = require("socket.io")
@@ -57,6 +58,7 @@ app.use("/user/api/report", reportRoutes)
 app.use("/user/api/search", searchRoutes)
 app.use("/user/api/calorie-snap", calorieSnapRoutes)
 app.use("/admin/calorie-snap",   adminPanelRoutes)
+app.use("/payment",              paymentRoutes)
 
 const PORT = process.env.PORT || 5000
 
