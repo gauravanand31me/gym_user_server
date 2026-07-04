@@ -337,7 +337,7 @@ exports.createPaymentLink = async (req, res) => {
           },
         },
       },
-      callback_url:    'yupluck://payment-success',
+      callback_url:    `${process.env.APP_BASE_URL}/payment/success`,
       callback_method: 'get',
     });
 
