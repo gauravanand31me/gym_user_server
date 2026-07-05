@@ -58,7 +58,7 @@ app.use("/user/api/report", reportRoutes)
 app.use("/user/api/search", searchRoutes)
 app.use("/user/api/calorie-snap", calorieSnapRoutes)
 app.use("/admin/calorie-snap",   adminPanelRoutes)
-app.use("/payment",              paymentRoutes)
+app.use("/user/api/payment",      paymentRoutes)
 
 const PORT = process.env.PORT || 5000
 
