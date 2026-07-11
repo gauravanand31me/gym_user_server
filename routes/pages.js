@@ -12,6 +12,7 @@ const {
   leavePage,
   listPosts,
   createPost,
+  deletePost,
 } = require('../controllers/pagesController');
 
 const router = express.Router();
@@ -34,7 +35,8 @@ router.post('/:id/join',  authMiddleware, joinPage);
 router.delete('/:id/leave', authMiddleware, leavePage);
 
 // Posts
-router.get('/:id/posts',  authMiddleware, listPosts);
-router.post('/:id/posts', authMiddleware, upload.single('image'), createPost);
+router.get('/:id/posts',              authMiddleware, listPosts);
+router.post('/:id/posts',             authMiddleware, upload.array('images', 10), createPost);
+router.delete('/:id/posts/:postId',   authMiddleware, deletePost);
 
 module.exports = router;
