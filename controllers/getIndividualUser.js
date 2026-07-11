@@ -27,6 +27,7 @@ const { sendPushNotification } = require('../config/pushNotification');
 const FeedReports = require('../models/FeedReports');
 const Block = require('../models/Block');
 const Category = require('../models/Category');
+const PageFollower = require('../models/PageFollower');
 const ChallengePayment = require('../models/ChallengePayment');
 const Message = require('../models/Message');
 const MessageRequest = require('../models/MessageRequest');
@@ -2482,6 +2483,13 @@ exports.getAllHashTag = async (req, res) => {
     const followingIds = followings.map(f => f.followingId);
     const idsArray = [loggedInUserId, ...followingIds];
 
+    // === Get followed pages ===
+    const followedPageRows = await PageFollower.findAll({
+      where: { user_id: loggedInUserId },
+      attributes: ['page_id'],
+    });
+    const followedPageIds = followedPageRows.map(p => p.page_id);
+
     // === Get friends ===
     const friends = await FriendRequest.findAll({
       where: {
@@ -2527,6 +2535,9 @@ exports.getAllHashTag = async (req, res) => {
     if (friendIdArray.length > 0) {
       visibilityConditions.push(`(f."postType" = 'onlyme' AND f."userId" IN (:friendIds))`);
     }
+    if (followedPageIds.length > 0) {
+      visibilityConditions.push(`(f."activityType" = 'page_post' AND f."pageId" IN (:followedPageIds))`);
+    }
 
     // === Exclude blocked users ===
     const excludeCondition = excludedUserIds.length
@@ -2539,6 +2550,7 @@ exports.getAllHashTag = async (req, res) => {
         f."id", f."userId", f."activityType", f."images", f."title", f."randomCode", f."awards", f."description", f."gymId", f."mentions", f."link",
         f."imageUrl", f."like_count", f."comment_count", f."report_count",
         f."postType", f."mentionedUserIds", f."price", f."myBookmarks", f."timestamp", f."createdAt", f."updatedAt",
+        f."pageId",
         u.full_name AS "user.full_name",
         u.profile_pic AS "user.profile_pic",
         g.id AS "gym.id",
@@ -2566,6 +2578,7 @@ exports.getAllHashTag = async (req, res) => {
       ids: idsArray,
       friendIds: friendIdArray,
       ...(excludedUserIds.length && { excludedUserIds }),
+      ...(followedPageIds.length && { followedPageIds }),
     };
 
     // === Extra filters ===

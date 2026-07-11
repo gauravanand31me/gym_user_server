@@ -7,6 +7,7 @@ const Page         = require('../models/Page');
 const PageFollower = require('../models/PageFollower');
 const PagePost     = require('../models/PagePost');
 const User         = require('../models/User');
+const Feed         = require('../models/Feed');
 const PushNotification = require('../models/PushNotification');
 
 const CLOUDFRONT = process.env.CLOUDFRONT_URL;
@@ -414,6 +415,18 @@ exports.createPost = async (req, res) => {
     }
 
     await page.increment('post_count');
+
+    // Create a single Feed entry — home feed query will fan it out to followers
+    await Feed.create({
+      userId:       userId,
+      activityType: 'page_post',
+      title:        page.name,
+      description:  post.content  || null,
+      imageUrl:     post.image_url || null,
+      pageId:       page.id,
+      postType:     'public',
+      timestamp:    new Date(),
+    });
 
     // Fire-and-forget push notifications to all followers
     notifyFollowers(page, post).catch(err => console.error('notifyFollowers error:', err));
