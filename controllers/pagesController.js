@@ -362,6 +362,9 @@ exports.listPosts = async (req, res) => {
       offset,
     });
 
+    const requestUserId = req.user.id;
+    const isAdmin = requestUserId === process.env.ADMIN_UUID;
+
     const posts = await Promise.all(rows.map(async post => {
       const author = await User.findByPk(post.author_id, {
         attributes: ['id', 'full_name', 'profile_pic'],
@@ -369,10 +372,14 @@ exports.listPosts = async (req, res) => {
       return {
         id:           post.id,
         content:      post.content,
-        imageUrl:     post.image_url,
+        images:       post.images || (post.image_url ? [post.image_url] : []),
+        link:         post.link   || null,
+        hashtags:     post.hashtags || [],
+        mentions:     post.mentions || [],
         likeCount:    post.like_count,
         commentCount: post.comment_count,
         createdAt:    post.created_at,
+        canDelete:    post.author_id === requestUserId || page.owner_id === requestUserId || isAdmin,
         author: author ? {
           id:         author.id,
           name:       author.full_name,
@@ -393,54 +400,82 @@ exports.listPosts = async (req, res) => {
 exports.createPost = async (req, res) => {
   try {
     const userId = req.user.id;
+    const isAdmin = userId === process.env.ADMIN_UUID;
     const page   = await Page.findByPk(req.params.id);
-    if (!page)                    return res.status(404).json({ message: 'Page not found' });
-    if (page.owner_id !== userId) return res.status(403).json({ message: 'Only the page owner can post' });
+    if (!page) return res.status(404).json({ message: 'Page not found' });
+    if (page.owner_id !== userId && !isAdmin) return res.status(403).json({ message: 'Only the page owner can post' });
 
-    const { content } = req.body;
-    if (!content && !req.file) {
-      return res.status(400).json({ message: 'Post must have content or an image' });
+    const { content, link } = req.body;
+    const files = req.files || [];
+
+    if (!content && files.length === 0) {
+      return res.status(400).json({ message: 'Post must have content or at least one image' });
+    }
+
+    // Parse hashtags: "gym,fitness" → ["gym", "fitness"]
+    let hashtags = [];
+    if (req.body.hashtags) {
+      hashtags = req.body.hashtags.split(',').map(t => t.trim()).filter(Boolean);
+    }
+
+    // Parse mentions: JSON string → array
+    let mentions = [];
+    if (req.body.mentions) {
+      try { mentions = JSON.parse(req.body.mentions); } catch (_) {}
     }
 
     const post = await PagePost.create({
       page_id:   page.id,
       author_id: userId,
       content:   content || null,
+      link:      link    || null,
+      hashtags,
+      mentions,
     });
 
-    if (req.file) {
-      const key      = `pages/${page.id}/posts/${post.id}_${Date.now()}.jpg`;
-      const imageUrl = await uploadToS3(req.file.buffer, key, req.file.mimetype);
-      await post.update({ image_url: imageUrl });
+    // Upload up to 10 images in parallel
+    let images = [];
+    if (files.length > 0) {
+      const ts = Date.now();
+      images = await Promise.all(
+        files.slice(0, 10).map((f, i) =>
+          uploadToS3(f.buffer, `pages/${page.id}/posts/${post.id}_${ts}_${i}.jpg`, f.mimetype)
+        )
+      );
+      await post.update({ images, image_url: images[0] });
     }
 
     await page.increment('post_count');
 
-    // Create a single Feed entry — home feed query will fan it out to followers
     await Feed.create({
       userId:       userId,
       activityType: 'page_post',
       title:        page.name,
       description:  post.content  || null,
-      imageUrl:     post.image_url || null,
+      imageUrl:     images[0]     || null,
+      images:       images,
       pageId:       page.id,
       postType:     'public',
       timestamp:    new Date(),
     });
 
-    // Fire-and-forget push notifications to all followers
     notifyFollowers(page, post).catch(err => console.error('notifyFollowers error:', err));
 
     const author = await User.findByPk(userId, { attributes: ['id', 'full_name', 'profile_pic'] });
 
     return res.status(201).json({
+      success: true,
       post: {
         id:           post.id,
         content:      post.content,
-        imageUrl:     post.image_url,
+        images:       post.images || [],
+        link:         post.link,
+        hashtags:     post.hashtags || [],
+        mentions:     post.mentions || [],
         likeCount:    post.like_count,
         commentCount: post.comment_count,
         createdAt:    post.created_at,
+        canDelete:    true,
         author: {
           id:         author.id,
           name:       author.full_name,
@@ -450,6 +485,33 @@ exports.createPost = async (req, res) => {
     });
   } catch (err) {
     console.error('createPost error:', err);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// ── DELETE /pages/:pageId/posts/:postId ───────────────────────────────────────
+
+exports.deletePost = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const isAdmin = userId === process.env.ADMIN_UUID;
+    const page = await Page.findByPk(req.params.id);
+    if (!page) return res.status(404).json({ success: false, message: 'Page not found' });
+
+    const post = await PagePost.findOne({
+      where: { id: req.params.postId, page_id: page.id },
+    });
+    if (!post) return res.status(404).json({ success: false, message: 'Post not found' });
+
+    const canDelete = post.author_id === userId || page.owner_id === userId || isAdmin;
+    if (!canDelete) return res.status(403).json({ success: false, message: 'Not authorised' });
+
+    await post.destroy();
+    await page.decrement('post_count');
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('deletePost error:', err);
     return res.status(500).json({ message: 'Internal server error' });
   }
 };

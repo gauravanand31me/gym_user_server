@@ -23,6 +23,25 @@ const PagePost = sequelize.define('PagePost', {
     type:      DataTypes.STRING(500),
     allowNull: true,
   },
+  images: {
+    type:         DataTypes.ARRAY(DataTypes.TEXT),
+    allowNull:    true,
+    defaultValue: [],
+  },
+  link: {
+    type:      DataTypes.TEXT,
+    allowNull: true,
+  },
+  hashtags: {
+    type:         DataTypes.ARRAY(DataTypes.STRING),
+    allowNull:    true,
+    defaultValue: [],
+  },
+  mentions: {
+    type:         DataTypes.JSONB,
+    allowNull:    true,
+    defaultValue: [],
+  },
   like_count: {
     type:         DataTypes.INTEGER,
     allowNull:    false,
