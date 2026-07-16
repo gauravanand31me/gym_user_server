@@ -64,18 +64,19 @@ async function formatPage(page, userId) {
   }
 
   return {
-    id:           page.id,
-    name:         page.name,
-    slug:         page.slug,
-    category:     page.category,
-    description:  page.description,
-    website:      page.website,
-    profileImage: page.profile_image,
-    coverImage:   page.cover_image,
+    id:            page.id,
+    name:          page.name,
+    slug:          page.slug,
+    category:      page.category,
+    description:   page.description,
+    website:       page.website,
+    profileImage:  page.profile_image,
+    coverImage:    page.cover_image,
     followerCount: page.follower_count,
-    postCount:    page.post_count,
+    postCount:     page.post_count,
+    customButtons: page.custom_buttons || [],
     isJoined,
-    isOwner:      userId ? page.owner_id === userId : false,
+    isOwner:       userId ? page.owner_id === userId : false,
     owner: owner ? {
       id:         owner.id,
       name:       owner.full_name,
@@ -209,15 +210,21 @@ exports.createPage = async (req, res) => {
       return res.status(400).json({ message: `category must be one of: ${VALID_CATEGORIES.join(', ')}` });
     }
 
+    let customButtons = [];
+    if (req.body.customButtons) {
+      try { customButtons = JSON.parse(req.body.customButtons); } catch (_) {}
+    }
+
     const slug = await uniqueSlug(name);
     const ts   = Date.now();
 
     // Create page first to get id
     const page = await Page.create({
       name, slug, category,
-      description: description || null,
-      website:     website     || null,
-      owner_id:    userId,
+      description:    description    || null,
+      website:        website        || null,
+      owner_id:       userId,
+      custom_buttons: customButtons,
     });
 
     // Upload images if provided
@@ -263,6 +270,9 @@ exports.updatePage = async (req, res) => {
     if (category)    updates.category    = category;
     if (description !== undefined) updates.description = description;
     if (website     !== undefined) updates.website     = website;
+    if (req.body.customButtons !== undefined) {
+      try { updates.custom_buttons = JSON.parse(req.body.customButtons); } catch (_) {}
+    }
 
     const ts = Date.now();
     if (req.files?.profileImage?.[0]) {

@@ -50,6 +50,11 @@ const Page = sequelize.define('Page', {
     allowNull:    false,
     defaultValue: 0,
   },
+  custom_buttons: {
+    type:         DataTypes.JSON,
+    allowNull:    true,
+    defaultValue: [],
+  },
 }, {
   tableName:  'Pages',
   timestamps: true,
