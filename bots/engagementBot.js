@@ -4,14 +4,15 @@ const { Op } = require('sequelize');
 const { v4: uuidv4 } = require('uuid');
 const sequelize   = require('../config/db');
 
-const User         = require('../models/User');
-const Feed         = require('../models/Feed');
-const Follow       = require('../models/Follow');
-const PostReaction = require('../models/PostReaction');
-const PostComment  = require('../models/PostComment');
-const Message      = require('../models/Message');
+const User           = require('../models/User');
+const Feed           = require('../models/Feed');
+const Follow         = require('../models/Follow');
+const PostReaction   = require('../models/PostReaction');
+const PostComment    = require('../models/PostComment');
+const Message        = require('../models/Message');
 const MessageRequest = require('../models/MessageRequest');
-const Notification = require('../models/Notification');
+const Notification   = require('../models/Notification');
+const { pushToUser } = require('../utils/pushHelpers');
 
 // ─── Config ────────────────────────────────────────────────────────────────────
 
@@ -174,15 +175,24 @@ async function likePost(bot, post) {
   // Bump like count on the feed post
   await Feed.increment('like_count', { by: 1, where: { id: post.id } }).catch(() => {});
 
-  // Match exact format from controllers/PostReaction.js
   if (post.userId !== bot.id) {
     await createNotification({
-      forUserId: post.userId, // post owner receives it
+      forUserId: post.userId,
       fromUser:  bot,
-      type:      'reaction',  // must be 'reaction' — matches frontend handler
+      type:      'reaction',
       message:   `${bot.full_name} liked your post`,
-      relatedId: post.id,     // post ID — frontend navigates to this post
+      relatedId: post.id,
     });
+
+    // Push for likes — only 40% chance so it doesn't feel spammy
+    if (Math.random() < 0.4) {
+      await pushToUser(
+        post.userId,
+        `${bot.full_name} liked your post ❤️`,
+        (post.title || post.description || '').substring(0, 80) || 'Check it out',
+        { type: 'reaction', postId: post.id }
+      );
+    }
   }
 
   return true;
@@ -209,8 +219,16 @@ async function commentOnPost(bot, post) {
       fromUser:  bot,
       type:      'comment',
       message:   `${bot.full_name} commented on your post`,
-      relatedId: post.id,   // post ID — frontend opens the post from this
+      relatedId: post.id,
     });
+
+    // Push notification so user actually sees it on their phone
+    await pushToUser(
+      post.userId,
+      `${bot.full_name} commented on your post 💬`,
+      `"${text.substring(0, 80)}"`,
+      { type: 'comment', postId: post.id }
+    );
   }
 
   return true;

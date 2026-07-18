@@ -159,38 +159,36 @@ io.on("connection", (socket) => {
 
       await t.commit();
 
-      // 4️⃣ Push Notification (unchanged)
-      const notificationData = await PushNotification.findOne({
-        where: { userId: data.receiverId }
-      });
+      // 4️⃣ Push Notification — skip if receiver is already in this chat room
+      const chatRoom = io.sockets.adapter.rooms.get(data.chatId);
+      const receiverAlreadyInRoom = chatRoom && chatRoom.size >= 2;
 
-      if (notificationData?.expoPushToken) {
-        // Get sender info
-        const sender = await User.findOne({
-          where: { id: data.senderId },
-          attributes: ["full_name", "profile_pic"],
+      if (!receiverAlreadyInRoom) {
+        const notificationData = await PushNotification.findOne({
+          where: { userId: data.receiverId }
         });
 
-        const senderName = sender?.full_name || "New message";
-        const senderPic = sender?.profile_pic || null;
+        if (notificationData?.expoPushToken) {
+          const sender = await User.findOne({
+            where: { id: data.senderId },
+            attributes: ["full_name", "profile_pic"],
+          });
 
-        await sendPushNotification(notificationData.expoPushToken, {
-          title: senderName,
-          body: data.text,
+          const senderName = sender?.full_name || "New message";
+          const senderPic = sender?.profile_pic || null;
 
-          // Large preview image (Android; iOS w/ extension)
-          image: senderPic,
-
-          // Small icon (Android only — optional)
-          icon: senderPic,
-
-          // Also pass to app UI if you want
-          data: {
-            senderId: data.senderId,
-            full_name: senderName,
-            profile_pic: senderPic,
-          },
-        });
+          await sendPushNotification(notificationData.expoPushToken, {
+            title: senderName,
+            body: data.text,
+            image: senderPic,
+            icon: senderPic,
+            data: {
+              senderId: data.senderId,
+              full_name: senderName,
+              profile_pic: senderPic,
+            },
+          });
+        }
       }
 
       console.log("💾 Message stored + request handled");
