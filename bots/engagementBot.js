@@ -163,19 +163,10 @@ async function createNotification({ forUserId, fromUser, type, message, relatedI
 // ─── Action: Like a post ───────────────────────────────────────────────────────
 
 async function likePost(bot, post) {
-  const reactions = ['like', 'love', 'wow'];
-  const weights   = [0.70,   0.20,   0.10]; // weighted pick
-  const rng = Math.random();
-  let reactionType = 'like';
-  let cum = 0;
-  for (let i = 0; i < reactions.length; i++) {
-    cum += weights[i];
-    if (rng < cum) { reactionType = reactions[i]; break; }
-  }
-
+  // Only 'like' is supported by the PostReaction controller
   const [, created] = await PostReaction.findOrCreate({
     where:    { postId: post.id, userId: bot.id },
-    defaults: { reactionType },
+    defaults: { reactionType: 'like' },
   });
 
   if (!created) return; // already reacted
@@ -183,14 +174,16 @@ async function likePost(bot, post) {
   // Bump like count on the feed post
   await Feed.increment('like_count', { by: 1, where: { id: post.id } }).catch(() => {});
 
-  // Notify the post owner
-  await createNotification({
-    forUserId: post.userId,
-    fromUser:  bot,
-    type:      'like',
-    message:   `${bot.full_name} reacted to your post`,
-    relatedId: post.id,
-  });
+  // Match exact format from controllers/PostReaction.js
+  if (post.userId !== bot.id) {
+    await createNotification({
+      forUserId: post.userId, // post owner receives it
+      fromUser:  bot,
+      type:      'reaction',  // must be 'reaction' — matches frontend handler
+      message:   `${bot.full_name} liked your post`,
+      relatedId: post.id,     // post ID — frontend navigates to this post
+    });
+  }
 
   return true;
 }
@@ -200,22 +193,25 @@ async function likePost(bot, post) {
 async function commentOnPost(bot, post) {
   const text = getComment(post.activityType);
 
-  const comment = await PostComment.create({
+  await PostComment.create({
     postId:      post.id,
     userId:      bot.id,
     commentText: text,
-    timestamp:   new Date(Date.now() - rand(0, 3600_000)), // up to 1h ago
+    timestamp:   new Date(Date.now() - rand(0, 3600_000)),
   });
 
   await Feed.increment('comment_count', { by: 1, where: { id: post.id } }).catch(() => {});
 
-  await createNotification({
-    forUserId: post.userId,
-    fromUser:  bot,
-    type:      'comment',
-    message:   `${bot.full_name} commented: "${text.substring(0, 60)}${text.length > 60 ? '…' : ''}"`,
-    relatedId: comment.id,
-  });
+  // relatedId must be the FEED POST ID (not comment ID) — matches createComment.js:90
+  if (post.userId !== bot.id) {
+    await createNotification({
+      forUserId: post.userId,
+      fromUser:  bot,
+      type:      'comment',
+      message:   `${bot.full_name} commented on your post`,
+      relatedId: post.id,   // post ID — frontend opens the post from this
+    });
+  }
 
   return true;
 }
@@ -233,13 +229,8 @@ async function followUser(bot, target) {
   await User.increment('followers_count', { by: 1, where: { id: target.id } }).catch(() => {});
   await User.increment('following_count', { by: 1, where: { id: bot.id } }).catch(() => {});
 
-  await createNotification({
-    forUserId: target.id,
-    fromUser:  bot,
-    type:      'follow',
-    message:   `${bot.full_name} started following you`,
-    relatedId: bot.id,
-  });
+  // The real followUser controller does NOT create a Notification record —
+  // no notification for follows, so we skip it too (avoids dead-link notifications).
 
   return true;
 }
@@ -249,13 +240,13 @@ async function followUser(bot, target) {
 async function sendDM(bot, target, text) {
   const chatId = [bot.id, target.id].sort().join('_');
 
-  // Create or update MessageRequest so the message is auto-accepted
+  // Create or update MessageRequest so the message lands in inbox (not requests)
   await MessageRequest.findOrCreate({
     where:    { chat_id: chatId, receiver_id: target.id },
     defaults: { status: 'auto' },
   });
 
-  const msg = await Message.create({
+  await Message.create({
     id:           uuidv4(),
     chat_id:      chatId,
     sender_id:    bot.id,
@@ -265,13 +256,9 @@ async function sendDM(bot, target, text) {
     is_read:      false,
   });
 
-  await createNotification({
-    forUserId: target.id,
-    fromUser:  bot,
-    type:      'message',
-    message:   `${bot.full_name} sent you a message`,
-    relatedId: msg.id,
-  });
+  // The real app does NOT store a Notification row for messages —
+  // it delivers them via socket / push notification only.
+  // So no Notification.create here — avoids dead-link taps.
 
   return true;
 }
