@@ -4,6 +4,7 @@ const Reel = require('../models/Reel');
 const Feed = require('../models/Feed');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
+const { pushToUser } = require('../utils/pushHelpers');
 
 exports.reactToPost = async (req, res) => {
   const { postId, reactionType } = req.body;
@@ -56,12 +57,10 @@ exports.reactToPost = async (req, res) => {
         });
 
         if (existingNotification) {
-          // Just update the timestamp
           existingNotification.status = "unread";
           existingNotification.updatedAt = new Date();
           await existingNotification.save();
         } else {
-          // Create new notification
           await Notification.create({
             userId: toUserId,
             forUserId: userId,
@@ -71,6 +70,14 @@ exports.reactToPost = async (req, res) => {
             relatedId: postId,
           });
         }
+
+        // Push notification to post owner
+        await pushToUser(
+          toUserId,
+          `${fromUser.full_name} liked your ${reel ? 'reel' : 'post'} ❤️`,
+          reel?.title || feed?.title || feed?.description?.substring(0, 60) || 'Check it out',
+          { type: 'reaction', postId }
+        );
       }
 
     } else if (existingReaction.reactionType === reactionType) {

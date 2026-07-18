@@ -2,6 +2,7 @@ const { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand, HeadO
 const FriendRequest = require('../models/FriendRequest');
 const UserImage = require('../models/UserImages');
 const User = require('../models/User');
+const { pushToUser, pushToUsers } = require('../utils/pushHelpers');
 // controllers/userController.js
 const upload = require('../middleware/upload'); // Adjust path as necessary
 const { Op, Sequelize } = require('sequelize');
@@ -439,6 +440,15 @@ exports.followUser = async (req, res) => {
       followingId: toUserId
     });
     await User.increment('following_count', { by: 1, where: { id: toUserId } });
+
+    // Push notification to the followed user
+    const follower = await User.findOne({ where: { id: fromUserId }, attributes: ['full_name'] });
+    pushToUser(
+      toUserId,
+      `${follower?.full_name || 'Someone'} started following you 🙌`,
+      'Tap to check out their profile',
+      { type: 'follow', userId: fromUserId }
+    ).catch(() => {});
 
     return res.status(201).json({
       message: 'Successfully followed user',
@@ -2913,7 +2923,7 @@ exports.uploadFeed = async (req, res) => {
       title: title || "",
       gymId,
       description: answer,
-      imageUrl: imageUrls[0] || null,      
+      imageUrl: imageUrls[0] || null,
       images: imageUrls,
       timestamp: new Date(),
       postType: postType || "public",
@@ -2922,6 +2932,29 @@ exports.uploadFeed = async (req, res) => {
       link,
       hashtags
     });
+
+    // Push to all followers — fire and forget so response isn't delayed
+    if (!mode || mode !== 'story') {
+      (async () => {
+        try {
+          const poster = await User.findOne({ where: { id: userId }, attributes: ['full_name'] });
+          const followers = await Follow.findAll({
+            where: { followingId: userId },
+            attributes: ['followerId'],
+          });
+          const followerIds = followers.map(f => f.followerId);
+          const postPreview = (title || answer || '').substring(0, 70);
+          await pushToUsers(
+            followerIds,
+            `${poster?.full_name || 'Someone'} posted something new 🔥`,
+            postPreview || 'Tap to see the post',
+            { type: 'new_post', postId: feed.id }
+          );
+        } catch (e) {
+          console.error('[push] follower notify error:', e.message);
+        }
+      })();
+    }
 
     // Send notifications for mentioned users
     if (mentionIds.length > 0) {
