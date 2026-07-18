@@ -383,12 +383,13 @@ const PAGES_DATA = [
   },
 ];
 
-// ─── VIDEO REELS (Pexels royalty-free fitness videos) ─────────────────────────
+// ─── VIDEO REELS ──────────────────────────────────────────────────────────────
+// videoUrl is resolved at runtime from existing production reels on CloudFront.
+// thumbnailUrl is a Unsplash static image (always available).
 
 const REELS_DATA = [
   {
     user_index: 0,
-    videoUrl:   'https://videos.pexels.com/video-files/4761427/4761427-hd_1920_1080_25fps.mp4',
     thumbnail:  'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=600&h=800&fit=crop',
     title:      '5 AM Club — This is what discipline looks like',
     description: 'Nobody sees the 5 AM sessions. Nobody sees the missed social events. But they see the results. 6 months in 60 seconds. 🔥 #discipline #gains #gymlife',
@@ -397,7 +398,6 @@ const REELS_DATA = [
   },
   {
     user_index: 1,
-    videoUrl:   'https://videos.pexels.com/video-files/3289978/3289978-hd_1920_1080_25fps.mp4',
     thumbnail:  'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=600&h=800&fit=crop',
     title:      'Morning yoga flow — 10 min energiser',
     description: 'This 10-minute morning flow will wake up your spine, open your hips, and set the tone for the day. No equipment needed. 🧘 #yoga #morningroutine #wellness',
@@ -406,7 +406,6 @@ const REELS_DATA = [
   },
   {
     user_index: 2,
-    videoUrl:   'https://videos.pexels.com/video-files/5319934/5319934-hd_1920_1080_25fps.mp4',
     thumbnail:  'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=600&h=800&fit=crop',
     title:      'My 220kg deadlift — Raw, no belt',
     description: 'Year 8. Finally hit this. No belt, no suit, raw. Still shaking. For everyone who said I\'d plateau — watch this. 💪 #powerlifting #deadlift #strengthsports',
@@ -415,7 +414,6 @@ const REELS_DATA = [
   },
   {
     user_index: 3,
-    videoUrl:   'https://videos.pexels.com/video-files/4327008/4327008-hd_1920_1080_30fps.mp4',
     thumbnail:  'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=600&h=800&fit=crop',
     title:      'What I eat in a day — 1800 calories, 140g protein',
     description: 'Full day of eating while cutting. Every meal, every macro, every snack — explained. Indian food, high protein, totally sustainable. 🥗 #nutrition #whatieataday #macros',
@@ -424,7 +422,6 @@ const REELS_DATA = [
   },
   {
     user_index: 4,
-    videoUrl:   'https://videos.pexels.com/video-files/3571264/3571264-hd_1920_1080_25fps.mp4',
     thumbnail:  'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=600&h=800&fit=crop',
     title:      'Speed drills that actually work — Track session',
     description: 'A session breakdown of the exact speed drills I use for my 100m training. Acceleration phase, max velocity, speed endurance. 🏃 #athletics #speedtraining #trackandfield',
@@ -433,7 +430,6 @@ const REELS_DATA = [
   },
   {
     user_index: 0,
-    videoUrl:   'https://videos.pexels.com/video-files/4761425/4761425-hd_1920_1080_25fps.mp4',
     thumbnail:  'https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=600&h=800&fit=crop',
     title:      'How I went from skinny to jacked — 3 year transformation',
     description: '54kg to 85kg. 3 years of consistency. No steroids, no shortcuts, no excuses. This reel has everything: training, diet, mindset. Save it. 🔑 #transformation #natty #fitnessjourney',
@@ -510,14 +506,26 @@ const FEED_POSTS = [
   { user_index: 11, type: 'challenge', daysAgo: 35, postType: 'public',
     title: '30-Day Push-Up Challenge',
     answer: 'Day 1 of 30 — done ✅ 50 push-ups completed. It\'s never comfortable on day 1 but it\'ll be worth it on day 30. Anyone else doing this? Drop a 🔥 if you\'re in. #30daychallenge #pushupchallenge #fitness',
-    images: null, likes: 156, comments: 44,
-    challengeId: null },
+    images: ['https://images.unsplash.com/photo-1598971639058-fab3c3109a78?w=800&h=600&fit=crop'],
+    likes: 156, comments: 44, challengeId: null },
 
   { user_index: 12, type: 'challenge', daysAgo: 22, postType: 'public',
     title: '10k Steps Daily Challenge',
     answer: 'Week 3 of the 10k daily steps challenge and I genuinely feel different. Sleep is better. Appetite is better. Mood is better. Walking is underrated medicine. 🚶‍♀️ #10ksteps #walkingchallenge #wellness',
-    images: null, likes: 203, comments: 31,
-    challengeId: null },
+    images: ['https://images.unsplash.com/photo-1571008887538-b36bb32f4571?w=800&h=600&fit=crop'],
+    likes: 203, comments: 31, challengeId: null },
+
+  { user_index: 13, type: 'challenge', daysAgo: 14, postType: 'public',
+    title: '21-Day Plank Challenge — Day 7',
+    answer: 'Day 7 done! Holding 3 min plank now. Core is screaming but in the best way. Started at 30 sec on day 1. Progress is real. 💪 #plankchallenge #corestrength #21days',
+    images: ['https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800&h=600&fit=crop'],
+    likes: 134, comments: 22, challengeId: null },
+
+  { user_index: 18, type: 'challenge', daysAgo: 7, postType: 'public',
+    title: 'No Sugar 30 Days — Week 1 done!',
+    answer: 'One week without sugar complete 🎉 The cravings on day 2-3 were brutal. Day 7 feels different — clearer head, better energy. Sticking with it. Who else is on a no-sugar challenge? 🙋 #nosugarchallenge #cleaneating #wellness',
+    images: ['https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=800&h=600&fit=crop'],
+    likes: 178, comments: 38, challengeId: null },
 
   // checkin posts
   { user_index: 5, type: 'checkin', gym_index: 0, daysAgo: 60, hours: 2,
@@ -560,6 +568,30 @@ const seed = async () => {
   try {
     await sequelize.authenticate();
     console.log('✅ DB connected\n');
+
+    // ── 0. Harvest existing CloudFront video URLs from production reels ─────────
+    // This runs BEFORE cleanup so we can recycle real video URLs that actually
+    // exist on S3/CloudFront. Seed reels will use these so playback works.
+    console.log('🎬 Fetching existing video URLs from production reels...');
+    const productionReels = await Reel.findAll({
+      where: {
+        videoUrl: { [Op.not]: null },
+        processing: { [Op.or]: [false, null] },
+      },
+      attributes: ['videoUrl', 'thumbnailUrl'],
+      order: [['timestamp', 'DESC']],
+      limit: 20,
+    });
+
+    const liveVideoUrls = productionReels
+      .filter(r => r.videoUrl && r.videoUrl.includes('cloudfront'))
+      .map(r => r.videoUrl);
+
+    if (liveVideoUrls.length > 0) {
+      console.log(`   ✔ Found ${liveVideoUrls.length} live CloudFront video(s) — will reuse for seed reels\n`);
+    } else {
+      console.log('   ⚠ No existing CloudFront videos found — seed reels will show thumbnails only\n');
+    }
 
     // ── 1. Cleanup ──────────────────────────────────────────────────────────────
     console.log('🧹 Cleaning previous seed data...');
@@ -744,14 +776,22 @@ const seed = async () => {
     // ── 7. Video Reels ──────────────────────────────────────────────────────────
     console.log('🎬 Creating video reels...');
     const createdReelIds = [];
-    for (const r of REELS_DATA) {
+    for (let i = 0; i < REELS_DATA.length; i++) {
+      const r = REELS_DATA[i];
       const reelId = uuidv4();
       const ts = daysAgo(r.daysAgo);
       const user = createdUsers[r.user_index];
 
+      // Rotate through real CloudFront video URLs harvested from production.
+      // If production has no videos yet, videoUrl will be null — the reel is
+      // still created so the feed card appears; the user can upload videos later.
+      const videoUrl = liveVideoUrls.length > 0
+        ? liveVideoUrls[i % liveVideoUrls.length]
+        : null;
+
       await Reel.create({
         id: reelId, userId: user.id,
-        videoUrl: r.videoUrl, thumbnailUrl: r.thumbnail,
+        videoUrl, thumbnailUrl: r.thumbnail,
         title: r.title, description: r.description,
         hashtags: r.hashtags, postType: 'public', isPublic: true,
         like_count: r.likes, view_count: r.views,
