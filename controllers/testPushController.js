@@ -3,20 +3,9 @@ const User             = require('../models/User');
 const PushNotification = require('../models/PushNotification');
 const { sendPushNotification } = require('../config/pushNotification');
 
-// ── Admin-secret guard (reusable inline) ──────────────────────────────────────
-function checkAdmin(req, res) {
-  const secret = req.headers['x-admin-secret'] || req.query.secret;
-  if (!secret || secret !== process.env.ADMIN_SECRET) {
-    res.status(401).json({ error: 'Unauthorized — provide x-admin-secret header' });
-    return false;
-  }
-  return true;
-}
-
 // ── GET /user/api/notifications/push-tokens ───────────────────────────────────
 // Lists every stored Expo push token so you can see what's in the DB.
 exports.listPushTokens = async (req, res) => {
-  if (!checkAdmin(req, res)) return;
 
   try {
     const rows = await PushNotification.findAll({
@@ -56,8 +45,6 @@ exports.listPushTokens = async (req, res) => {
 //   Send to one user by userId:  { "userId": "uuid", "title": "Hey", "body": "Test 🔥" }
 //   Broadcast to all:            { "sendToAll": true, "title": "Hey", "body": "Test 🔥" }
 exports.testPush = async (req, res) => {
-  if (!checkAdmin(req, res)) return;
-
   const { userId, mobile, sendToAll, title = 'Test Notification', body = 'Push is working! 🔥' } = req.body;
 
   try {
