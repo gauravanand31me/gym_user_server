@@ -153,8 +153,8 @@ async function clear() {
     section('Messages & MessageRequests');
     const chatIds = await sequelize.query(
       `SELECT DISTINCT chat_id FROM "Messages"
-       WHERE sender_id = ANY(:ids) OR receiver_id = ANY(:ids)`,
-      { replacements: { ids: seedIds }, type: sequelize.QueryTypes.SELECT }
+       WHERE sender_id = ANY($1::uuid[]) OR receiver_id = ANY($1::uuid[])`,
+      { bind: [seedIds], type: sequelize.QueryTypes.SELECT }
     );
     const cids = chatIds.map(r => r.chat_id);
 
@@ -206,8 +206,8 @@ async function clear() {
     if (SEEDED_GYM_NAMES.length) {
       // delete child tables first
       const gymRows = await sequelize.query(
-        `SELECT id FROM "Gyms" WHERE name = ANY(:names)`,
-        { replacements: { names: SEEDED_GYM_NAMES }, type: sequelize.QueryTypes.SELECT }
+        `SELECT id FROM "Gyms" WHERE name = ANY($1::text[])`,
+        { bind: [SEEDED_GYM_NAMES], type: sequelize.QueryTypes.SELECT }
       );
       const gymIds = gymRows.map(r => r.id);
       log(`    Found ${gymIds.length} seeded gym(s)`);
@@ -215,16 +215,14 @@ async function clear() {
       if (gymIds.length) {
         const tables = ['GymImages', 'Equipments', 'EquipmentLists', 'Slots', 'GymSubscriptions', 'Bookings'];
         for (const t of tables) {
-          const del = await sequelize.query(
-            `DELETE FROM "${t}" WHERE "gymId" = ANY(:ids)`,
-            { replacements: { ids: gymIds } }
-          ).catch(() => [null, 0]);
-          const count = del[1] ?? 0;
-          if (count) log(`    Deleted ${count} row(s) from ${t}`);
+          await sequelize.query(
+            `DELETE FROM "${t}" WHERE "gymId" = ANY($1::uuid[])`,
+            { bind: [gymIds] }
+          ).catch(() => {});
         }
-        const gymDel = await sequelize.query(
-          `DELETE FROM "Gyms" WHERE id = ANY(:ids)`,
-          { replacements: { ids: gymIds } }
+        await sequelize.query(
+          `DELETE FROM "Gyms" WHERE id = ANY($1::uuid[])`,
+          { bind: [gymIds] }
         );
         log(`    Deleted ${gymIds.length} gym(s)`);
       }
