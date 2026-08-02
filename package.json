@@ -6,12 +6,19 @@
   "scripts": {
     "test": "jest",
     "seed:demo": "node seeders/seedDemoUser.js",
-    "seed:data": "node seeders/seedRealisticData.js"
+    "seed:data": "node seeders/seedRealisticData.js",
+    "seed:full": "node seeders/seedFullApp.js",
+    "seed:clear": "node seeders/clearSeedData.js",
+    "bot": "node bots/engagementBot.js",
+    "bot:watch": "node bots/botScheduler.js",
+    "seed:personas": "node seeders/seedPersonaBots.js",
+    "bot:persona": "node bots/indianPersonaBot.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.112.3",
     "@aws-sdk/client-s3": "^3.665.0",
     "@react-google-maps/api": "^2.19.3",
     "aws-sdk": "^2.1691.0",
