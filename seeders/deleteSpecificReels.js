@@ -73,7 +73,7 @@ async function run() {
 
   // Notifications
   const [, pn] = await sequelize.query(
-    `DELETE FROM "Notifications" WHERE "relatedId" = ANY($1::uuid[])`,
+    `DELETE FROM "Notification" WHERE "relatedId" = ANY($1::uuid[])`,
     { bind: [allPostIds] }
   );
   console.log(`✔ Notifications: ${pn.rowCount ?? 0} deleted`);
