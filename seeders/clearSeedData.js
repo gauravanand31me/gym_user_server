@@ -180,8 +180,8 @@ async function clear() {
     // PagePosts and PageFollowers
     section('Page content');
     if (pageIds.length) {
-      const ppDel = await PagePost.destroy({ where: { pageId: { [Op.in]: pageIds } } });
-      const pfDel = await PageFollower.destroy({ where: { pageId: { [Op.in]: pageIds } } });
+      const ppDel = await PagePost.destroy({ where: { page_id: { [Op.in]: pageIds } } });
+      const pfDel = await PageFollower.destroy({ where: { page_id: { [Op.in]: pageIds } } });
       log(`    Deleted ${ppDel} page post(s), ${pfDel} page follower(s)`);
     } else {
       log(`    No pages to clear`);
