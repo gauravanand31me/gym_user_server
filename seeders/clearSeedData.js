@@ -126,6 +126,7 @@ async function clear() {
         { userId:    { [Op.in]: seedIds } },
         { forUserId: { [Op.in]: seedIds } },
       ]},
+      // model tableName is 'Notification' (singular) — Sequelize handles it
     });
     log(`    Deleted ${n} notification(s)`);
 
