@@ -375,12 +375,28 @@ exports.listPosts = async (req, res) => {
     const requestUserId = req.user.id;
     const isAdmin = requestUserId === process.env.ADMIN_UUID;
 
+    // Fetch all Feed entries for this page so we can attach feedId to each post
+    const pageFeeds = await Feed.findAll({
+      where:      { pageId: page.id, activityType: 'page_post' },
+      attributes: ['id', 'description', 'createdAt'],
+      order:      [['createdAt', 'DESC']],
+    });
+
     const posts = await Promise.all(rows.map(async post => {
       const author = await User.findByPk(post.author_id, {
         attributes: ['id', 'full_name', 'profile_pic'],
       });
+
+      // Match Feed by content + closest createdAt to post.created_at
+      const matchedFeed = pageFeeds.find(f => f.description === post.content)
+        || pageFeeds.find(f => {
+          const diff = Math.abs(new Date(f.createdAt) - new Date(post.created_at));
+          return diff < 5000; // within 5 seconds
+        });
+
       return {
         id:           post.id,
+        feedId:       matchedFeed?.id || null,
         content:      post.content,
         images:       post.images || (post.image_url ? [post.image_url] : []),
         link:         post.link   || null,
