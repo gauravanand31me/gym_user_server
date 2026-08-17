@@ -477,9 +477,7 @@ exports.createPost = async (req, res) => {
     const mentionedUserIds = Array.isArray(mentions)
       ? mentions.map(m => m.id).filter(Boolean)
       : [];
-    const mentionHandles = Array.isArray(mentions)
-      ? mentions.map(m => m.username || m.name).filter(Boolean)
-      : [];
+    
 
     await Feed.create({
       userId:           userId,
@@ -492,8 +490,7 @@ exports.createPost = async (req, res) => {
       postType:         'public',
       timestamp:        new Date(),
       hashtags:         hashtags.length     ? hashtags         : [],
-      mentions:         mentionHandles.length ? mentionHandles  : [],
-      mentionedUserIds: mentionedUserIds.length ? mentionedUserIds : [],
+      mentions,
     });
 
     notifyFollowers(page, post).catch(err => console.error('notifyFollowers error:', err));
