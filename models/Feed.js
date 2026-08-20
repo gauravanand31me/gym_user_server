@@ -25,6 +25,11 @@ const Feed = sequelize.define('Feed', {
     allowNull: true,
     defaultValue: null,
   },
+  pagePostId: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    defaultValue: null,
+  },
   price: {
     type: DataTypes.INTEGER,
     allowNull: true,

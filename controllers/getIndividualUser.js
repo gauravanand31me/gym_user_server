@@ -29,6 +29,8 @@ const FeedReports = require('../models/FeedReports');
 const Block = require('../models/Block');
 const Category = require('../models/Category');
 const PageFollower = require('../models/PageFollower');
+const PagePost = require('../models/PagePost');
+const Page = require('../models/Page');
 const ChallengePayment = require('../models/ChallengePayment');
 const Message = require('../models/Message');
 const MessageRequest = require('../models/MessageRequest');
@@ -2460,6 +2462,17 @@ exports.deletePost = async (req, res) => {
     // Step 3: Delete reactions and comments
     await PostReaction.destroy({ where: { postId } });
     await PostComment.destroy({ where: { postId } });
+
+    // Step 3.5: If this feed entry mirrors a page post, delete the page post too
+    if (post.activityType === 'page_post' && post.pagePostId) {
+      const pagePost = await PagePost.findOne({
+        where: { id: post.pagePostId, page_id: post.pageId },
+      });
+      if (pagePost) {
+        await pagePost.destroy();
+        await Page.decrement('post_count', { where: { id: post.pageId } });
+      }
+    }
 
     // Step 4: Delete the post
     await post.destroy();
