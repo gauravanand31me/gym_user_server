@@ -499,6 +499,7 @@ exports.createPost = async (req, res) => {
       imageUrl:         images[0]     || null,
       images:           images,
       pageId:           page.id,
+      pagePostId:       post.id,
       postType:         'public',
       timestamp:        new Date(),
       hashtags:         hashtags.length     ? hashtags         : [],
@@ -553,6 +554,7 @@ exports.deletePost = async (req, res) => {
     if (!canDelete) return res.status(403).json({ success: false, message: 'Not authorised' });
 
     await post.destroy();
+    await Feed.destroy({ where: { pagePostId: post.id, pageId: page.id } });
     await page.decrement('post_count');
 
     return res.json({ success: true });
