@@ -9,6 +9,7 @@ const PagePost     = require('../models/PagePost');
 const User         = require('../models/User');
 const Feed         = require('../models/Feed');
 const PushNotification = require('../models/PushNotification');
+const Category = require('../models/Category');
 
 const CLOUDFRONT = process.env.CLOUDFRONT_URL;
 
@@ -440,8 +441,19 @@ exports.createPost = async (req, res) => {
 
     // Parse hashtags: "gym,fitness" → ["gym", "fitness"]
     let hashtags = [];
-    if (req.body.hashtags) {
-      hashtags = req.body.hashtags.split(',').map(t => t.trim()).filter(Boolean);
+    const hashtagRegex = /#\w+/g;
+    hashtags = content.match(hashtagRegex) || [];
+    const uniqueCategories = new Set(hashtags);
+    
+    for (const categoryName of uniqueCategories) {
+            const [category, created] = await Category.findOrCreate({
+              where: { name: categoryName },
+              defaults: { name: categoryName, numberOfPosts: 1, isChallenge: false },
+            });
+    
+            if (!created) {
+              await category.increment('numberOfPosts');
+            }
     }
 
     // Parse mentions: JSON string → array
