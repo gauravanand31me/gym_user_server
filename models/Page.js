@@ -28,6 +28,10 @@ const Page = sequelize.define('Page', {
     type:      DataTypes.STRING(255),
     allowNull: true,
   },
+  link: {
+    type:      DataTypes.ARRAY(DataTypes.STRING),
+    allowNull: true,
+  },
   profile_image: {
     type:      DataTypes.STRING(500),
     allowNull: true,
