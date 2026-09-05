@@ -24,6 +24,23 @@ function toSlug(name) {
     .replace(/^-|-$/g, '');
 }
 
+// Mirrors how PUT /users/update-link stores User.link: an array of JSON
+// strings, each shaped {"id","title","url"}. Pages go through multer
+// (multipart, for the image uploads), so the array arrives JSON-stringified
+// as a single text field rather than as native JSON body.
+function parseLinks(raw) {
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw === 'string') {
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (_) {
+      return [];
+    }
+  }
+  return [];
+}
+
 async function uniqueSlug(name, excludeId = null) {
   const base = toSlug(name);
   let slug = base;
@@ -71,6 +88,7 @@ async function formatPage(page, userId) {
     category:      page.category,
     description:   page.description,
     website:       page.website,
+    link:          page.link || [],
     profileImage:  page.profile_image,
     coverImage:    page.cover_image,
     followerCount: page.follower_count,
@@ -211,10 +229,7 @@ exports.createPage = async (req, res) => {
       return res.status(400).json({ message: `category must be one of: ${VALID_CATEGORIES.join(', ')}` });
     }
 
-    let customButtons = [];
-    if (req.body.customButtons) {
-      try { customButtons = JSON.parse(req.body.customButtons); } catch (_) {}
-    }
+    const link = parseLinks(req.body.link);
 
     const slug = await uniqueSlug(name);
     const ts   = Date.now();
@@ -222,10 +237,10 @@ exports.createPage = async (req, res) => {
     // Create page first to get id
     const page = await Page.create({
       name, slug, category,
-      description:    description    || null,
-      website:        website        || null,
-      owner_id:       userId,
-      custom_buttons: customButtons,
+      description: description || null,
+      website:     website     || null,
+      link,
+      owner_id:    userId,
     });
 
     // Upload images if provided
@@ -271,9 +286,7 @@ exports.updatePage = async (req, res) => {
     if (category)    updates.category    = category;
     if (description !== undefined) updates.description = description;
     if (website     !== undefined) updates.website     = website;
-    if (req.body.customButtons !== undefined) {
-      try { updates.custom_buttons = JSON.parse(req.body.customButtons); } catch (_) {}
-    }
+    if (req.body.link !== undefined) updates.link = parseLinks(req.body.link);
 
     const ts = Date.now();
     if (req.files?.profileImage?.[0]) {
