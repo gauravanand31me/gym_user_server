@@ -4,7 +4,7 @@ const { Op }   = require('sequelize');
 const { v4: uuidv4 } = require('uuid');
 
 const User             = require('../models/User');
-const PushNotification = require('../models/PushNotification');
+const { savePushToken } = require('../utils/pushHelpers');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'Test@1992';
 
@@ -149,14 +149,10 @@ exports.socialLogin = async (req, res) => {
   user = await findOrCreateSocialUser({ provider, socialId, email, fullName, profilePic });
 
   // ── 4. Update push token ───────────────────────────────────────────────────
-  if (expoPushToken) {
-    const existing = await PushNotification.findOne({ where: { userId: user.id } });
-    if (existing) {
-      existing.expoPushToken = expoPushToken;
-      await existing.save();
-    } else {
-      await PushNotification.create({ userId: user.id, expoPushToken });
-    }
+  try {
+    await savePushToken(user.id, expoPushToken);
+  } catch (err) {
+    console.error('[push] Failed to save token on social login:', err.message);
   }
 
   // ── 5. Return JWT ──────────────────────────────────────────────────────────

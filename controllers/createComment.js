@@ -3,8 +3,8 @@ const User = require('../models/User');
 const Feed = require('../models/Feed');
 const Reel = require("../models/Reel");
 const Notification = require("../models/Notification");
-const PushNotification = require('../models/PushNotification');
-const { sendPushNotification } = require('../config/pushNotification');
+const { pushToUser } = require('../utils/pushHelpers');
+const { truncate } = require('../config/pushNotification');
 
 
 exports.createComment = async (req, res) => {
@@ -59,6 +59,7 @@ exports.createComment = async (req, res) => {
     // 🔔 Notification Logic for Post/Reel Owner
     const actorUser = await User.findOne({ where: { id: fromUserId } });
     const receiverUserId = post?.userId || reel?.userId;
+    const contentLabel = reel ? 'reel' : 'post';
 
     if (receiverUserId && receiverUserId !== fromUserId) {
       const existingNotification = await Notification.findOne({
@@ -95,16 +96,12 @@ exports.createComment = async (req, res) => {
         });
       }
 
-      const notificationData = await PushNotification.findOne({
-        where: { userId: receiverUserId }
-      });
-
-      const notificationTitle = {
-        title: "New Comment",
-        body: `${actorUser.full_name} commented on your ${reel ? 'reel' : 'post'}`, // Notification message
-      };
-
-      await sendPushNotification(notificationData?.expoPushToken, notificationTitle);
+      pushToUser(
+        receiverUserId,
+        `💬 ${actorUser.full_name} commented on your ${contentLabel}`,
+        `"${truncate(commentText, 120)}"`,
+        { type: 'comment', postId, commentId: comment.id, isReel: !!reel }
+      );
     }
 
     // 🔔 Notification Logic for Replied-to User
@@ -120,6 +117,15 @@ exports.createComment = async (req, res) => {
         message: `${actorUser.full_name} replied to your comment on ${reel ? 'reel' : 'post'} - "${parentCommentData}"`,
         othersCount: 1,
       });
+
+      if (repliedUserId !== fromUserId) {
+        pushToUser(
+          repliedUserId,
+          `↩️ ${actorUser.full_name} replied to your comment`,
+          `"${truncate(commentText, 120)}"`,
+          { type: 'comment_reply', postId, commentId: comment.id, parentId, isReel: !!reel }
+        );
+      }
     }
 
     // 🔔 Notification Logic for Mentioned Users
@@ -139,16 +145,12 @@ exports.createComment = async (req, res) => {
               othersCount: 1,
             });
 
-            const mentionNotificationData = await PushNotification.findOne({
-              where: { userId: mentionedUserId }
-            });
-
-            const mentionNotificationTitle = {
-              title: "You Were Mentioned",
-              body: `${actorUser.full_name} mentioned you in a ${reel ? 'reel' : 'post'}`,
-            };
-
-            await sendPushNotification(mentionNotificationData?.expoPushToken, mentionNotificationTitle);
+            pushToUser(
+              mentionedUserId,
+              `📣 ${actorUser.full_name} mentioned you in a comment`,
+              `"${truncate(commentText, 120)}"`,
+              { type: 'comment_mention', postId, commentId: comment.id, isReel: !!reel }
+            );
           }
         }
       }

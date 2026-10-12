@@ -28,7 +28,7 @@ const pagesRoutes       = require("./routes/pages")
 const { Server } = require("socket.io")
 const Message = require("./models/Message")
 const PushNotification = require("./models/PushNotification")
-const { sendPushNotification } = require("./config/pushNotification")
+const { sendPushNotification, truncate } = require("./config/pushNotification")
 const MessageRequest = require("./models/MessageRequest");
 const User = require("./models/User");
 
@@ -177,17 +177,21 @@ io.on("connection", (socket) => {
           const senderName = sender?.full_name || "New message";
           const senderPic = sender?.profile_pic || null;
 
-          await sendPushNotification(notificationData.expoPushToken, {
-            title: senderName,
-            body: data.text,
-            image: senderPic,
-            icon: senderPic,
-            data: {
+          // Don't block the socket handler on Expo
+          sendPushNotification(
+            notificationData.expoPushToken,
+            {
+              title: `💬 ${senderName}`,
+              body: data.text ? truncate(data.text, 150) : "Sent you a message",
+            },
+            {
+              type: "chat",
+              chatId: data.chatId,
               senderId: data.senderId,
               full_name: senderName,
               profile_pic: senderPic,
-            },
-          });
+            }
+          );
         }
       }
 

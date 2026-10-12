@@ -1,7 +1,7 @@
 const { Op } = require('sequelize');
 const { PutObjectCommand } = require('@aws-sdk/client-s3');
 const { s3Client } = require('../s3Client');
-const axios = require('axios');
+const { sendPushToTokens, truncate } = require('../config/pushNotification');
 
 const Page         = require('../models/Page');
 const PageFollower = require('../models/PageFollower');
@@ -117,31 +117,18 @@ async function notifyFollowers(page, post) {
     attributes: ['expoPushToken'],
   });
 
-  const validTokens = tokens
-    .map(t => t.expoPushToken)
-    .filter(t => t && t.startsWith('ExponentPushToken'));
-
-  if (!validTokens.length) return;
+  if (!tokens.length) return;
 
   const body = post.content
-    ? post.content.substring(0, 80)
-    : 'New post with photo';
+    ? truncate(post.content, 120)
+    : 'Shared a new photo — tap to see it.';
 
-  // Expo allows up to 100 messages per batch request
-  const BATCH = 100;
-  for (let i = 0; i < validTokens.length; i += BATCH) {
-    const batch = validTokens.slice(i, i + BATCH).map(token => ({
-      to:    token,
-      sound: 'default',
-      title: page.name,
-      body,
-      data:  { type: 'PAGE_POST', pageId: page.id, postId: post.id },
-    }));
-
-    axios.post('https://exp.host/--/api/v2/push/send', batch, {
-      headers: { 'Content-Type': 'application/json' },
-    }).catch(err => console.error('Push batch error:', err.message));
-  }
+  // Batching, retries and invalid-token filtering are handled by the sender
+  sendPushToTokens(
+    tokens.map(t => t.expoPushToken),
+    { title: `📢 New post from ${page.name}`, body },
+    { type: 'PAGE_POST', pageId: page.id, postId: post.id },
+  );
 }
 
 // ── GET /pages ────────────────────────────────────────────────────────────────

@@ -1,5 +1,5 @@
 const sequelize = require("../config/db");
-const PushNotification = require("../models/PushNotification");
+const { savePushToken } = require("../utils/pushHelpers");
 
 // Fetch all information about a specific gym by gymId
 exports.fetchIndividualGyms = async (req, res) => {
@@ -50,20 +50,12 @@ exports.fetchIndividualGyms = async (req, res) => {
 };
 
 exports.storePushToken = async (req, res) => {
-    const receivedToken = req.body.expoPushToken || "NA";
-    const notify = await PushNotification.findOne({ where: { userId: req.user.id } })
-    
-        if (notify) {
-            // If user exists, update the expoPushToken
-            notify.expoPushToken = receivedToken;
-            await notify.save();
-        
-        } else {
-            // If user doesn't exist, create a new record
-          const newToken = new PushNotification({ userId: req.user.id , expoPushToken: receivedToken });
-          await newToken.save();
-          
-        }
-
-        return res.status(200).json({status: true});
+    try {
+        const saved = await savePushToken(req.user.id, req.body.expoPushToken);
+        if (!saved) console.warn(`[push] Ignored invalid token for user ${req.user.id}:`, req.body.expoPushToken);
+        return res.status(200).json({ status: true, saved });
+    } catch (error) {
+        console.error("Error storing push token:", error);
+        return res.status(500).json({ status: false, message: "Failed to store push token" });
+    }
 }
