@@ -4,7 +4,7 @@ const { sendSMS } = require('../utils/sendSMS');
 const { Op } = require('sequelize');
 const jwt = require('jsonwebtoken');
 const { isMobileNumber } = require('../helper/helper');
-const PushNotification = require('../models/PushNotification');
+const { savePushToken } = require('../utils/pushHelpers');
 const { sendSMSINFOBIP } = require('../utils/sendSMSInfoBIP');
 const JWT_SECRET = process.env.JWT_SECRET || "Test@1992"
 // Register a new user
@@ -67,11 +67,6 @@ exports.register = async (req, res) => {
 exports.verifyOTP = async (req, res) => {
   const { mobile_number, otp, expoPushToken } = req.body;
 
-  await PushNotification.destroy({
-    where: {}, // No condition, deletes all records
-    truncate: true // This will clear the table and reset auto-increment counters
-  });
-
   try {
     // Find the user with the given mobile number and OTP
     const user = await User.findOne({ where: { mobile_number, otp } });
@@ -87,22 +82,12 @@ exports.verifyOTP = async (req, res) => {
     const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: '20d' });
 
 
-    const receivedToken = expoPushToken || "NA";
-
-    const notify = await PushNotification.findOne({ where: { userId: user.id } })
-    
-        if (notify) {
-            // If user exists, update the expoPushToken
-            notify.expoPushToken = receivedToken;
-            await notify.save();
-        
-        } else {
-            // If user doesn't exist, create a new record
-          const newToken = new PushNotification({ userId: user.id , expoPushToken: receivedToken });
-          await newToken.save();
-          
-        }
-    
+    // A push-token problem must never block login
+    try {
+      await savePushToken(user.id, expoPushToken);
+    } catch (err) {
+      console.error("[push] Failed to save token on login:", err.message);
+    }
 
     // Send the token in the response along with the success message
     res.json({

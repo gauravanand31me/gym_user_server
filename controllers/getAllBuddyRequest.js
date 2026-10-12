@@ -3,8 +3,7 @@ const sequelize = require("../config/db");
 const Notification  = require("../models/Notification");
 const User = require('../models/User'); // Adjust your model imports as necessary
 const { Op } = require('sequelize');
-const { sendPushNotification } = require('../config/pushNotification');
-const PushNotification = require('../models/PushNotification');
+const { pushToUser } = require('../utils/pushHelpers');
 
 exports.getAllBuddyRequest = async (req, res) => {
     try {
@@ -75,16 +74,12 @@ exports.sendBuddyRequest = async (req, res) => {
             forUserId: req.user.id
         });
 
-        const notificationData = await PushNotification.findOne({
-            where: { userId: toUserId }
-          });
-    
-          const notificationTitle = {
-            title: "New Workout Invite",
-            body: `${fromUser.full_name} has sent you a workout invitation.`, // Notification message
-          }
-    
-          await sendPushNotification(notificationData?.expoPushToken, notificationTitle);
+        pushToUser(
+            toUserId,
+            "🏋️ New workout invite",
+            `${fromUser.full_name} wants to train with you. Tap to accept or decline.`,
+            { type: 'workout_invite', bookingId, userId: fromUser.id }
+        );
 
         res.status(201).json(newRequest);
     } catch (error) {

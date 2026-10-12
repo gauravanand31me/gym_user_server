@@ -7,8 +7,7 @@ const FriendRequest  = require("../models/FriendRequest");
 const Notification  = require("../models/Notification");
 const sequelize = require("../config/db");
 const { v4: uuidv4 } = require('uuid');
-const PushNotification = require('../models/PushNotification');
-const { sendPushNotification } = require('../config/pushNotification');
+const { pushToUser } = require('../utils/pushHelpers');
 const MessageRequest = require('../models/MessageRequest');
 
 exports.sendFriendRequest = async (req, res) => {
@@ -59,16 +58,12 @@ exports.sendFriendRequest = async (req, res) => {
         forUserId: req.user.id
       });
 
-      const notificationData = await PushNotification.findOne({
-        where: { userId: userId }
-      });
-
-      const notificationTitle = {
-        title: "New Friend Request",
-        body: `${fromUser.full_name} has sent you a friend request.`, // Notification message
-      }
-
-      await sendPushNotification(notificationData?.expoPushToken, notificationTitle);
+      pushToUser(
+        userId,
+        "👋 New friend request",
+        `${fromUser.full_name} wants to connect with you. Tap to respond.`,
+        { type: 'friend_request', userId: fromUser.id, requestId: friendRequest.id }
+      );
   
       return res.status(201).json({ 
         message: "Friend request sent and notification created.",
@@ -176,16 +171,12 @@ exports.acceptRequest = async (req, res) => {
         );
 
 
-        const notificationData = await PushNotification.findOne({
-          where: { userId: request.fromUserId }
-        });
-  
-        const notificationTitle = {
-          title: "Accepted Friend Request",
-          body: `${fromUser.full_name} has accepted your friend request.`, // Notification message
-        }
-  
-        await sendPushNotification(notificationData?.expoPushToken, notificationTitle);
+        pushToUser(
+          request.fromUserId,
+          "🤝 Friend request accepted",
+          `You and ${fromUser.full_name} are now friends. Say hi!`,
+          { type: 'friend_accepted', userId: fromUser.id }
+        );
 
         return res.status(200).json({ message: "Friend request accepted." });
     } catch (error) {

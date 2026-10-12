@@ -24,7 +24,7 @@ const sharp = require("sharp"); // Import Sharp at the top
 const fs = require('fs');
 const path = require('path');
 const s3 = require('../config/aws'); // your s3 config
-const { sendPushNotification } = require('../config/pushNotification');
+const { sendPushNotification, truncate } = require('../config/pushNotification');
 const FeedReports = require('../models/FeedReports');
 const Block = require('../models/Block');
 const Category = require('../models/Category');
@@ -3000,10 +3000,16 @@ exports.uploadFeed = async (req, res) => {
             const profilePic = target?.profile_pic || 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
 
             if (expoPushToken) {
-              await sendPushNotification(expoPushToken, {
-                title: "📢 You've been mentioned in a post!",
-                body: `${senderUser.full_name} mentioned you in their ${activityType === 'challenge' ? 'challenge' : 'post'}. Check it out!`
-              });
+              const label = activityType === 'challenge' ? 'challenge' : 'post';
+              const preview = truncate(title || answer, 120);
+              await sendPushNotification(
+                expoPushToken,
+                {
+                  title: `📣 ${senderUser.full_name} mentioned you in a ${label}`,
+                  body: preview ? `"${preview}"` : 'Tap to see what they shared.',
+                },
+                { type: 'post_mention', postId: feed.id }
+              );
             }
 
             await Notification.create({
@@ -3117,10 +3123,16 @@ exports.mentionFriendsInChallenge = async (req, res) => {
           const profilePic = target?.profile_pic || 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
 
           if (expoPushToken) {
-            await sendPushNotification(expoPushToken, {
-              title: "🏆 You've been tagged in a Challenge!",
-              body: `${senderUser.full_name} tagged you in a challenge. Check it out!`
-            });
+            await sendPushNotification(
+              expoPushToken,
+              {
+                title: `🏆 ${senderUser.full_name} challenged you!`,
+                body: feed?.title
+                  ? `"${truncate(feed.title, 100)}" — think you can take it on?`
+                  : 'You were tagged in a challenge. Think you can take it on?',
+              },
+              { type: 'challenge_tag', challengeId }
+            );
           }
 
           await Notification.create({

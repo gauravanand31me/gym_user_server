@@ -8,8 +8,7 @@ const Notification = require("../models/Notification");
 const BuddyRequest = require('../models/BuddyRequest');
 const crypto = require("crypto");
 const { v4: uuidv4 } = require('uuid');
-const { sendPushNotification } = require('../config/pushNotification');
-const PushNotification = require('../models/PushNotification');
+const { pushToUser } = require('../utils/pushHelpers');
 const Feed = require('../models/Feed');
 const ChallengePayment = require('../models/ChallengePayment');
 const Reel = require('../models/Reel');
@@ -433,16 +432,12 @@ exports.razorPayWebhookPost = async (req, res) => {
           });
 
 
-          const notificationData = await PushNotification.findOne({
-            where: { userId: relatedBooking.userId }
-          });
-
-          const notificationTitle = {
-            title: "Workout request accepted",
-            body: `${fromUser.full_name} has accepted your workout invitation.`, // Notification message
-          }
-
-          await sendPushNotification(notificationData?.expoPushToken, notificationTitle);
+          pushToUser(
+            relatedBooking.userId,
+            "💪 Workout invite accepted",
+            `${fromUser.full_name} is in! Get ready to train together.`,
+            { type: "workout_accepted", bookingId: request, userId: fromUser.id }
+          );
 
 
 
@@ -467,23 +462,12 @@ exports.razorPayWebhookPost = async (req, res) => {
 
       await Booking.update({ isPaid: true, "paymentId": paymentId }, { where: { bookingId } });
 
-      const notificationData = await PushNotification.findOne({
-        where: { userId }
-      });
-
-
-
-
-      const newnotificationTitle = {
-        title: "Booking Successful",
-        body: `Your booking is successful.`, // Notification message
-      }
-
-      const data = {
-        reloadPayment: true
-      };
-
-      await sendPushNotification(notificationData?.expoPushToken, newnotificationTitle, data);
+      pushToUser(
+        userId,
+        "✅ Booking confirmed",
+        "Your payment went through and your gym session is booked. See you there!",
+        { type: "booking_confirmed", bookingId, reloadPayment: true }
+      );
     } else {
 
 
